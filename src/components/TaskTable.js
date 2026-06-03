@@ -64,9 +64,9 @@ export function TaskModal(task = null) {
         <form id="task-form" class="form-grid">
           <input type="hidden" name="id" value="${escapeHtml(task?.id || "")}" />
           <label>Ticket<input name="ticket" value="${escapeHtml(task?.ticket || "")}" /></label>
+          <label>Título<input name="title" required value="${escapeHtml(task?.title || "")}" /></label>
           <label>Fecha asignación<input name="assigned_date" type="date" required value="${escapeHtml(task?.assigned_date || new Date().toISOString().slice(0, 10))}" /></label>
           <label>Fecha finalización<input name="finished_date" type="date" value="${escapeHtml(task?.finished_date || "")}" ${!isEdit || task?.task_status !== "Done" ? "disabled" : ""} /></label>
-          <label>Título<input name="title" required value="${escapeHtml(task?.title || "")}" /></label>
           <label>Punto de esfuerzo<input name="effort_points" type="number" min="0" value="${escapeHtml(task?.effort_points ?? 3)}" /></label>
           <label>Punto de orden<input name="order_points" type="number" value="${escapeHtml(task?.order_points ?? "")}" /></label>
           <label>Prioridad<select name="priority">${PRIORITIES.map((priority) => `<option ${((task?.priority || "Menor") === priority) ? "selected" : ""}>${priority}</option>`).join("")}</select></label>
