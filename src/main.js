@@ -5,10 +5,12 @@ import { AuthPage } from "./pages/AuthPage.js";
 import { BacklogPage } from "./pages/BacklogPage.js";
 import { CalendarPage } from "./pages/CalendarPage.js";
 import { DailyTasksPage } from "./pages/DailyTasksPage.js";
+import { ConfigurationPage } from "./pages/ConfigurationPage.js";
 import { PerformancePage } from "./pages/PerformancePage.js";
 import { TimeManagerPage } from "./pages/TimeManagerPage.js";
 import { login, logout, register } from "./services/authService.js";
 import { getCalendarMonth, updateCalendarDayStatus } from "./services/calendarService.js";
+import { createConfiguration, listConfigurations, updateConfigurationProfile } from "./services/configurationService.js";
 import { createDailyReport, getDailyReport } from "./services/dailyReportService.js";
 import { isAuthenticated } from "./services/sessionService.js";
 import { createTask, listTasks, updateTask } from "./services/taskService.js";
@@ -34,6 +36,7 @@ const state = {
   calendarDays: [],
   timeEntries: [],
   editingTimeEntry: null,
+  configurations: [],
 };
 
 async function boot() {
@@ -67,6 +70,9 @@ function currentPageHtml() {
   }
   if (state.page === "time") {
     return TimeManagerPage({ tasks: state.tasks, entries: state.timeEntries, editingEntry: state.editingTimeEntry, error: state.error, success: state.success });
+  }
+  if (state.page === "configuration") {
+    return ConfigurationPage({ configurations: state.configurations, loading: state.loading, error: state.error, success: state.success });
   }
   return PerformancePage({ tasks: state.tasks, calendarDays: state.calendarDays, loading: state.loading, error: state.error, success: state.success });
 }
@@ -123,6 +129,7 @@ function bindPageEvents() {
   if (state.page === "daily") bindDailyEvents();
   if (state.page === "calendar") bindCalendarEvents();
   if (state.page === "time") bindTimeEvents();
+  if (state.page === "configuration") bindConfigurationEvents();
 }
 
 function bindBacklogEvents() {
@@ -283,6 +290,44 @@ function bindTimeEvents() {
   });
 }
 
+function bindConfigurationEvents() {
+  document.querySelectorAll("[data-configuration-form]").forEach((form) => {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      clearMessages();
+      const payload = formToObject(event.target);
+      try {
+        await updateConfigurationProfile(payload);
+        state.success = "Parámetro actualizado.";
+        await loadConfigurations({ preserveMessages: true });
+      } catch (error) {
+        state.error = error.message;
+      }
+      render();
+    });
+  });
+
+  document.querySelector("#configuration-create-form")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    clearMessages();
+    const payload = normalizeConfigurationPayload(formToObject(event.target));
+    try {
+      await createConfiguration(payload);
+      state.success = "Parámetro creado.";
+      await loadConfigurations({ preserveMessages: true });
+    } catch (error) {
+      state.error = error.message;
+    }
+    render();
+  });
+
+  document.querySelector("[data-create-parameter-type]")?.addEventListener("change", (event) => {
+    const input = document.querySelector("[data-create-default-value]");
+    if (!input) return;
+    applyConfigurationInputType(input, event.target.value);
+  });
+}
+
 async function mutateTask(payload) {
   clearMessages();
   try {
@@ -297,10 +342,11 @@ async function mutateTask(payload) {
 
 async function loadAllData({ preserveMessages = false } = {}) {
   await withLoading(async () => {
-    const [tasksResult, dailyResult, calendarResult] = await Promise.allSettled([
+    const [tasksResult, dailyResult, calendarResult, configurationsResult] = await Promise.allSettled([
       listTasks(),
       getDailyReport(state.dailyDate),
       getCalendarMonth(state.calendarYear, state.calendarMonth),
+      listConfigurations(),
     ]);
 
     state.timeEntries = listTimeEntries();
@@ -327,10 +373,23 @@ async function loadAllData({ preserveMessages = false } = {}) {
       errors.push(calendarResult.reason.message);
     }
 
+    if (configurationsResult.status === "fulfilled") {
+      state.configurations = configurationsResult.value.configurations ?? [];
+    } else {
+      errors.push(configurationsResult.reason.message);
+    }
+
     if (errors.length) {
       state.success = "";
       state.error = errors.join(" ");
     }
+  }, { preserveMessages });
+}
+
+async function loadConfigurations({ preserveMessages = false } = {}) {
+  await withLoading(async () => {
+    const data = await listConfigurations();
+    state.configurations = data.configurations ?? [];
   }, { preserveMessages });
 }
 
@@ -389,6 +448,27 @@ function normalizeTaskPayload(payload) {
   normalized.effort_points = Number(normalized.effort_points || 0);
   normalized.order_points = normalized.order_points === "" ? null : Number(normalized.order_points);
   return normalized;
+}
+
+function normalizeConfigurationPayload(payload) {
+  return {
+    ...payload,
+    name: payload.name?.trim(),
+    fixed_value: payload.fixed_value === "true",
+  };
+}
+
+function applyConfigurationInputType(input, parameterType) {
+  const typeByParameter = {
+    string: "text",
+    number: "number",
+    boolean: "text",
+    date: "date",
+    datetime: "datetime-local",
+  };
+  input.type = typeByParameter[parameterType] ?? "text";
+  input.step = parameterType === "number" ? "any" : "";
+  input.placeholder = parameterType === "boolean" ? "true o false" : "";
 }
 
 function clearMessages() {

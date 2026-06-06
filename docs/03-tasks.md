@@ -4,7 +4,6 @@
 
 - **Hecho**: la documentación, archivo o funcionalidad principal existe en el proyecto.
 - **Pendiente**: la tarea está definida, pero no existe todavía la implementación principal esperada.
-- **Bloqueada**: depende de una tarea pendiente antes de poder completarse correctamente.
 
 ## Lista de tareas
 
@@ -113,7 +112,7 @@
   - **Dependencias**: DOC-004.
 
 - **API-004**
-  - **Estado**: Bloqueada
+  - **Estado**: Hecho
   - **Área**: Edge Functions
   - **Descripción**: Consultar y guardar configuración.
   - **Archivos**: `supabase/functions/configuration-*`
@@ -121,7 +120,7 @@
   - **Dependencias**: SQL-002.
 
 - **FE-005**
-  - **Estado**: Bloqueada
+  - **Estado**: Hecho
   - **Área**: Frontend
   - **Descripción**: Pestaña Configuración.
   - **Archivos**: `src/pages/ConfigurationPage.js`, `src/components/AppLayout.js`
