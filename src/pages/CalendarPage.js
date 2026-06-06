@@ -1,8 +1,9 @@
-﻿import { ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
+import { ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
 import { DAY_STATUSES } from "../utils/constants.js";
+import { formatHoursFromEffortPoints } from "../utils/effortTime.js";
 import { escapeHtml, truncate } from "../utils/format.js";
 
-export function CalendarPage({ year, month, days = [], loading = false, error = "", success = "" } = {}) {
+export function CalendarPage({ year, month, days = [], minutesPerEffortPoint = 60, loading = false, error = "", success = "" } = {}) {
   const current = new Date();
   const selectedYear = year ?? current.getFullYear();
   const selectedMonth = month ?? current.getMonth() + 1;
@@ -20,23 +21,25 @@ export function CalendarPage({ year, month, days = [], loading = false, error = 
       <input data-calendar-month type="number" min="1" max="12" value="${selectedMonth}" />
       <button class="secondary" data-load-calendar>Consultar</button>
     </section>
-    <section class="panel">${loading ? LoadingState() : CalendarGrid(days)}</section>
+    <section class="panel">${loading ? LoadingState() : CalendarGrid(days, minutesPerEffortPoint)}</section>
   `;
 }
 
-function CalendarGrid(days) {
-  return `<div class="calendar-grid">${days.map(CalendarDayCard).join("")}</div>`;
+function CalendarGrid(days, minutesPerEffortPoint) {
+  return `<div class="calendar-grid">${days.map((day) => CalendarDayCard(day, minutesPerEffortPoint)).join("")}</div>`;
 }
 
-function CalendarDayCard(day) {
+function CalendarDayCard(day, minutesPerEffortPoint) {
   const className = dayClass(day);
+  const completedPoints = Number(day.completed_points || 0);
+  const completedHours = formatHoursFromEffortPoints(completedPoints, minutesPerEffortPoint);
   return `
     <article class="calendar-day ${className}">
       <div class="calendar-day-top">
         <strong>${day.day}</strong>
         <span>${escapeHtml(day.status)}</span>
       </div>
-      <div class="points">${day.completed_points} pts</div>
+      <div class="points">${completedPoints} pts / ${completedHours}</div>
       <select data-day-status="${day.date}" ${day.status === "Finde" ? "disabled" : ""}>
         ${DAY_STATUSES.map((status) => `<option ${day.status === status ? "selected" : ""}>${status}</option>`).join("")}
       </select>

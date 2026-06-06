@@ -15,6 +15,7 @@ import { createDailyReport, getDailyReport } from "./services/dailyReportService
 import { isAuthenticated } from "./services/sessionService.js";
 import { createTask, listTasks, updateTask } from "./services/taskService.js";
 import { deleteTimeEntry, listTimeEntries, saveTimeEntry } from "./services/timeEntryService.js";
+import { getMinutesPerEffortPoint } from "./utils/effortTime.js";
 import { todayIso } from "./utils/format.js";
 
 const root = document.querySelector("#app");
@@ -66,7 +67,7 @@ function currentPageHtml() {
     return DailyTasksPage({ date: state.dailyDate, report: state.dailyReport, tasks: state.dailyTasks, editable: state.dailyEditable, loading: state.loading, error: state.error, success: state.success });
   }
   if (state.page === "calendar") {
-    return CalendarPage({ year: state.calendarYear, month: state.calendarMonth, days: state.calendarDays, loading: state.loading, error: state.error, success: state.success });
+    return CalendarPage({ year: state.calendarYear, month: state.calendarMonth, days: state.calendarDays, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success });
   }
   if (state.page === "time") {
     return TimeManagerPage({ tasks: state.tasks, entries: state.timeEntries, editingEntry: state.editingTimeEntry, error: state.error, success: state.success });
@@ -74,7 +75,7 @@ function currentPageHtml() {
   if (state.page === "configuration") {
     return ConfigurationPage({ configurations: state.configurations, loading: state.loading, error: state.error, success: state.success });
   }
-  return PerformancePage({ tasks: state.tasks, calendarDays: state.calendarDays, loading: state.loading, error: state.error, success: state.success });
+  return PerformancePage({ tasks: state.tasks, calendarDays: state.calendarDays, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success });
 }
 
 function bindAuthEvents() {

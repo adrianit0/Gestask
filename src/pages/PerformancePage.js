@@ -1,10 +1,12 @@
 import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
 import { PRIORITIES, TASK_STATUSES } from "../utils/constants.js";
+import { formatHoursFromEffortPoints } from "../utils/effortTime.js";
 import { escapeHtml } from "../utils/format.js";
 
-export function PerformancePage({ tasks = [], calendarDays = [], loading = false, error = "", success = "" } = {}) {
+export function PerformancePage({ tasks = [], calendarDays = [], minutesPerEffortPoint = 60, loading = false, error = "", success = "" } = {}) {
   const doneTasks = tasks.filter((task) => task.task_status === "Done");
   const completedPoints = doneTasks.reduce((sum, task) => sum + Number(task.effort_points || 0), 0);
+  const completedHours = formatHoursFromEffortPoints(completedPoints, minutesPerEffortPoint);
   const openTasks = tasks.filter((task) => task.task_status !== "Done").length;
   const deployableTasks = doneTasks.filter((task) => ["Imputed", "Deployed"].includes(task.pr_status)).length;
 
@@ -22,6 +24,7 @@ export function PerformancePage({ tasks = [], calendarDays = [], loading = false
         ${Metric("Tareas abiertas", openTasks)}
         ${Metric("Tareas terminadas", doneTasks.length)}
         ${Metric("Puntos completados", completedPoints)}
+        ${Metric("Horas completadas", completedHours)}
         ${Metric("Listas para cierre", deployableTasks)}
       </section>
       <section class="charts-grid">
