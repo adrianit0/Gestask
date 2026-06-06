@@ -38,7 +38,7 @@ const state = {
 
 async function boot() {
   if (isAuthenticated()) {
-    await loadPageData();
+    await loadAllData();
   }
   render();
 }
@@ -57,7 +57,7 @@ function render() {
 
 function currentPageHtml() {
   if (state.page === "backlog") {
-    return BacklogPage({ tasks: state.tasks, filters: state.filters, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask });
+    return BacklogPage({ tasks: getFilteredTasks(), filters: state.filters, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask });
   }
   if (state.page === "daily") {
     return DailyTasksPage({ date: state.dailyDate, report: state.dailyReport, tasks: state.dailyTasks, editable: state.dailyEditable, loading: state.loading, error: state.error, success: state.success });
@@ -86,7 +86,7 @@ function bindAuthEvents() {
       if (state.authMode === "login") await login(payload);
       else await register(payload);
       state.page = "backlog";
-      await loadBacklog();
+      await loadAllData();
     } catch (error) {
       state.error = error.message;
     }
@@ -96,12 +96,18 @@ function bindAuthEvents() {
 
 function bindLayoutEvents() {
   document.querySelectorAll("[data-page]").forEach((button) => {
-    button.addEventListener("click", async () => {
+    button.addEventListener("click", () => {
       state.page = button.dataset.page;
       clearMessages();
-      await loadPageData();
       render();
     });
+  });
+
+  document.querySelector("[data-action='refresh']")?.addEventListener("click", async () => {
+    clearMessages();
+    await loadAllData();
+    if (!state.error) state.success = "Datos actualizados.";
+    render();
   });
 
   document.querySelector("[data-action='logout']")?.addEventListener("click", () => {
@@ -141,18 +147,16 @@ function bindBacklogEvents() {
   });
 
   document.querySelectorAll("[data-filter]").forEach((input) => {
-    input.addEventListener("change", async () => {
+    input.addEventListener("change", () => {
       clearMessages();
       state.filters[input.dataset.filter] = input.value;
-      await loadBacklog();
       render();
     });
   });
 
-  document.querySelector("[data-clear-filters]")?.addEventListener("click", async () => {
+  document.querySelector("[data-clear-filters]")?.addEventListener("click", () => {
     clearMessages();
     state.filters = {};
-    await loadBacklog();
     render();
   });
 
@@ -171,11 +175,13 @@ function bindTaskModalEvents() {
     event.preventDefault();
     const payload = normalizeTaskPayload(formToObject(event.target));
     try {
+      const isCreate = !payload.id;
       if (payload.id) await updateTask(payload);
       else await createTask(payload);
       state.modalTask = undefined;
       state.success = "Tarea guardada correctamente.";
-      await loadBacklog();
+      await loadAllData({ preserveMessages: true });
+      if (isCreate && !state.error) state.success = "Tarea creada y datos actualizados.";
     } catch (error) {
       state.error = error.message;
     }
@@ -190,7 +196,7 @@ function bindDailyEvents() {
       await createDailyReport();
       state.success = "Parte diario creado.";
       state.dailyDate = todayIso();
-      await loadDailyReport();
+      await loadAllData({ preserveMessages: true });
     } catch (error) {
       state.error = error.message;
     }
@@ -227,10 +233,10 @@ function bindCalendarEvents() {
   });
 
   document.querySelectorAll("[data-calendar-task]").forEach((button) => {
-    button.addEventListener("click", async () => {
+    button.addEventListener("click", () => {
+      const task = state.tasks.find((item) => item.id === button.dataset.calendarTask);
       state.page = "backlog";
-      state.filters = { search: button.textContent };
-      await loadBacklog();
+      state.filters = { search: task?.ticket || task?.title || button.textContent };
       render();
     });
   });
@@ -282,26 +288,50 @@ async function mutateTask(payload) {
   try {
     await updateTask(payload);
     state.success = "Tarea actualizada.";
-    await loadBacklog();
+    await loadAllData({ preserveMessages: true });
   } catch (error) {
     state.error = error.message;
   }
   render();
 }
 
-async function loadPageData() {
-  if (state.page === "backlog") await loadBacklog();
-  if (state.page === "daily") await loadDailyReport();
-  if (state.page === "calendar") await loadCalendar();
-  if (state.page === "time") await loadTimeManager();
-  if (state.page === "charts") await loadPerformance();
-}
-
-async function loadBacklog() {
+async function loadAllData({ preserveMessages = false } = {}) {
   await withLoading(async () => {
-    const data = await listTasks(state.filters);
-    state.tasks = data.tasks ?? [];
-  });
+    const [tasksResult, dailyResult, calendarResult] = await Promise.allSettled([
+      listTasks(),
+      getDailyReport(state.dailyDate),
+      getCalendarMonth(state.calendarYear, state.calendarMonth),
+    ]);
+
+    state.timeEntries = listTimeEntries();
+
+    const errors = [];
+
+    if (tasksResult.status === "fulfilled") {
+      state.tasks = tasksResult.value.tasks ?? [];
+    } else {
+      errors.push(tasksResult.reason.message);
+    }
+
+    if (dailyResult.status === "fulfilled") {
+      state.dailyReport = dailyResult.value.report;
+      state.dailyTasks = dailyResult.value.tasks ?? [];
+      state.dailyEditable = Boolean(dailyResult.value.editable);
+    } else {
+      errors.push(dailyResult.reason.message);
+    }
+
+    if (calendarResult.status === "fulfilled") {
+      state.calendarDays = calendarResult.value.days ?? [];
+    } else {
+      errors.push(calendarResult.reason.message);
+    }
+
+    if (errors.length) {
+      state.success = "";
+      state.error = errors.join(" ");
+    }
+  }, { preserveMessages });
 }
 
 async function loadDailyReport() {
@@ -320,18 +350,9 @@ async function loadCalendar() {
   });
 }
 
-async function loadTimeManager() {
-  state.timeEntries = listTimeEntries();
-  if (!state.tasks.length) await loadBacklog();
-}
-
-async function loadPerformance() {
-  if (!state.tasks.length) await loadBacklog();
-  if (!state.calendarDays.length) await loadCalendar();
-}
-
-async function withLoading(action) {
+async function withLoading(action, { preserveMessages = false } = {}) {
   state.loading = true;
+  if (!preserveMessages) clearMessages();
   render();
   try {
     await action();
@@ -340,6 +361,19 @@ async function withLoading(action) {
   } finally {
     state.loading = false;
   }
+}
+
+function getFilteredTasks() {
+  return state.tasks.filter((task) => {
+    const search = state.filters.search?.trim().toLowerCase();
+    const matchesSearch = !search || [task.title, task.ticket, task.more_info]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(search));
+    const matchesStatus = !state.filters.status || task.task_status === state.filters.status;
+    const matchesPriority = !state.filters.priority || task.priority === state.filters.priority;
+    const matchesDate = !state.filters.date || task.assigned_date === state.filters.date || task.finished_date === state.filters.date;
+    return matchesSearch && matchesStatus && matchesPriority && matchesDate;
+  });
 }
 
 function formToObject(form) {

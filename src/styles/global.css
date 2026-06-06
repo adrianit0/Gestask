@@ -51,6 +51,22 @@ a { color: #6b3b00; font-weight: 700; }
 }
 .nav-link.active, .nav-link:hover { background: var(--secondary); }
 .nav-link.danger { color: var(--danger); }
+.icon-nav {
+  display: inline-grid;
+  place-items: center;
+  width: 2.55rem;
+  height: 2.55rem;
+  padding: 0;
+}
+.icon-nav svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 
 .app-shell { width: min(1400px, 100%); margin: 0 auto; padding: 1.4rem; }
 .page-header { display: flex; justify-content: space-between; gap: 1rem; align-items: center; margin-bottom: 1rem; }

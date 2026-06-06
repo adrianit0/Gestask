@@ -29,3 +29,10 @@
 - Gestor de tiempos.
 - Horarios por tarea.
 - Gráficas de rendimiento.
+
+## Iteración 6
+- Pestaña Configuración con icono de rueda dentada.
+- Catálogo `gestask_configuration`.
+- Valores por usuario en `gestask_configuration_profile`.
+- Lectura con fallback a `default_value`.
+- Soporte de parámetros fijos de solo lectura.

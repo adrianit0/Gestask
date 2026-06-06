@@ -9,6 +9,7 @@
 - Consulta de partes diarios por fecha con modo histórico de solo lectura.
 - Calendario mensual con puntos completados y tareas/tickets finalizados.
 - Marcado de Laboral, Vacaciones, Festivos y Ausencia.
+- Pestaña de Configuración para consultar, modificar y crear parámetros configurables.
 - Placeholders para Gestor de Tiempos y Gráficas.
 
 ## No funcionales
@@ -25,6 +26,7 @@
 - Crea un nuevo parte diario; las tareas pendientes del parte anterior pasan a `Unfinished`.
 - Consulta días anteriores en modo histórico.
 - Visualiza el calendario mensual y marca ausencias o vacaciones.
+- Accede a Configuración, modifica valores propios y crea nuevos parámetros configurables.
 
 ## Reglas de negocio
 - Estados de tarea: `To do`, `Doing`, `Draft`, `Undone`, `Unfinished`, `Need Fix`, `Waiting`, `Done`, `Warning`.
@@ -36,9 +38,14 @@
 - Tareas válidas para parte diario: `To do`, `Doing`, `Draft`, `Need Fix`, `Waiting`, `Warning`.
 - Tareas no cargadas: `Done`, `Undone`, `Unfinished`.
 - Sábados y domingos son `Finde`.
+- Si un parámetro no tiene perfil de usuario, se devuelve el `default_value` sin insertar registro personalizado.
+- Si `fixed_value = true`, se devuelve siempre el `default_value`, se ignora cualquier valor personalizado existente y el campo queda en solo lectura.
+- Solo se persisten valores de configuración de usuario cuando difieren del valor por defecto.
 
 ## Permisos
 Cada usuario solo puede ver y modificar sus perfiles, tareas, partes diarios y estados de calendario.
+
+Cada usuario solo puede ver y modificar sus valores propios de configuración. La creación de parámetros globales de configuración debe estar protegida.
 
 ## Casos límite y validaciones
 - Email/password obligatorios.
@@ -47,3 +54,5 @@ Cada usuario solo puede ver y modificar sus perfiles, tareas, partes diarios y e
 - Rechazar estados fuera de catálogo.
 - Duplicado de parte diario devuelve `El parte diario está ya creado`.
 - Fecha de consulta inválida devuelve 400.
+- `parameter_type` de configuración debe pertenecer al catálogo de tipos primitivos permitido.
+- `default_value` y `value` deben ser válidos para el `parameter_type` configurado.

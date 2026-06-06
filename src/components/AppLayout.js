@@ -8,6 +8,12 @@
         ${navButton("calendar", "Calendario", activePage)}
         ${navButton("time", "Gestor de Tiempos", activePage)}
         ${navButton("charts", "Gráficas de Rendimiento", activePage)}
+        <button class="nav-link icon-nav" data-action="refresh" aria-label="Actualizar datos" title="Actualizar datos">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M20.5 5.5v5h-5" />
+            <path d="M19.4 10.5A7.5 7.5 0 1 0 17 17.7" />
+          </svg>
+        </button>
         <button class="nav-link danger" data-action="logout">Logout</button>
       </nav>
     </header>
