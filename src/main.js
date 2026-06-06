@@ -28,6 +28,7 @@ const state = {
   tasks: [],
   filters: {},
   modalTask: undefined,
+  detailTask: null,
   dailyDate: todayIso(),
   dailyReport: null,
   dailyTasks: [],
@@ -61,10 +62,10 @@ function render() {
 
 function currentPageHtml() {
   if (state.page === "backlog") {
-    return BacklogPage({ tasks: getFilteredTasks(), filters: state.filters, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask });
+    return BacklogPage({ tasks: getFilteredTasks(), filters: state.filters, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
   }
   if (state.page === "daily") {
-    return DailyTasksPage({ date: state.dailyDate, report: state.dailyReport, tasks: state.dailyTasks, editable: state.dailyEditable, loading: state.loading, error: state.error, success: state.success });
+    return DailyTasksPage({ date: state.dailyDate, report: state.dailyReport, tasks: state.dailyTasks, editable: state.dailyEditable, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
   }
   if (state.page === "calendar") {
     return CalendarPage({ year: state.calendarYear, month: state.calendarMonth, days: state.calendarDays, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success });
@@ -105,6 +106,8 @@ function bindLayoutEvents() {
   document.querySelectorAll("[data-page]").forEach((button) => {
     button.addEventListener("click", () => {
       state.page = button.dataset.page;
+      state.detailTask = null;
+      state.modalTask = undefined;
       clearMessages();
       render();
     });
@@ -142,17 +145,12 @@ function bindBacklogEvents() {
   document.querySelectorAll("[data-edit-task]").forEach((button) => {
     button.addEventListener("click", () => {
       state.modalTask = state.tasks.find((task) => task.id === button.dataset.editTask) ?? null;
+      state.detailTask = null;
       render();
     });
   });
 
-  document.querySelectorAll("[data-task-status]").forEach((select) => {
-    select.addEventListener("change", async () => mutateTask({ id: select.dataset.taskStatus, task_status: select.value }));
-  });
-
-  document.querySelectorAll("[data-pr-status]").forEach((select) => {
-    select.addEventListener("change", async () => mutateTask({ id: select.dataset.prStatus, pr_status: select.value }));
-  });
+  bindTaskTableEvents(state.tasks);
 
   document.querySelectorAll("[data-filter]").forEach((input) => {
     input.addEventListener("change", () => {
@@ -213,8 +211,48 @@ function bindDailyEvents() {
 
   document.querySelector("[data-load-daily-report]")?.addEventListener("click", async () => {
     state.dailyDate = document.querySelector("[data-daily-date]").value;
+    state.detailTask = null;
+    state.modalTask = undefined;
     await loadDailyReport();
     render();
+  });
+
+  document.querySelectorAll("[data-edit-task]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.modalTask = state.dailyTasks.find((task) => task.id === button.dataset.editTask) ?? null;
+      state.detailTask = null;
+      render();
+    });
+  });
+
+  bindTaskTableEvents(state.dailyTasks, { readonly: !state.dailyEditable });
+  bindTaskModalEvents();
+}
+
+function bindTaskTableEvents(tasks, { readonly = false } = {}) {
+  document.querySelectorAll("[data-view-task]").forEach((row) => {
+    row.addEventListener("click", (event) => {
+      if (event.target.closest("a, button, select, input, textarea, label")) return;
+      state.detailTask = tasks.find((task) => task.id === row.dataset.viewTask) ?? null;
+      render();
+    });
+  });
+
+  document.querySelectorAll("[data-close-detail-modal]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.detailTask = null;
+      render();
+    });
+  });
+
+  if (readonly) return;
+
+  document.querySelectorAll("[data-task-status]").forEach((select) => {
+    select.addEventListener("change", async () => mutateTask({ id: select.dataset.taskStatus, task_status: select.value }));
+  });
+
+  document.querySelectorAll("[data-pr-status]").forEach((select) => {
+    select.addEventListener("change", async () => mutateTask({ id: select.dataset.prStatus, pr_status: select.value }));
   });
 }
 
@@ -335,10 +373,16 @@ async function mutateTask(payload) {
     await updateTask(payload);
     state.success = "Tarea actualizada.";
     await loadAllData({ preserveMessages: true });
+    refreshSelectedTask(payload.id);
   } catch (error) {
     state.error = error.message;
   }
   render();
+}
+
+function refreshSelectedTask(taskId) {
+  if (!state.detailTask || state.detailTask.id !== taskId) return;
+  state.detailTask = state.tasks.find((task) => task.id === taskId) ?? state.dailyTasks.find((task) => task.id === taskId) ?? null;
 }
 
 async function loadAllData({ preserveMessages = false } = {}) {

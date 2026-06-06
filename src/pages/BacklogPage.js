@@ -1,9 +1,9 @@
-﻿import { TaskModal, TaskTable } from "../components/TaskTable.js";
+﻿import { TaskDetailModal, TaskModal, TaskTable } from "../components/TaskTable.js";
 import { ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
 import { PRIORITIES, TASK_STATUSES } from "../utils/constants.js";
 import { escapeHtml } from "../utils/format.js";
 
-export function BacklogPage({ tasks = [], filters = {}, loading = false, error = "", success = "", modalTask = undefined } = {}) {
+export function BacklogPage({ tasks = [], filters = {}, loading = false, error = "", success = "", modalTask = undefined, detailTask = null } = {}) {
   return `
     <section class="page-header">
       <div>
@@ -21,7 +21,9 @@ export function BacklogPage({ tasks = [], filters = {}, loading = false, error =
       <input data-filter="date" type="date" value="${escapeHtml(filters.date || "")}" />
       <button class="secondary" data-clear-filters>Limpiar</button>
     </section>
-    <section class="panel">${loading ? LoadingState() : TaskTable(tasks)}</section>
+    <section class="panel">${loading ? LoadingState() : TaskTable(tasks, { mode: "backlog" })}</section>
     ${modalTask !== undefined ? TaskModal(modalTask) : ""}
+    ${detailTask ? TaskDetailModal(detailTask) : ""}
   `;
 }
+

@@ -1,8 +1,8 @@
-﻿import { TaskTable } from "../components/TaskTable.js";
+﻿import { TaskDetailModal, TaskModal, TaskTable } from "../components/TaskTable.js";
 import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
 import { escapeHtml, todayIso } from "../utils/format.js";
 
-export function DailyTasksPage({ date = todayIso(), report = null, tasks = [], editable = false, loading = false, error = "", success = "" } = {}) {
+export function DailyTasksPage({ date = todayIso(), report = null, tasks = [], editable = false, loading = false, error = "", success = "", modalTask = undefined, detailTask = null } = {}) {
   const historical = report && !editable;
   return `
     <section class="page-header">
@@ -20,7 +20,10 @@ export function DailyTasksPage({ date = todayIso(), report = null, tasks = [], e
     </section>
     ${historical ? `<div class="state warning">Modo histórico: solo lectura.</div>` : ""}
     <section class="panel">
-      ${loading ? LoadingState() : report ? TaskTable(tasks, { readonly: !editable }) : EmptyState("No existe parte diario para esta fecha.")}
+      ${loading ? LoadingState() : report ? TaskTable(tasks, { readonly: !editable, mode: "daily" }) : EmptyState("No existe parte diario para esta fecha.")}
     </section>
+    ${modalTask !== undefined ? TaskModal(modalTask) : ""}
+    ${detailTask ? TaskDetailModal(detailTask, { readonly: !editable }) : ""}
   `;
 }
+
