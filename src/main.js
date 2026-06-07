@@ -75,7 +75,7 @@ function currentPageHtml() {
     return DailyTasksPage({ date: state.dailyDate, report: state.dailyReport, tasks: state.dailyTasks, editable: state.dailyEditable, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask, sort: state.dailySort });
   }
   if (state.page === "completion") {
-    return CompletionTasksPage({ tasks: state.completionTasks, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, modalTask: state.completionModalTask });
+    return CompletionTasksPage({ tasks: state.completionTasks, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, modalTask: state.completionModalTask, detailTask: state.detailTask });
   }
   if (state.page === "dailySchedule") {
     return DailySchedulePage({ report: state.dailyReport, tasks: state.dailyTasks, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, detailTask: state.detailTask });
@@ -228,6 +228,7 @@ function bindCompletionEvents() {
   document.querySelectorAll("[data-open-completion-resolve]").forEach((button) => {
     button.addEventListener("click", () => {
       state.completionModalTask = state.completionTasks.find((task) => task.id === button.dataset.openCompletionResolve) ?? null;
+      state.detailTask = null;
       clearMessages();
       render();
     });
@@ -254,6 +255,8 @@ function bindCompletionEvents() {
     }
     render();
   });
+
+  bindTaskTableEvents(state.completionTasks, { readonly: true });
 }
 
 function cloneTaskDraft(task) {

@@ -6,6 +6,7 @@ const allowedSortFields = new Set([
   "scoring",
   "assigned_date",
   "limit_date",
+  "finished_date",
   "priority",
   "task_status",
   "pr_status",

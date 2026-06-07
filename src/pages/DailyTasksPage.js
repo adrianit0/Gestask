@@ -7,6 +7,7 @@ const SORT_OPTIONS = [
   ["scoring", "Scoring"],
   ["assigned_date", "Fecha inicio"],
   ["limit_date", "Fecha límite"],
+  ["finished_date", "Fecha finalización"],
   ["priority", "Prioridad"],
   ["task_status", "Estado"],
   ["pr_status", "PR"],

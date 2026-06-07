@@ -22,7 +22,7 @@ function taskTable(tasks, { readonly = false, mode = "full" } = {}) {
 
 function header(mode) {
   if (mode === "backlog") {
-    return `<tr><th>Ticket</th><th>Tipo</th><th>Asignación</th><th>Límite</th><th>Scoring</th><th>Puntos de Orden</th><th class="actions-column">Acciones</th></tr>`;
+    return `<tr><th>Ticket</th><th>Tipo</th><th>Asignación</th><th>Límite</th><th>Finalización</th><th>Scoring</th><th>Puntos de Orden</th><th class="actions-column">Acciones</th></tr>`;
   }
   if (mode === "daily") {
     return `<tr><th>Ticket</th><th>Tipo</th><th>Asignación</th><th>Límite</th><th>Scoring</th><th>Puntos de Orden</th><th class="status-column">Estado</th><th class="pr-column">PR</th></tr>`;
@@ -34,7 +34,7 @@ function row(task, { readonly, mode, compact }) {
   const background = task.task_status === "To do" ? TASK_COLORS["To do"][task.priority] : TASK_COLORS[task.task_status];
   const border = task.task_status === "Done" ? PR_BORDER_COLORS[task.pr_status] : null;
   const visualStyle = `--task-bg:${background}; --task-border:${border || "transparent"};`;
-  const colspan = mode === "backlog" ? 7 : mode === "daily" ? 8 : 11;
+  const colspan = mode === "backlog" ? 8 : mode === "daily" ? 8 : 11;
   const clickableAttrs = compact ? `data-view-task="${task.id}"` : "";
   return `
     <tr class="task-main-row ${compact ? "clickable-row" : ""}" ${clickableAttrs} style="${visualStyle}">
@@ -42,7 +42,7 @@ function row(task, { readonly, mode, compact }) {
       <td>${escapeHtml(task.ticket_type || "Bug")}</td>
       <td>${escapeHtml(task.assigned_date)}</td>
       <td>${escapeHtml(task.limit_date || "-")}</td>
-      ${mode === "full" ? `<td>${escapeHtml(task.finished_date || "-")}</td>` : ""}
+      ${mode !== "daily" ? `<td>${escapeHtml(task.finished_date || "-")}</td>` : ""}
       <td>${escapeHtml(task.scoring ?? "-")}</td>
       ${mode !== "full" ? `<td>${escapeHtml(task.order_points ?? "-")}</td>` : ""}
       ${mode === "full" ? `
@@ -131,6 +131,9 @@ export function TaskDetailModal(task, { readonly = false } = {}) {
           ${detailItem("Fecha asignación", escapeHtml(task.assigned_date))}
           ${detailItem("Fecha límite", escapeHtml(task.limit_date || "-"))}
           ${detailItem("Fecha finalización", escapeHtml(task.finished_date || "-"))}
+          ${task.imputed_date ? detailItem("Fecha imputación", escapeHtml(task.imputed_date)) : ""}
+          ${task.pr_link ? detailItem("Link PR", externalLink(task.pr_link, "Abrir PR")) : ""}
+          ${task.test_cases ? detailItem("Test Cases", externalLink(task.test_cases, "Abrir Test Cases")) : ""}
           ${detailItem("Esfuerzo", escapeHtml(task.effort_points))}
           ${detailItem("Orden", escapeHtml(task.order_points ?? "-"))}
           ${detailItem("Prioridad", escapeHtml(task.priority))}
@@ -156,6 +159,12 @@ function detailItem(label, value, className = "") {
   `;
 }
 
+function externalLink(value, label) {
+  const url = String(value ?? "").trim();
+  if (!url) return "-";
+  if (!/^https?:\/\//i.test(url)) return escapeHtml(url);
+  return `<a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>`;
+}
 function TaskComments(task, { readonly = false } = {}) {
   const comments = Array.isArray(task.comments) ? task.comments : [];
   return `

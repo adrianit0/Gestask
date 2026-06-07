@@ -1,9 +1,10 @@
 import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
+import { TaskDetailModal } from "../components/TaskTable.js";
 import { PR_BORDER_COLORS } from "../utils/constants.js";
 import { escapeHtml, todayIso } from "../utils/format.js";
 import { formatHoursFromEffortPoints } from "../utils/effortTime.js";
 
-export function CompletionTasksPage({ tasks = [], minutesPerEffortPoint = 60, loading = false, error = "", success = "", modalTask = null } = {}) {
+export function CompletionTasksPage({ tasks = [], minutesPerEffortPoint = 60, loading = false, error = "", success = "", modalTask = null, detailTask = null } = {}) {
   return `
     <section class="page-header">
       <div>
@@ -17,6 +18,7 @@ export function CompletionTasksPage({ tasks = [], minutesPerEffortPoint = 60, lo
       ${loading ? LoadingState() : CompletionTasksTable(tasks, minutesPerEffortPoint)}
     </section>
     ${modalTask ? CompletionResolveModal(modalTask, minutesPerEffortPoint) : ""}
+    ${detailTask ? TaskDetailModal(detailTask, { readonly: true }) : ""}
   `;
 }
 
@@ -78,8 +80,9 @@ function compareDatesAsc(a, b) {
 
 function CompletionTaskRow(task, minutesPerEffortPoint) {
   const visualStyle = `--task-bg:#ccffcc; --task-border:${PR_BORDER_COLORS[task.pr_status] || "transparent"};`;
+  const clickableAttrs = `data-view-task="${escapeHtml(task.id)}"`;
   return `
-    <tr class="task-main-row" style="${visualStyle}">
+    <tr class="task-main-row clickable-row" ${clickableAttrs} style="${visualStyle}">
       <td>${ticketCell(task.ticket)}</td>
       <td>${escapeHtml(task.ticket_type || "Bug")}</td>
       <td>${escapeHtml(task.finished_date || "-")}</td>
@@ -87,7 +90,7 @@ function CompletionTaskRow(task, minutesPerEffortPoint) {
       <td><span class="status-pill">${escapeHtml(task.pr_status || "-")}</span></td>
       <td>${resolveButton(task)}</td>
     </tr>
-    <tr class="task-title-row" style="${visualStyle}">
+    <tr class="task-title-row clickable-row" ${clickableAttrs} style="${visualStyle}">
       <td class="task-title-cell" colspan="6">
         <div>${escapeHtml(task.title || "Sin tÃ­tulo")}</div>
       </td>

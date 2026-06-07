@@ -300,7 +300,7 @@ textarea { min-height: 90px; resize: vertical; }
 
 .table-wrap { width: 100%; overflow-x: auto; }
 .task-table { width: 100%; min-width: 1120px; border-collapse: separate; border-spacing: 0; }
-.task-table-backlog { min-width: 620px; table-layout: fixed; }
+.task-table-backlog { min-width: 760px; table-layout: fixed; }
 .task-table-daily { min-width: 820px; table-layout: fixed; }
 .task-table-completion { min-width: 820px; table-layout: fixed; }
 .task-table-completion th:nth-child(1), .task-table-completion .task-main-row td:nth-child(1) { width: 130px; }
@@ -312,9 +312,10 @@ textarea { min-height: 90px; resize: vertical; }
 .task-table-backlog th:nth-child(1), .task-table-backlog .task-main-row td:nth-child(1) { width: 130px; }
 .task-table-backlog th:nth-child(2), .task-table-backlog .task-main-row td:nth-child(2),
 .task-table-backlog th:nth-child(3), .task-table-backlog .task-main-row td:nth-child(3) { width: 140px; }
-.task-table-backlog th:nth-child(5), .task-table-backlog .task-main-row td:nth-child(5) { width: 76px; text-align: center; }
-.task-table-backlog th:nth-child(6), .task-table-backlog .task-main-row td:nth-child(6) { width: 110px; text-align: center; }
-.task-table-backlog th:nth-child(7), .task-table-backlog .task-main-row td:nth-child(7) { width: 92px; }
+.task-table-backlog th:nth-child(5), .task-table-backlog .task-main-row td:nth-child(5) { width: 140px; }
+.task-table-backlog th:nth-child(6), .task-table-backlog .task-main-row td:nth-child(6) { width: 76px; text-align: center; }
+.task-table-backlog th:nth-child(7), .task-table-backlog .task-main-row td:nth-child(7) { width: 110px; text-align: center; }
+.task-table-backlog th:nth-child(8), .task-table-backlog .task-main-row td:nth-child(8) { width: 92px; }
 .task-table-daily th:nth-child(1), .task-table-daily .task-main-row td:nth-child(1) { width: 130px; }
 .task-table-daily th:nth-child(2), .task-table-daily .task-main-row td:nth-child(2),
 .task-table-daily th:nth-child(3), .task-table-daily .task-main-row td:nth-child(3) { width: 132px; }
