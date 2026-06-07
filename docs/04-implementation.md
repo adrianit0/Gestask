@@ -10,6 +10,7 @@
 - Gráficas de rendimiento con KPIs, distribución por estado/prioridad y puntos completados del mes.
 - Pestaña Configuración con catálogo global y valores por usuario.
 - Documentación funcional y técnica para `limit_date`, `ticket_type`, comentarios, scoring configurable y ordenación avanzada.
+- Documentación funcional y técnica para la funcionalidad futura `Completar tareas`; no está implementada.
 - Verificación parcial de QA-002 documentada en `docs/10-qa-002.md`.
 - Build de frontend verificado con `npm.cmd run build` en una iteración previa.
 
@@ -26,6 +27,7 @@
 - `supabase/sql/script-001.sql`: tablas, constraints, RLS, triggers de actualización y sincronización con parte diario.
 - `supabase/sql/script-002.sql`: modelo de configuración.
 - `supabase/sql/script-003.sql`: columnas `limit_date`, `ticket_type` y `comments` en `tasks`, con defaults, constraints básicos, reglas PR específicas para `ticket_type = Task`, índices de filtro/ordenación y parámetros base `scoring_*`.
+- Pendiente SQL futuro: columnas `pr_link`, `test_cases` e `imputed_date` para soportar `Completar tareas`.
 
 ## Edge Functions creadas
 - `tasks-list`.
@@ -42,6 +44,7 @@
 - `tasks-update` actualizado para `ticket_type`, `limit_date`, comentarios y reglas PR por tipo.
 - `tasks-list` y `daily-report-get` actualizados para devolver `scoring` calculado.
 - `tasks-list` y `daily-report-get` actualizados para validar y aplicar `sort_by` y `sort_direction`.
+- Pendiente Edge Functions futuras: `tasks-completion-list` y `tasks-completion-resolve`.
 
 ## Frontend añadido
 - `src/pages/TimeManagerPage.js`: alta, edición, borrado e historial de registros horarios.
@@ -55,6 +58,7 @@
 - `src/services/timeEntryService.js`: persistencia local de registros horarios en `localStorage`.
 - `supabase/functions/_shared/configuration.ts`: validación de configuración y cálculo compartido de scoring.
 - `supabase/functions/_shared/taskSorting.ts`: validación y ordenación estable de tareas.
+- Pendiente frontend futuro: página `Completar tareas`, navegación asociada y popups de resolución.
 
 ## Decisiones técnicas
 - SPA con Vite y JavaScript sin framework para mantener una primera versión simple.
@@ -74,3 +78,4 @@
 - Completar validación manual del flujo de scoring y ordenación.
 - Ejecutar QA-002 en navegador contra Supabase real y cerrar la tarea cuando todos los casos pasen.
 - Añadir comentarios persistidos desde el detalle de tarea.
+- Implementar `Completar tareas` cuando se autorice el desarrollo.

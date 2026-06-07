@@ -265,3 +265,67 @@
   - **Criterio de aceptación**: Todos los casos manuales de `docs/09-scoring-and-ordering.md` pasan correctamente.
   - **Dependencias**: FE-010.
   - **Nota**: Verificación parcial documentada; pendiente ejecución real en navegador contra Supabase.
+
+- **DOC-006**
+  - **Estado**: Hecho
+  - **Área**: Documentación
+  - **Descripción**: Documentar la funcionalidad `Completar tareas`.
+  - **Archivos**: `docs/01-requirements.md`, `docs/02-roadmap.md`, `docs/04-implementation.md`, `docs/05-data-model.md`, `docs/06-api-contracts.md`, `docs/07-ui-specification.md`
+  - **Criterio de aceptación**: Reglas de inclusión, popups, transiciones, datos futuros y contratos previstos quedan documentados sin implementación.
+  - **Dependencias**: DOC-005.
+
+- **SQL-006**
+  - **Estado**: Pendiente
+  - **Área**: SQL
+  - **Descripción**: Añadir campos de cierre de workflow a `tasks`.
+  - **Archivos**: `supabase/sql/script-004.sql` o migración equivalente.
+  - **Criterio de aceptación**: Existen `pr_link`, `test_cases` e `imputed_date` con tipos y nullability documentados, sin romper datos existentes.
+  - **Dependencias**: DOC-006, SQL-003, SQL-004.
+
+- **SQL-007**
+  - **Estado**: Pendiente
+  - **Área**: SQL
+  - **Descripción**: Añadir soporte de consulta eficiente para `Completar tareas`.
+  - **Archivos**: `supabase/sql/script-004.sql` o migración equivalente.
+  - **Criterio de aceptación**: Existen índices adecuados para consultar tareas por `user_id`, `task_status`, `pr_status` e `imputed_date` cuando aplique.
+  - **Dependencias**: SQL-006.
+
+- **API-009**
+  - **Estado**: Pendiente
+  - **Área**: Edge Functions
+  - **Descripción**: Crear endpoint `tasks-completion-list`.
+  - **Archivos**: `supabase/functions/tasks-completion-list/index.ts`, código compartido si aplica.
+  - **Criterio de aceptación**: Devuelve solo tareas `Done` no finalizadas: `Bug`/`Feature` no `Deployed` y `Task` no `Imputed`, sin aceptar criterios funcionales de ordenación o filtrado.
+  - **Dependencias**: SQL-006, SQL-007.
+
+- **API-010**
+  - **Estado**: Pendiente
+  - **Área**: Edge Functions
+  - **Descripción**: Crear endpoint `tasks-completion-resolve`.
+  - **Archivos**: `supabase/functions/tasks-completion-resolve/index.ts`, código compartido si aplica.
+  - **Criterio de aceptación**: Resuelve transiciones válidas `Need PR -> PR Hecho`, `PR Hecho -> Imputed` e `Imputed -> Deployed` con validaciones por tipo de ticket.
+  - **Dependencias**: API-009.
+
+- **FE-011**
+  - **Estado**: Pendiente
+  - **Área**: Frontend
+  - **Descripción**: Añadir navegación y página `Completar tareas`.
+  - **Archivos**: `src/components/AppLayout.js`, `src/main.js`, `src/pages/CompletionTasksPage.js`, `src/services/taskCompletionService.js`
+  - **Criterio de aceptación**: La navegación muestra `Completar tareas` y la página lista únicamente tareas devueltas por `tasks-completion-list` sin filtros ni ordenación funcional.
+  - **Dependencias**: API-009.
+
+- **FE-012**
+  - **Estado**: Pendiente
+  - **Área**: Frontend
+  - **Descripción**: Implementar popups de resolución de `Completar tareas`.
+  - **Archivos**: `src/pages/CompletionTasksPage.js`, `src/components` si se extraen modales, `src/styles/global.css`, `src/services/taskCompletionService.js`
+  - **Criterio de aceptación**: `Resolver` muestra el popup correcto para `Need PR`, `PR Hecho` e `Imputed`, permite campos opcionales donde corresponda y refresca el listado tras confirmar.
+  - **Dependencias**: FE-011, API-010.
+
+- **QA-003**
+  - **Estado**: Pendiente
+  - **Área**: Testing manual
+  - **Descripción**: Verificar flujo completo de `Completar tareas`.
+  - **Archivos**: Navegador + Supabase, documentación QA futura.
+  - **Criterio de aceptación**: Se valida inclusión/exclusión de tareas, transiciones por tipo, datos opcionales de PR/test cases, edición de `imputed_date` y cierre final en `Deployed`.
+  - **Dependencias**: FE-012.

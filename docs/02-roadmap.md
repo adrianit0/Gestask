@@ -48,3 +48,9 @@
 - Exponer scoring calculado en API y UI.
 - Ordenación avanzada por orden, scoring, fechas, prioridad, estado y tipo.
 - Validación manual y casos límite del nuevo ordenamiento.
+
+## Iteración 9
+- Documentar la funcionalidad `Completar tareas`.
+- Añadir modelo de datos previsto para `pr_link`, `test_cases` e `imputed_date`.
+- Definir endpoints futuros para listar y resolver tareas pendientes de cierre.
+- Implementar la pestaña `Completar tareas` y sus popups guiados cuando se autorice el desarrollo.

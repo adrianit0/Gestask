@@ -1,7 +1,7 @@
 ﻿# Especificación UI
 
 ## Navegación
-Barra superior fija con Backlog, Tareas Diarias, Calendario, Gestor de Tiempos, Gráficas de Rendimiento, Configuración y Logout.
+Barra superior fija con Backlog, Tareas Diarias, Completar tareas, Calendario, Gestor de Tiempos, Gráficas de Rendimiento, Configuración y Logout.
 
 La pestaña Configuración debe representarse con un icono de rueda dentada.
 
@@ -79,6 +79,68 @@ Reglas de UX:
 Selector de fecha, botón Nuevo día, aviso de modo histórico y listado ordenado por `order_points` descendente por defecto.
 
 La vista debe permitir cambiar la ordenación usando los mismos criterios principales que Backlog cuando aplique.
+
+## Completar tareas
+Pantalla operativa para cerrar tareas que ya están en `Done` pero cuyo workflow posterior no ha terminado.
+
+La vista debe mostrar exclusivamente:
+- Tareas `Bug` y `Feature` con `task_status = Done` y `pr_status` distinto de `Deployed`.
+- Tareas `Task` con `task_status = Done` y `pr_status` distinto de `Imputed`.
+
+La vista no debe incluir filtros, scoring visible como criterio ni controles de ordenación funcionales. Si la implementación necesita ordenar para estabilidad visual, debe usar un orden técnico estable sin exponerlo como criterio de usuario.
+
+Campos mínimos de tabla:
+- Ticket como hipervínculo cuando exista URL o patrón de enlace configurado.
+- Tipo.
+- Título.
+- Fecha de finalización.
+- Esfuerzo u horas a imputar.
+- Estado PR/imputación.
+- Acción `Resolver` cuando exista una transición disponible.
+
+### Resolver `Need PR`
+Aplica a tareas `Bug` y `Feature` en `pr_status = Need PR`.
+
+Al pulsar `Resolver`, debe abrirse un popup con:
+- Campo opcional `pr_link` para informar el enlace al PR.
+- Campo opcional `test_cases` solo cuando `ticket_type = Feature`.
+- Botón de confirmar.
+- Botón de cancelar.
+
+Reglas:
+- Ambos campos son opcionales.
+- Confirmar sin datos debe ser válido.
+- Tras confirmar, la tarea pasa a `pr_status = PR Hecho`.
+
+### Resolver `PR Hecho`
+Aplica a tareas en `pr_status = PR Hecho`.
+
+Al pulsar `Resolver`, debe abrirse un popup con:
+- Hipervínculo al ticket.
+- Título de la tarea.
+- Fecha de resolución, tomada de `finished_date`.
+- Cantidad de horas que se deben imputar.
+- Campo de tipo `date` llamado `imputed_date`.
+- Botón de confirmar.
+- Botón de cancelar.
+
+Reglas:
+- `imputed_date` aparece inicialmente con el mismo valor que `finished_date`.
+- `imputed_date` es editable antes de confirmar.
+- Tras confirmar, la tarea pasa a `pr_status = Imputed`.
+
+### Resolver `Imputed`
+Aplica solo a tareas `Bug` y `Feature` en `pr_status = Imputed`.
+
+Al pulsar `Resolver`, debe abrirse un popup con:
+- Hipervínculo al ticket.
+- Aviso claro de que el usuario debe cerrar la tarea en el sistema externo.
+- Botón de confirmar.
+- Botón de cancelar.
+
+Reglas:
+- Tras confirmar, la tarea pasa a `pr_status = Deployed`.
+- Las tareas `Task` no muestran este paso porque su workflow termina en `Imputed`.
 
 ## Calendario
 Grid mensual. Cada día muestra estado, puntos y tickets/tareas finalizadas.

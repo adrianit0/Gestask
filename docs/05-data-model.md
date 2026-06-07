@@ -25,6 +25,9 @@ Campos relevantes actuales y previstos:
 | `pr_status` | `text` | Estado PR o imputación según `ticket_type`. |
 | `more_info` | `text` | Información adicional. |
 | `comments` | `text` o `jsonb` | Comentarios añadidos desde el detalle de tarea. |
+| `pr_link` | `text` | Enlace opcional al PR informado desde `Completar tareas`. |
+| `test_cases` | `text` | Test cases opcionales para cierre de funcionalidades. Solo aplica funcionalmente a `Feature`. |
+| `imputed_date` | `date` | Fecha editable en la que se imputan las horas tras `PR Hecho`. |
 | `created_at` | `timestamptz` | Fecha de creación. |
 | `updated_at` | `timestamptz` | Fecha de última actualización. |
 
@@ -45,6 +48,14 @@ Campos relevantes actuales y previstos:
 - Si se usa `text`, el campo representa un historial plano acumulado.
 - Si se usa `jsonb`, cada comentario debe incluir al menos texto, fecha de creación y autor.
 - La opción preferida es `jsonb` si se necesita historial auditable; `text` es aceptable para una primera versión simple.
+
+### Reglas de cierre de workflow
+- `pr_link` es opcional y puede permanecer `null` aunque una tarea pase de `Need PR` a `PR Hecho`.
+- `test_cases` es opcional y solo debe solicitarse en UI cuando `ticket_type = Feature`.
+- `imputed_date` debe guardarse al pasar de `PR Hecho` a `Imputed`.
+- El valor inicial recomendado para `imputed_date` es `finished_date`; si no existe, la implementación debe usar un fallback explícito y validado.
+- Para `Task`, `Imputed` es estado final y no existe transición a `Deployed`.
+- Para `Bug` y `Feature`, `Deployed` es el estado final del workflow posterior a `Done`.
 
 ## daily_reports
 Parte diario único por usuario y fecha.
@@ -83,6 +94,8 @@ Debe devolverse en los listados de tareas cuando la UI lo necesite para mostrar 
 - `tasks(user_id, limit_date)` para ordenación por fecha límite.
 - `tasks(user_id, priority)` para filtros y ordenación por prioridad.
 - `tasks(user_id, ticket_type)` para filtros y reglas por tipo.
+- `tasks(user_id, task_status, pr_status)` para la vista `Completar tareas`.
+- `tasks(user_id, imputed_date)` si se consultan cierres o imputaciones por fecha.
 
 ## Reglas automáticas
 - Trigger `normalize_task_state` mantiene coherencia entre `task_status`, `finished_date`, `pr_status` y `ticket_type`.
