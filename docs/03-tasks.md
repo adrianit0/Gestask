@@ -154,7 +154,7 @@
   - **Dependencias**: DOC-002, DOC-004.
 
 - **SQL-003**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: SQL
   - **Descripción**: Añadir columnas nuevas a `tasks`: `limit_date`, `ticket_type` y campo de comentarios.
   - **Archivos**: `supabase/sql/script-003.sql` o migración equivalente.
@@ -162,7 +162,7 @@
   - **Dependencias**: DOC-005.
 
 - **SQL-004**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: SQL
   - **Descripción**: Adaptar reglas automáticas de estado para `ticket_type = Task`.
   - **Archivos**: `supabase/sql/script-003.sql` o migración equivalente.
@@ -170,7 +170,7 @@
   - **Dependencias**: SQL-003.
 
 - **SQL-005**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: SQL
   - **Descripción**: Añadir índices para filtros y ordenación por `assigned_date`, `limit_date`, `priority` y `ticket_type`.
   - **Archivos**: `supabase/sql/script-003.sql` o migración equivalente.
@@ -178,7 +178,7 @@
   - **Dependencias**: SQL-003.
 
 - **CONF-001**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Configuración
   - **Descripción**: Crear parámetros base `scoring_*` en `gestask_configuration`.
   - **Archivos**: `supabase/sql/script-003.sql` o seed equivalente.
@@ -186,7 +186,7 @@
   - **Dependencias**: SQL-002, DOC-005.
 
 - **API-005**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Edge Functions
   - **Descripción**: Actualizar `tasks-create` para aceptar `limit_date`, `ticket_type` y comentarios.
   - **Archivos**: `supabase/functions/tasks-create/index.ts`
@@ -194,7 +194,7 @@
   - **Dependencias**: SQL-003.
 
 - **API-006**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Edge Functions
   - **Descripción**: Actualizar `tasks-update` para editar `limit_date`, `ticket_type`, comentarios y reglas PR por tipo.
   - **Archivos**: `supabase/functions/tasks-update/index.ts`
@@ -202,7 +202,7 @@
   - **Dependencias**: SQL-003, SQL-004.
 
 - **API-007**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Edge Functions
   - **Descripción**: Implementar cálculo de scoring en listados.
   - **Archivos**: `supabase/functions/tasks-list/index.ts`, `supabase/functions/daily-report-get/index.ts`, `supabase/functions/_shared/configuration.ts`
@@ -210,7 +210,7 @@
   - **Dependencias**: CONF-001, API-004.
 
 - **API-008**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Edge Functions
   - **Descripción**: Añadir ordenación avanzada a listados de tareas.
   - **Archivos**: `supabase/functions/tasks-list/index.ts`, `supabase/functions/daily-report-get/index.ts`
@@ -218,7 +218,7 @@
   - **Dependencias**: API-007.
 
 - **FE-006**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Frontend
   - **Descripción**: Añadir `ticket_type` y `limit_date` al formulario de creación/edición de tarea.
   - **Archivos**: `src/components/TaskTable.js`, servicios de tareas relacionados.
@@ -226,7 +226,7 @@
   - **Dependencias**: API-005, API-006.
 
 - **FE-007**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Frontend
   - **Descripción**: Adaptar selector PR según `ticket_type`.
   - **Archivos**: `src/components/TaskTable.js`, `src/utils/constants.js`
@@ -234,7 +234,7 @@
   - **Dependencias**: FE-006.
 
 - **FE-008**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Frontend
   - **Descripción**: Rediseñar detalle de tarea a 3 columnas y tamaño más compacto.
   - **Archivos**: `src/components/TaskTable.js`, `src/styles/global.css`
@@ -242,7 +242,7 @@
   - **Dependencias**: FE-006.
 
 - **FE-009**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Frontend
   - **Descripción**: Añadir comentarios persistidos al final del detalle de tarea.
   - **Archivos**: `src/components/TaskTable.js`, manejadores de eventos en `src/main.js` o módulo equivalente, servicios de tareas.
@@ -250,7 +250,7 @@
   - **Dependencias**: API-006, FE-008.
 
 - **FE-010**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Frontend
   - **Descripción**: Mostrar scoring y controles de ordenación avanzada.
   - **Archivos**: `src/pages/BacklogPage.js`, `src/pages/DailyTasksPage.js`, `src/components/TaskTable.js`, servicios de tareas.
@@ -261,6 +261,7 @@
   - **Estado**: Pendiente
   - **Área**: Testing manual
   - **Descripción**: Verificar flujo completo de tipos, fecha límite, comentarios, scoring y ordenación.
-  - **Archivos**: Navegador + Supabase
+  - **Archivos**: Navegador + Supabase, `docs/10-qa-002.md`
   - **Criterio de aceptación**: Todos los casos manuales de `docs/09-scoring-and-ordering.md` pasan correctamente.
   - **Dependencias**: FE-010.
+  - **Nota**: Verificación parcial documentada; pendiente ejecución real en navegador contra Supabase.

@@ -10,6 +10,7 @@
 - Gráficas de rendimiento con KPIs, distribución por estado/prioridad y puntos completados del mes.
 - Pestaña Configuración con catálogo global y valores por usuario.
 - Documentación funcional y técnica para `limit_date`, `ticket_type`, comentarios, scoring configurable y ordenación avanzada.
+- Verificación parcial de QA-002 documentada en `docs/10-qa-002.md`.
 - Build de frontend verificado con `npm.cmd run build` en una iteración previa.
 
 ## Archivos creados o modificados
@@ -17,12 +18,14 @@
 - `src/**`.
 - `supabase/sql/script-001.sql`.
 - `supabase/sql/script-002.sql`.
+- `supabase/sql/script-003.sql`.
 - `supabase/functions/**`.
 - `docs/**`.
 
 ## SQL añadido
 - `supabase/sql/script-001.sql`: tablas, constraints, RLS, triggers de actualización y sincronización con parte diario.
 - `supabase/sql/script-002.sql`: modelo de configuración.
+- `supabase/sql/script-003.sql`: columnas `limit_date`, `ticket_type` y `comments` en `tasks`, con defaults, constraints básicos, reglas PR específicas para `ticket_type = Task`, índices de filtro/ordenación y parámetros base `scoring_*`.
 
 ## Edge Functions creadas
 - `tasks-list`.
@@ -35,12 +38,23 @@
 - `configuration-list`.
 - `configuration-profile-update`.
 - `configuration-create`.
+- `tasks-create` actualizado para `ticket_type`, `limit_date` y `comments`.
+- `tasks-update` actualizado para `ticket_type`, `limit_date`, comentarios y reglas PR por tipo.
+- `tasks-list` y `daily-report-get` actualizados para devolver `scoring` calculado.
+- `tasks-list` y `daily-report-get` actualizados para validar y aplicar `sort_by` y `sort_direction`.
 
 ## Frontend añadido
 - `src/pages/TimeManagerPage.js`: alta, edición, borrado e historial de registros horarios.
 - `src/pages/PerformancePage.js`: métricas de tareas y visualizaciones básicas de rendimiento.
 - `src/pages/ConfigurationPage.js`: edición y creación de parámetros de configuración.
+- `src/components/TaskTable.js`: formulario de tarea con `ticket_type` y `limit_date`.
+- `src/components/TaskTable.js`: selector PR adaptado a `ticket_type = Task`.
+- `src/components/TaskTable.js` y `src/styles/global.css`: detalle de tarea compacto con 3 columnas en escritorio.
+- `src/components/TaskTable.js`, `src/main.js` y `src/styles/global.css`: comentarios persistidos desde el detalle de tarea.
+- `src/pages/BacklogPage.js`, `src/pages/DailyTasksPage.js`, `src/components/TaskTable.js` y servicios de tareas/partes: scoring visible y ordenación avanzada en UI.
 - `src/services/timeEntryService.js`: persistencia local de registros horarios en `localStorage`.
+- `supabase/functions/_shared/configuration.ts`: validación de configuración y cálculo compartido de scoring.
+- `supabase/functions/_shared/taskSorting.ts`: validación y ordenación estable de tareas.
 
 ## Decisiones técnicas
 - SPA con Vite y JavaScript sin framework para mantener una primera versión simple.
@@ -56,9 +70,7 @@
 - Añadir tests automatizados.
 - Mejorar accesibilidad avanzada de tablas grandes.
 - Validar Edge Functions con `supabase functions serve` o despliegue real cuando Supabase CLI esté configurado.
-- Implementar migración SQL para `limit_date`, `ticket_type`, comentarios, constraints e índices.
-- Crear parámetros base `scoring_*`.
-- Implementar cálculo de scoring en API.
-- Implementar ordenación avanzada en API y UI.
-- Adaptar formularios, tablas y detalle de tarea.
+- Implementar ordenación avanzada en UI.
+- Completar validación manual del flujo de scoring y ordenación.
+- Ejecutar QA-002 en navegador contra Supabase real y cerrar la tarea cuando todos los casos pasen.
 - Añadir comentarios persistidos desde el detalle de tarea.

@@ -1,4 +1,6 @@
-﻿import { errorResponse, handleOptions, jsonResponse } from "../_shared/http.ts";
+import { addScoringToTasks } from "../_shared/configuration.ts";
+import { errorResponse, handleOptions, jsonResponse } from "../_shared/http.ts";
+import { parseTaskSort, sortTasks } from "../_shared/taskSorting.ts";
 import { requireUser } from "../_shared/supabase.ts";
 
 Deno.serve(async (req) => {
@@ -11,7 +13,10 @@ Deno.serve(async (req) => {
   const { supabase, user } = auth;
   const url = new URL(req.url);
 
-  let query = supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
+  const sort = parseTaskSort(url.searchParams, { sortBy: "created_at", sortDirection: "desc" });
+  if ("error" in sort) return errorResponse(sort.error, 400);
+
+  let query = supabase.from("tasks").select("*").eq("user_id", user.id);
   const status = url.searchParams.get("status");
   const priority = url.searchParams.get("priority");
   const date = url.searchParams.get("date");
@@ -24,5 +29,11 @@ Deno.serve(async (req) => {
 
   const { data, error } = await query;
   if (error) return errorResponse(error.message, 400);
-  return jsonResponse({ tasks: data ?? [] });
+
+  try {
+    const tasks = await addScoringToTasks(supabase, user.id, data ?? []);
+    return jsonResponse({ tasks: sortTasks(tasks, sort.sortBy, sort.sortDirection) });
+  } catch (scoringError) {
+    return errorResponse(scoringError instanceof Error ? scoringError.message : "Invalid scoring configuration.", 400);
+  }
 });

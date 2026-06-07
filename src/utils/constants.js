@@ -1,5 +1,7 @@
-﻿export const TASK_STATUSES = ["To do", "Doing", "Draft", "Undone", "Unfinished", "Need Fix", "Waiting", "Done", "Warning"];
+export const TASK_STATUSES = ["To do", "Doing", "Draft", "Undone", "Unfinished", "Need Fix", "Waiting", "Done", "Warning"];
 export const PR_STATUSES = ["Not Finished", "Need PR", "PR Hecho", "Imputed", "Deployed"];
+export const TASK_PR_STATUSES = ["Not Finished", "Imputed"];
+export const TICKET_TYPES = ["Bug", "Feature", "Task"];
 export const PRIORITIES = ["Trivial", "Menor", "Prioritaria", "Crítica", "Bloqueante"];
 export const DAY_STATUSES = ["Laboral", "Vacaciones", "Festivos", "Ausencia"];
 

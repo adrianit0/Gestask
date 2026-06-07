@@ -1,4 +1,4 @@
-﻿import { PRIORITIES, PR_BORDER_COLORS, PR_STATUSES, TASK_COLORS, TASK_STATUSES } from "../utils/constants.js";
+import { PRIORITIES, PR_BORDER_COLORS, PR_STATUSES, TASK_COLORS, TASK_PR_STATUSES, TASK_STATUSES, TICKET_TYPES } from "../utils/constants.js";
 import { escapeHtml } from "../utils/format.js";
 
 export function TaskTable(tasks, options = {}) {
@@ -22,12 +22,12 @@ function taskTable(tasks, { readonly = false, mode = "full" } = {}) {
 
 function header(mode) {
   if (mode === "backlog") {
-    return `<tr><th>Ticket</th><th>Asignación</th><th>Finalización</th><th class="title-column">Título</th><th>Acciones</th></tr>`;
+    return `<tr><th>Ticket</th><th>Tipo</th><th>Asignación</th><th>Límite</th><th class="title-column">Título</th><th>Scoring</th><th>Acciones</th></tr>`;
   }
   if (mode === "daily") {
-    return `<tr><th>Ticket</th><th>Asignación</th><th>Finalización</th><th class="title-column">Título</th><th>Estado</th><th>PR</th><th>Acciones</th></tr>`;
+    return `<tr><th>Ticket</th><th>Tipo</th><th>Asignación</th><th>Límite</th><th class="title-column">Título</th><th>Scoring</th><th>Estado</th><th>PR</th><th>Acciones</th></tr>`;
   }
-  return `<tr><th>Ticket</th><th>Asignación</th><th>Finalización</th><th class="title-column">Título</th><th>Esfuerzo</th><th>Orden</th><th>Prioridad</th><th>Estado</th><th>PR</th><th>Más info</th><th>Acciones</th></tr>`;
+  return `<tr><th>Ticket</th><th>Tipo</th><th>Asignación</th><th>Límite</th><th>Finalización</th><th class="title-column">Título</th><th>Scoring</th><th>Esfuerzo</th><th>Orden</th><th>Prioridad</th><th>Estado</th><th>PR</th><th>Más info</th><th>Acciones</th></tr>`;
 }
 
 function row(task, { readonly, mode, compact }) {
@@ -36,9 +36,12 @@ function row(task, { readonly, mode, compact }) {
   return `
     <tr class="${compact ? "clickable-row" : ""}" ${compact ? `data-view-task="${task.id}"` : ""} style="background:${background}; ${border ? `box-shadow: inset 4px 0 0 ${border};` : ""}">
       <td>${ticketCell(task.ticket)}</td>
+      <td>${escapeHtml(task.ticket_type || "Bug")}</td>
       <td>${escapeHtml(task.assigned_date)}</td>
-      <td>${escapeHtml(task.finished_date || "-")}</td>
+      <td>${escapeHtml(task.limit_date || "-")}</td>
+      ${mode === "full" ? `<td>${escapeHtml(task.finished_date || "-")}</td>` : ""}
       <td class="task-title-cell">${escapeHtml(task.title)}</td>
+      <td>${escapeHtml(task.scoring ?? "-")}</td>
       ${mode === "full" ? `
         <td>${escapeHtml(task.effort_points)}</td>
         <td>${escapeHtml(task.order_points ?? "-")}</td>
@@ -65,7 +68,14 @@ function statusSelect(task, readonly) {
 
 function prSelect(task, readonly) {
   const disabled = readonly || task.task_status !== "Done";
-  return `<select data-pr-status="${task.id}" ${disabled ? "disabled" : ""}>${PR_STATUSES.map((status) => `<option ${task.pr_status === status ? "selected" : ""}>${status}</option>`).join("")}</select>`;
+  const statuses = task.ticket_type === "Task" ? TASK_PR_STATUSES : PR_STATUSES;
+  return `<select data-pr-status="${task.id}" ${disabled ? "disabled" : ""}>${statuses.map((status) => `<option ${task.pr_status === status ? "selected" : ""}>${status}</option>`).join("")}</select>`;
+}
+
+function prStatusOptions(task) {
+  const statuses = task?.ticket_type === "Task" ? TASK_PR_STATUSES : PR_STATUSES;
+  const selectedStatus = statuses.includes(task?.pr_status) ? task?.pr_status : statuses[0];
+  return statuses.map((status) => `<option ${(selectedStatus === status) ? "selected" : ""}>${status}</option>`).join("");
 }
 
 function editIcon() {
@@ -91,16 +101,20 @@ export function TaskDetailModal(task, { readonly = false } = {}) {
         </div>
         <div class="detail-grid">
           ${detailItem("Ticket", task.ticket ? ticketCell(task.ticket) : "-")}
-          ${detailItem("Título", escapeHtml(task.title), "span-2")}
+          ${detailItem("Tipo", escapeHtml(task.ticket_type || "Bug"))}
+          ${detailItem("Scoring", escapeHtml(task.scoring ?? "-"))}
+          ${detailItem("Título", escapeHtml(task.title), "span-3 detail-title")}
           ${detailItem("Fecha asignación", escapeHtml(task.assigned_date))}
+          ${detailItem("Fecha límite", escapeHtml(task.limit_date || "-"))}
           ${detailItem("Fecha finalización", escapeHtml(task.finished_date || "-"))}
           ${detailItem("Esfuerzo", escapeHtml(task.effort_points))}
           ${detailItem("Orden", escapeHtml(task.order_points ?? "-"))}
           ${detailItem("Prioridad", escapeHtml(task.priority))}
           ${detailItem("Estado", statusSelect(task, readonly))}
           ${detailItem("PR", prSelect(task, readonly))}
-          ${detailItem("Más info", escapeHtml(task.more_info || "-"), "span-2 detail-info")}
+          ${detailItem("Más info", escapeHtml(task.more_info || "-"), "span-3 detail-info")}
         </div>
+        ${TaskComments(task, { readonly })}
         <div class="modal-actions">
           <button type="button" class="secondary" data-close-detail-modal>Cerrar</button>
         </div>
@@ -118,6 +132,46 @@ function detailItem(label, value, className = "") {
   `;
 }
 
+function TaskComments(task, { readonly = false } = {}) {
+  const comments = Array.isArray(task.comments) ? task.comments : [];
+  return `
+    <section class="task-comments">
+      <div class="task-comments-header">
+        <h3>Comentarios</h3>
+        <span>${comments.length}</span>
+      </div>
+      <div class="task-comments-list">
+        ${comments.length ? comments.map(commentItem).join("") : `<p class="task-comment-empty">Sin comentarios todavía.</p>`}
+      </div>
+      ${readonly ? "" : `
+        <form class="task-comment-form" data-task-comment-form="${task.id}">
+          <label>Nuevo comentario<textarea name="comment" required placeholder="Añade un comentario a la tarea"></textarea></label>
+          <div class="modal-actions">
+            <button type="submit" class="primary">Añadir comentario</button>
+          </div>
+        </form>
+      `}
+    </section>
+  `;
+}
+
+function commentItem(comment) {
+  const text = typeof comment === "string" ? comment : comment?.text;
+  const createdAt = typeof comment === "object" ? comment?.created_at : null;
+  return `
+    <article class="task-comment">
+      <p>${escapeHtml(text || "")}</p>
+      ${createdAt ? `<time>${escapeHtml(formatCommentDate(createdAt))}</time>` : ""}
+    </article>
+  `;
+}
+
+function formatCommentDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
+
 export function TaskModal(task = null) {
   const isEdit = Boolean(task);
   return `
@@ -130,14 +184,16 @@ export function TaskModal(task = null) {
         <form id="task-form" class="form-grid">
           <input type="hidden" name="id" value="${escapeHtml(task?.id || "")}" />
           <label>Ticket<input name="ticket" value="${escapeHtml(task?.ticket || "")}" /></label>
+          <label>Tipo<select name="ticket_type">${TICKET_TYPES.map((type) => `<option ${((task?.ticket_type || "Bug") === type) ? "selected" : ""}>${type}</option>`).join("")}</select></label>
           <label>Título<input name="title" required value="${escapeHtml(task?.title || "")}" /></label>
           <label>Fecha asignación<input name="assigned_date" type="date" required value="${escapeHtml(task?.assigned_date || new Date().toISOString().slice(0, 10))}" /></label>
+          <label>Fecha límite<input name="limit_date" type="date" value="${escapeHtml(task?.limit_date || "")}" /></label>
           <label>Fecha finalización<input name="finished_date" type="date" value="${escapeHtml(task?.finished_date || "")}" ${!isEdit || task?.task_status !== "Done" ? "disabled" : ""} /></label>
           <label>Punto de esfuerzo<input name="effort_points" type="number" min="0" value="${escapeHtml(task?.effort_points ?? 3)}" /></label>
           <label>Punto de orden<input name="order_points" type="number" value="${escapeHtml(task?.order_points ?? "")}" /></label>
           <label>Prioridad<select name="priority">${PRIORITIES.map((priority) => `<option ${((task?.priority || "Menor") === priority) ? "selected" : ""}>${priority}</option>`).join("")}</select></label>
           ${isEdit ? `<label>Estado tarea<select name="task_status">${TASK_STATUSES.map((status) => `<option ${(task?.task_status === status) ? "selected" : ""}>${status}</option>`).join("")}</select></label>` : ""}
-          ${isEdit ? `<label>Estado PR<select name="pr_status" ${task?.task_status !== "Done" ? "disabled" : ""}>${PR_STATUSES.map((status) => `<option ${(task?.pr_status === status) ? "selected" : ""}>${status}</option>`).join("")}</select></label>` : ""}
+          ${isEdit ? `<label>Estado PR<select name="pr_status" ${task?.task_status !== "Done" ? "disabled" : ""}>${prStatusOptions(task)}</select></label>` : ""}
           <label class="span-2">Más info<textarea name="more_info">${escapeHtml(task?.more_info || "")}</textarea></label>
           <div class="modal-actions span-2">
             <button type="button" class="secondary" data-close-modal>Cancelar</button>

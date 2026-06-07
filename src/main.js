@@ -30,6 +30,7 @@ const state = {
   modalTask: undefined,
   detailTask: null,
   dailyDate: todayIso(),
+  dailySort: { sort_by: "order_points", sort_direction: "desc" },
   dailyReport: null,
   dailyTasks: [],
   dailyEditable: false,
@@ -65,7 +66,7 @@ function currentPageHtml() {
     return BacklogPage({ tasks: getFilteredTasks(), filters: state.filters, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
   }
   if (state.page === "daily") {
-    return DailyTasksPage({ date: state.dailyDate, report: state.dailyReport, tasks: state.dailyTasks, editable: state.dailyEditable, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
+    return DailyTasksPage({ date: state.dailyDate, report: state.dailyReport, tasks: state.dailyTasks, editable: state.dailyEditable, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask, sort: state.dailySort });
   }
   if (state.page === "calendar") {
     return CalendarPage({ year: state.calendarYear, month: state.calendarMonth, days: state.calendarDays, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success });
@@ -153,16 +154,18 @@ function bindBacklogEvents() {
   bindTaskTableEvents(state.tasks);
 
   document.querySelectorAll("[data-filter]").forEach((input) => {
-    input.addEventListener("change", () => {
+    input.addEventListener("change", async () => {
       clearMessages();
       state.filters[input.dataset.filter] = input.value;
+      await loadBacklogTasks({ preserveMessages: true });
       render();
     });
   });
 
-  document.querySelector("[data-clear-filters]")?.addEventListener("click", () => {
+  document.querySelector("[data-clear-filters]")?.addEventListener("click", async () => {
     clearMessages();
     state.filters = {};
+    await loadBacklogTasks({ preserveMessages: true });
     render();
   });
 
@@ -176,6 +179,9 @@ function bindTaskModalEvents() {
       render();
     });
   });
+
+  const taskForm = document.querySelector("#task-form");
+  taskForm?.elements.ticket_type?.addEventListener("change", () => syncTaskPrStatusOptions(taskForm));
 
   document.querySelector("#task-form")?.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -193,6 +199,16 @@ function bindTaskModalEvents() {
     }
     render();
   });
+}
+
+function syncTaskPrStatusOptions(form) {
+  const prStatus = form?.elements.pr_status;
+  if (!prStatus) return;
+
+  const currentValue = prStatus.value;
+  const statuses = form.elements.ticket_type.value === "Task" ? ["Not Finished", "Imputed"] : ["Not Finished", "Need PR", "PR Hecho", "Imputed", "Deployed"];
+  prStatus.innerHTML = statuses.map((status) => `<option ${currentValue === status ? "selected" : ""}>${status}</option>`).join("");
+  if (!statuses.includes(currentValue)) prStatus.value = statuses[0];
 }
 
 function bindDailyEvents() {
@@ -215,6 +231,14 @@ function bindDailyEvents() {
     state.modalTask = undefined;
     await loadDailyReport();
     render();
+  });
+
+  document.querySelectorAll("[data-daily-sort]").forEach((input) => {
+    input.addEventListener("change", async () => {
+      state.dailySort[input.dataset.dailySort] = input.value;
+      await loadDailyReport();
+      render();
+    });
   });
 
   document.querySelectorAll("[data-edit-task]").forEach((button) => {
@@ -242,6 +266,19 @@ function bindTaskTableEvents(tasks, { readonly = false } = {}) {
     button.addEventListener("click", () => {
       state.detailTask = null;
       render();
+    });
+  });
+
+  document.querySelectorAll("[data-task-comment-form]").forEach((form) => {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const comment = form.elements.comment.value.trim();
+      if (!comment) {
+        state.error = "El comentario no puede estar vacío.";
+        render();
+        return;
+      }
+      await mutateTask({ id: form.dataset.taskCommentForm, comment });
     });
   });
 
@@ -388,8 +425,8 @@ function refreshSelectedTask(taskId) {
 async function loadAllData({ preserveMessages = false } = {}) {
   await withLoading(async () => {
     const [tasksResult, dailyResult, calendarResult, configurationsResult] = await Promise.allSettled([
-      listTasks(),
-      getDailyReport(state.dailyDate),
+      listTasks(state.filters),
+      getDailyReport(state.dailyDate, state.dailySort),
       getCalendarMonth(state.calendarYear, state.calendarMonth),
       listConfigurations(),
     ]);
@@ -438,9 +475,16 @@ async function loadConfigurations({ preserveMessages = false } = {}) {
   }, { preserveMessages });
 }
 
+async function loadBacklogTasks({ preserveMessages = false } = {}) {
+  await withLoading(async () => {
+    const data = await listTasks(state.filters);
+    state.tasks = data.tasks ?? [];
+  }, { preserveMessages });
+}
+
 async function loadDailyReport() {
   await withLoading(async () => {
-    const data = await getDailyReport(state.dailyDate);
+    const data = await getDailyReport(state.dailyDate, state.dailySort);
     state.dailyReport = data.report;
     state.dailyTasks = data.tasks ?? [];
     state.dailyEditable = Boolean(data.editable);
@@ -488,6 +532,8 @@ function normalizeTaskPayload(payload) {
   const normalized = { ...payload };
   if (!normalized.id) delete normalized.id;
   if (!normalized.ticket) normalized.ticket = null;
+  if (!normalized.ticket_type) normalized.ticket_type = "Bug";
+  if (!normalized.limit_date) normalized.limit_date = null;
   if (!normalized.finished_date) delete normalized.finished_date;
   if (!normalized.more_info) normalized.more_info = null;
   normalized.effort_points = Number(normalized.effort_points || 0);
