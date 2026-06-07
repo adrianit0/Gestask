@@ -1,4 +1,4 @@
-﻿# Scoring y Ordenación
+# Scoring y Ordenación
 
 ## Objetivo
 Definir cómo se calcula el scoring de una tarea y cómo se ordenan los listados usando criterios configurables y campos existentes.
@@ -161,7 +161,7 @@ Reglas recomendadas:
 ## Casos de prueba manual
 - Crear tarea sin `limit_date`; debe guardarse con `null`.
 - Crear tarea sin `ticket_type`; debe guardarse como `Bug`.
-- Crear tarea `Task`; el selector PR solo permite `Not Finished` e `Imputed`.
+- Crear tarea `Task`; el selector PR solo permite `Not Finished`, `Need to Impute` e `Imputed`.
 - Cambiar una tarea `Bug` a `Task`; un PR incompatible se normaliza.
 - Añadir comentario desde detalle; al reabrir la tarea, el comentario sigue visible.
 - Ordenar por scoring descendente; las tareas con mayor scoring aparecen primero.

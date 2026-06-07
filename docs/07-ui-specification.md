@@ -1,4 +1,4 @@
-﻿# Especificación UI
+# Especificación UI
 
 ## Navegación
 Barra superior fija con Backlog, Tareas Diarias, Completar tareas, Calendario, Gestor de Tiempos, Gráficas de Rendimiento, Configuración y Logout.
@@ -30,7 +30,7 @@ Debe incluir:
 - Más info.
 
 Reglas visuales:
-- Si `ticket_type = Task`, el selector de PR solo muestra `Not Finished` e `Imputed`.
+- Si `ticket_type = Task`, el selector de PR solo muestra `Not Finished`, `Need to Impute` e `Imputed`.
 - Si `ticket_type != Task`, el selector de PR muestra el catálogo completo cuando la tarea está en estado que lo permite.
 - `limit_date` puede quedar vacío.
 
@@ -87,7 +87,11 @@ La vista debe mostrar exclusivamente:
 - Tareas `Bug` y `Feature` con `task_status = Done` y `pr_status` distinto de `Deployed`.
 - Tareas `Task` con `task_status = Done` y `pr_status` distinto de `Imputed`.
 
-La vista no debe incluir filtros, scoring visible como criterio ni controles de ordenación funcionales. Si la implementación necesita ordenar para estabilidad visual, debe usar un orden técnico estable sin exponerlo como criterio de usuario.
+La vista no debe incluir filtros, scoring visible como criterio ni controles de ordenación funcionales.
+
+Orden fijo de presentación:
+- Primero por estado PR: `Need PR`, `Need to Impute`, `Imputed`, `Deployed`.
+- Después por fecha de finalización de menor a mayor.
 
 Campos mínimos de tabla:
 - Ticket como hipervínculo cuando exista URL o patrón de enlace configurado.
@@ -110,10 +114,10 @@ Al pulsar `Resolver`, debe abrirse un popup con:
 Reglas:
 - Ambos campos son opcionales.
 - Confirmar sin datos debe ser válido.
-- Tras confirmar, la tarea pasa a `pr_status = PR Hecho`.
+- Tras confirmar, la tarea pasa a `pr_status = Need to Impute`.
 
-### Resolver `PR Hecho`
-Aplica a tareas en `pr_status = PR Hecho`.
+### Resolver `Need to Impute`
+Aplica a tareas en `pr_status = Need to Impute`.
 
 Al pulsar `Resolver`, debe abrirse un popup con:
 - Hipervínculo al ticket.

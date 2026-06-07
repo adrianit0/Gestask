@@ -1,4 +1,4 @@
-﻿# Contratos API
+# Contratos API
 
 Todas las funciones devuelven JSON y validan método HTTP.
 
@@ -77,7 +77,7 @@ Campos editables nuevos:
 - `imputed_date`.
 
 Reglas:
-- Si `ticket_type = Task`, solo se permite `pr_status` `Not Finished` o `Imputed`.
+- Si `ticket_type = Task`, solo se permite `pr_status` `Not Finished`, `Need to Impute` o `Imputed`.
 - Si una tarea cambia a `ticket_type = Task` y tenía un estado PR no permitido, debe normalizarse a `Not Finished` salvo que ya esté imputada.
 - Si `ticket_type != Task`, se mantiene la regla actual de PR al pasar a `Done`.
 - Al añadir comentarios desde el detalle, no deben perderse comentarios existentes.
@@ -86,7 +86,7 @@ Reglas:
 
 Lista tareas disponibles para la funcionalidad `Completar tareas`.
 
-No acepta criterios funcionales de filtrado u ordenación. Si se añaden parámetros técnicos en una implementación futura, no deben cambiar las reglas de inclusión.
+No acepta criterios funcionales de filtrado u ordenación. La presentación debe usar un orden fijo por `pr_status` y `finished_date`.
 
 Reglas de inclusión:
 - Incluir tareas `Bug` y `Feature` con `task_status = Done` y `pr_status != Deployed`.
@@ -94,6 +94,10 @@ Reglas de inclusión:
 - Excluir cualquier tarea que no esté en `Done`.
 - Excluir tareas `Bug` y `Feature` ya `Deployed`.
 - Excluir tareas `Task` ya `Imputed`.
+
+Orden de presentación:
+- Primero por `pr_status`: `Need PR`, `Need to Impute`, `Imputed`, `Deployed`.
+- Después por `finished_date` ascendente.
 
 Respuesta esperada:
 
@@ -142,9 +146,9 @@ Reglas:
 - Solo aplica a `Bug` y `Feature` con `pr_status = Need PR`.
 - `pr_link` es opcional.
 - `test_cases` es opcional y solo se usa funcionalmente para `Feature`.
-- Tras resolver, `pr_status` pasa a `PR Hecho`.
+- Tras resolver, `pr_status` pasa a `Need to Impute`.
 
-Payload para `PR Hecho`:
+Payload para `Need to Impute`:
 
 ```json
 {

@@ -1,4 +1,4 @@
-﻿# Tareas
+# Tareas
 
 ## Estado general
 
@@ -166,7 +166,7 @@
   - **Área**: SQL
   - **Descripción**: Adaptar reglas automáticas de estado para `ticket_type = Task`.
   - **Archivos**: `supabase/sql/script-003.sql` o migración equivalente.
-  - **Criterio de aceptación**: Las tareas tipo `Task` solo permiten `pr_status` `Not Finished` e `Imputed`, y no requieren flujo `Need PR`.
+  - **Criterio de aceptación**: Las tareas tipo `Task` solo permiten `pr_status` `Not Finished`, `Need to Impute` e `Imputed`, y no requieren flujo `Need PR` ni despliegue.
   - **Dependencias**: SQL-003.
 
 - **SQL-005**
@@ -230,7 +230,7 @@
   - **Área**: Frontend
   - **Descripción**: Adaptar selector PR según `ticket_type`.
   - **Archivos**: `src/components/TaskTable.js`, `src/utils/constants.js`
-  - **Criterio de aceptación**: Tipo `Task` solo muestra `Not Finished` e `Imputed`; otros tipos mantienen el catálogo completo.
+  - **Criterio de aceptación**: Tipo `Task` solo muestra `Not Finished`, `Need to Impute` e `Imputed`; otros tipos mantienen el catálogo completo.
   - **Dependencias**: FE-006.
 
 - **FE-008**
@@ -303,7 +303,7 @@
   - **Área**: Edge Functions
   - **Descripción**: Crear endpoint `tasks-completion-resolve`.
   - **Archivos**: `supabase/functions/tasks-completion-resolve/index.ts`, código compartido si aplica.
-  - **Criterio de aceptación**: Resuelve transiciones válidas `Need PR -> PR Hecho`, `PR Hecho -> Imputed` e `Imputed -> Deployed` con validaciones por tipo de ticket.
+  - **Criterio de aceptación**: Resuelve transiciones válidas `Need PR -> Need to Impute`, `Need to Impute -> Imputed` e `Imputed -> Deployed` con validaciones por tipo de ticket.
   - **Dependencias**: API-009.
 
 - **FE-011**
@@ -319,7 +319,7 @@
   - **Área**: Frontend
   - **Descripción**: Implementar popups de resolución de `Completar tareas`.
   - **Archivos**: `src/pages/CompletionTasksPage.js`, `src/components` si se extraen modales, `src/styles/global.css`, `src/services/taskCompletionService.js`
-  - **Criterio de aceptación**: `Resolver` muestra el popup correcto para `Need PR`, `PR Hecho` e `Imputed`, permite campos opcionales donde corresponda y refresca el listado tras confirmar.
+  - **Criterio de aceptación**: `Resolver` muestra el popup correcto para `Need PR`, `Need to Impute` e `Imputed`, permite campos opcionales donde corresponda y refresca el listado tras confirmar.
   - **Dependencias**: FE-011, API-010.
 
 - **QA-003**

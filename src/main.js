@@ -117,13 +117,12 @@ function bindAuthEvents() {
 
 function bindLayoutEvents() {
   document.querySelectorAll("[data-page]").forEach((button) => {
-    button.addEventListener("click", async () => {
+    button.addEventListener("click", () => {
       state.page = button.dataset.page;
       state.detailTask = null;
       state.modalTask = undefined;
       state.completionModalTask = null;
       clearMessages();
-      if (state.page === "completion") await loadCompletionTasks({ preserveMessages: true });
       render();
     });
   });
@@ -296,7 +295,7 @@ function syncTaskPrStatusOptions(form) {
   if (!prStatus) return;
 
   const currentValue = prStatus.value;
-  const statuses = form.elements.ticket_type.value === "Task" ? ["Not Finished", "Imputed"] : ["Not Finished", "Need PR", "PR Hecho", "Imputed", "Deployed"];
+  const statuses = form.elements.ticket_type.value === "Task" ? ["Not Finished", "Need to Impute", "Imputed"] : ["Not Finished", "Need PR", "Need to Impute", "Imputed", "Deployed"];
   prStatus.innerHTML = statuses.map((status) => `<option ${currentValue === status ? "selected" : ""}>${status}</option>`).join("");
   if (!statuses.includes(currentValue)) prStatus.value = statuses[0];
 }
@@ -591,13 +590,6 @@ async function loadBacklogTasks({ preserveMessages = false } = {}) {
   }, { preserveMessages });
 }
 
-async function loadCompletionTasks({ preserveMessages = false } = {}) {
-  await withLoading(async () => {
-    const data = await listCompletionTasks();
-    state.completionTasks = data.tasks ?? [];
-  }, { preserveMessages });
-}
-
 async function loadDailyReport() {
   await withLoading(async () => {
     const data = await getDailyReport(state.dailyDate, state.dailySort);
@@ -672,7 +664,7 @@ function normalizeCompletionResolvePayload(payload, status) {
     normalized.pr_link = payload.pr_link || "";
     if (payload.test_cases !== undefined) normalized.test_cases = payload.test_cases || "";
   }
-  if (status === "PR Hecho") {
+  if (status === "Need to Impute") {
     normalized.imputed_date = payload.imputed_date;
   }
   return normalized;

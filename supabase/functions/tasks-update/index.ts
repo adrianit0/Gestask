@@ -2,8 +2,8 @@ import { errorResponse, handleOptions, jsonResponse } from "../_shared/http.ts";
 import { requireUser } from "../_shared/supabase.ts";
 
 const allowedTicketTypes = ["Bug", "Feature", "Task"];
-const allowedPrStatuses = ["Not Finished", "Need PR", "PR Hecho", "Imputed", "Deployed"];
-const allowedTaskPrStatuses = ["Not Finished", "Imputed"];
+const allowedPrStatuses = ["Not Finished", "Need PR", "Need to Impute", "Imputed", "Deployed"];
+const allowedTaskPrStatuses = ["Not Finished", "Need to Impute", "Imputed"];
 const editableFields = ["ticket", "assigned_date", "finished_date", "effort_points", "order_points", "priority", "task_status", "pr_status", "more_info"];
 
 Deno.serve(async (req) => {
@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
   if (nextTicketType === "Task") {
     if (nextStatus === "Done") {
       if (!patch.finished_date && !current.finished_date) patch.finished_date = new Date().toISOString().slice(0, 10);
-      patch.pr_status = "Imputed";
+      if ((patch.pr_status ?? current.pr_status) === "Not Finished") patch.pr_status = "Need to Impute";
     } else {
       patch.finished_date = null;
       patch.pr_status = "Not Finished";
@@ -85,6 +85,7 @@ Deno.serve(async (req) => {
   } else if (nextStatus === "Done") {
     if (!patch.finished_date && !current.finished_date) patch.finished_date = new Date().toISOString().slice(0, 10);
     if ((patch.pr_status ?? current.pr_status) === "Not Finished") patch.pr_status = "Need PR";
+    if ((patch.pr_status ?? current.pr_status) === "PR Hecho") patch.pr_status = "Need to Impute";
   } else {
     patch.finished_date = null;
     patch.pr_status = "Not Finished";

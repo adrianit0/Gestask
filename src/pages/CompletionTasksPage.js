@@ -1,4 +1,5 @@
 import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
+import { PR_BORDER_COLORS } from "../utils/constants.js";
 import { escapeHtml, todayIso } from "../utils/format.js";
 import { formatHoursFromEffortPoints } from "../utils/effortTime.js";
 
@@ -21,15 +22,15 @@ export function CompletionTasksPage({ tasks = [], minutesPerEffortPoint = 60, lo
 
 function CompletionTasksTable(tasks, minutesPerEffortPoint) {
   if (!tasks.length) return EmptyState("No hay tareas pendientes de completar.");
+  const sortedTasks = sortCompletionTasks(tasks);
 
   return `
     <div class="table-wrap">
-      <table class="completion-table">
+      <table class="task-table task-table-completion">
         <thead>
           <tr>
             <th>Ticket</th>
             <th>Tipo</th>
-            <th>Título</th>
             <th>Finalización</th>
             <th>Horas</th>
             <th>PR</th>
@@ -37,23 +38,59 @@ function CompletionTasksTable(tasks, minutesPerEffortPoint) {
           </tr>
         </thead>
         <tbody>
-          ${tasks.map((task) => CompletionTaskRow(task, minutesPerEffortPoint)).join("")}
+          ${sortedTasks.map((task) => CompletionTaskRow(task, minutesPerEffortPoint)).join("")}
         </tbody>
       </table>
     </div>
   `;
 }
 
+function sortCompletionTasks(tasks) {
+  return [...tasks].sort((a, b) => {
+    const statusCompared = getPrStatusOrder(a.pr_status) - getPrStatusOrder(b.pr_status);
+    if (statusCompared !== 0) return statusCompared;
+
+    const finishedCompared = compareDatesAsc(a.finished_date, b.finished_date);
+    if (finishedCompared !== 0) return finishedCompared;
+
+    return String(a.id ?? "").localeCompare(String(b.id ?? ""));
+  });
+}
+
+function getPrStatusOrder(status) {
+  const order = {
+    "Need PR": 0,
+    "Need to Impute": 1,
+    Imputed: 2,
+    Deployed: 3,
+  };
+  return order[status] ?? 99;
+}
+
+function compareDatesAsc(a, b) {
+  const aMissing = !a;
+  const bMissing = !b;
+  if (aMissing && bMissing) return 0;
+  if (aMissing) return 1;
+  if (bMissing) return -1;
+  return new Date(String(a)).getTime() - new Date(String(b)).getTime();
+}
+
 function CompletionTaskRow(task, minutesPerEffortPoint) {
+  const visualStyle = `--task-bg:#ccffcc; --task-border:${PR_BORDER_COLORS[task.pr_status] || "transparent"};`;
   return `
-    <tr>
+    <tr class="task-main-row" style="${visualStyle}">
       <td>${ticketCell(task.ticket)}</td>
       <td>${escapeHtml(task.ticket_type || "Bug")}</td>
-      <td><strong>${escapeHtml(task.title || "Sin título")}</strong></td>
       <td>${escapeHtml(task.finished_date || "-")}</td>
       <td>${escapeHtml(formatHoursFromEffortPoints(task.effort_points, minutesPerEffortPoint))}</td>
       <td><span class="status-pill">${escapeHtml(task.pr_status || "-")}</span></td>
       <td>${resolveButton(task)}</td>
+    </tr>
+    <tr class="task-title-row" style="${visualStyle}">
+      <td class="task-title-cell" colspan="6">
+        <div>${escapeHtml(task.title || "Sin tÃ­tulo")}</div>
+      </td>
     </tr>
   `;
 }
@@ -67,7 +104,7 @@ function resolveButton(task) {
 
 function canResolve(task) {
   if (task.pr_status === "Need PR") return task.ticket_type !== "Task";
-  if (task.pr_status === "PR Hecho") return true;
+  if (task.pr_status === "Need to Impute") return true;
   if (task.pr_status === "Imputed") return task.ticket_type !== "Task";
   return false;
 }
@@ -75,7 +112,7 @@ function canResolve(task) {
 function CompletionResolveModal(task, minutesPerEffortPoint) {
   const title = {
     "Need PR": "Informar PR",
-    "PR Hecho": "Imputar horas",
+    "Need to Impute": "Imputar horas",
     Imputed: "Cerrar tarea",
   }[task.pr_status] ?? "Resolver tarea";
 
@@ -97,9 +134,9 @@ function CompletionResolveModal(task, minutesPerEffortPoint) {
 
 function CompletionResolveForm(task, minutesPerEffortPoint) {
   if (task.pr_status === "Need PR") return NeedPrForm(task);
-  if (task.pr_status === "PR Hecho") return PrDoneForm(task, minutesPerEffortPoint);
+  if (task.pr_status === "Need to Impute") return NeedToImputeForm(task, minutesPerEffortPoint);
   if (task.pr_status === "Imputed") return ImputedForm(task);
-  return `<p class="state warning">Esta tarea no tiene una transición de resolución disponible.</p>`;
+  return `<p class="state warning">Esta tarea no tiene una transición de resoluciÃ³n disponible.</p>`;
 }
 
 function NeedPrForm(task) {
@@ -122,10 +159,10 @@ function NeedPrForm(task) {
   `;
 }
 
-function PrDoneForm(task, minutesPerEffortPoint) {
+function NeedToImputeForm(task, minutesPerEffortPoint) {
   const imputedDate = task.imputed_date || task.finished_date || todayIso();
   return `
-    <form id="completion-resolve-form" class="completion-resolve-form" data-completion-status="PR Hecho">
+    <form id="completion-resolve-form" class="completion-resolve-form" data-completion-status="Need to Impute">
       <input type="hidden" name="id" value="${escapeHtml(task.id)}" />
       <div class="completion-summary">
         <p><span>Ticket</span>${ticketCell(task.ticket)}</p>

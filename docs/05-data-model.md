@@ -1,4 +1,4 @@
-﻿# Modelo de Datos
+# Modelo de Datos
 
 ## profiles
 Perfil público de usuario vinculado a `auth.users`.
@@ -27,16 +27,16 @@ Campos relevantes actuales y previstos:
 | `comments` | `text` o `jsonb` | Comentarios añadidos desde el detalle de tarea. |
 | `pr_link` | `text` | Enlace opcional al PR informado desde `Completar tareas`. |
 | `test_cases` | `text` | Test cases opcionales para cierre de funcionalidades. Solo aplica funcionalmente a `Feature`. |
-| `imputed_date` | `date` | Fecha editable en la que se imputan las horas tras `PR Hecho`. |
+| `imputed_date` | `date` | Fecha editable en la que se imputan las horas tras `Need to Impute`. |
 | `created_at` | `timestamptz` | Fecha de creación. |
 | `updated_at` | `timestamptz` | Fecha de última actualización. |
 
 ### Reglas de `ticket_type`
 - `ticket_type` debe tener constraint de catálogo: `Bug`, `Feature`, `Task`.
 - El valor por defecto debe ser `Bug`.
-- Para `Bug` y `Feature`, se mantiene el flujo PR completo: `Not Finished`, `Need PR`, `PR Hecho`, `Imputed`, `Deployed`.
-- Para `Task`, solo se admiten `Not Finished` e `Imputed`.
-- `Task` no requiere `Need PR`, `PR Hecho` ni `Deployed`.
+- Para `Bug` y `Feature`, se mantiene el flujo PR completo: `Not Finished`, `Need PR`, `Need to Impute`, `Imputed`, `Deployed`.
+- Para `Task`, solo se admiten `Not Finished`, `Need to Impute` e `Imputed`.
+- `Task` no requiere `Need PR` ni `Deployed`.
 
 ### Reglas de `limit_date`
 - `limit_date` es nullable.
@@ -50,9 +50,9 @@ Campos relevantes actuales y previstos:
 - La opción preferida es `jsonb` si se necesita historial auditable; `text` es aceptable para una primera versión simple.
 
 ### Reglas de cierre de workflow
-- `pr_link` es opcional y puede permanecer `null` aunque una tarea pase de `Need PR` a `PR Hecho`.
+- `pr_link` es opcional y puede permanecer `null` aunque una tarea pase de `Need PR` a `Need to Impute`.
 - `test_cases` es opcional y solo debe solicitarse en UI cuando `ticket_type = Feature`.
-- `imputed_date` debe guardarse al pasar de `PR Hecho` a `Imputed`.
+- `imputed_date` debe guardarse al pasar de `Need to Impute` a `Imputed`.
 - El valor inicial recomendado para `imputed_date` es `finished_date`; si no existe, la implementación debe usar un fallback explícito y validado.
 - Para `Task`, `Imputed` es estado final y no existe transición a `Deployed`.
 - Para `Bug` y `Feature`, `Deployed` es el estado final del workflow posterior a `Done`.

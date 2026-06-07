@@ -43,7 +43,7 @@ function buildCompletionPatch(ticketType: string, prStatus: string, body: Record
   if (prStatus === "Need PR") {
     if (ticketType === "Task") return { error: "Invalid completion transition." } as const;
 
-    const patch: Record<string, unknown> = { pr_status: "PR Hecho" };
+    const patch: Record<string, unknown> = { pr_status: "Need to Impute" };
 
     if (body.pr_link !== undefined) {
       const prLink = normalizeOptionalText(body.pr_link);
@@ -60,7 +60,7 @@ function buildCompletionPatch(ticketType: string, prStatus: string, body: Record
     return { value: patch } as const;
   }
 
-  if (prStatus === "PR Hecho") {
+  if (prStatus === "Need to Impute") {
     const imputedDate = normalizeRequiredDate(body.imputed_date);
     if ("error" in imputedDate) return imputedDate;
     return { value: { pr_status: "Imputed", imputed_date: imputedDate.value } } as const;
