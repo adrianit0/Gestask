@@ -268,12 +268,16 @@ textarea { min-height: 90px; resize: vertical; }
 .task-comment-form textarea { min-height: 76px; }
 
 .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(130px, 1fr)); gap: 0.75rem; }
+.calendar-weekday { color: var(--muted); font-size: 0.78rem; font-weight: 900; letter-spacing: 0.08em; text-align: center; text-transform: uppercase; }
+.calendar-empty { min-height: 150px; border-radius: 18px; border: 1px dashed var(--line); background: rgba(255,255,255,0.38); }
 .calendar-day { position: relative; min-height: 150px; border-radius: 18px; padding: 0.8rem; border: 1px solid var(--line); display: grid; gap: 0.55rem; align-content: start; }
 .calendar-day.low { background: #ffcccc; }
 .calendar-day.good { background: #ccffcc; }
 .calendar-day.special { background: #f3f3f3; }
 .calendar-day.today { outline: 4px solid #ffffcc; background: #ffffcc; }
 .calendar-day-top { display: flex; justify-content: space-between; gap: 0.5rem; }
+.calendar-day-top strong { display: grid; gap: 0.15rem; }
+.calendar-day-top small { color: var(--muted); font-size: 0.72rem; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; }
 .points { font-weight: 900; }
 .tickets { display: flex; flex-wrap: wrap; gap: 0.3rem; }
 .tickets button { border: 1px solid rgba(0,0,0,0.08); background: rgba(255,255,255,0.72); border-radius: 999px; padding: 0.25rem 0.45rem; font-size: 0.8rem; }
@@ -290,6 +294,7 @@ textarea { min-height: 90px; resize: vertical; }
   .span-wide { grid-column: auto; }
   .bar-row { grid-template-columns: 1fr; }
   .calendar-grid { grid-template-columns: 1fr; }
+  .calendar-weekday, .calendar-empty { display: none; }
   .detail-grid { grid-template-columns: 1fr; }
   .span-3 { grid-column: span 1; }
 }
