@@ -5,6 +5,7 @@ import { AuthPage } from "./pages/AuthPage.js";
 import { BacklogPage } from "./pages/BacklogPage.js";
 import { CalendarPage } from "./pages/CalendarPage.js";
 import { DailyTasksPage } from "./pages/DailyTasksPage.js";
+import { DailySchedulePage } from "./pages/DailySchedulePage.js";
 import { ConfigurationPage } from "./pages/ConfigurationPage.js";
 import { PerformancePage } from "./pages/PerformancePage.js";
 import { TimeManagerPage } from "./pages/TimeManagerPage.js";
@@ -68,6 +69,9 @@ function currentPageHtml() {
   }
   if (state.page === "daily") {
     return DailyTasksPage({ date: state.dailyDate, report: state.dailyReport, tasks: state.dailyTasks, editable: state.dailyEditable, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask, sort: state.dailySort });
+  }
+  if (state.page === "dailySchedule") {
+    return DailySchedulePage({ report: state.dailyReport, tasks: state.dailyTasks, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, detailTask: state.detailTask });
   }
   if (state.page === "calendar") {
     return CalendarPage({ year: state.calendarYear, month: state.calendarMonth, days: state.calendarDays, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success });
@@ -133,6 +137,7 @@ function bindLayoutEvents() {
 function bindPageEvents() {
   if (state.page === "backlog") bindBacklogEvents();
   if (state.page === "daily") bindDailyEvents();
+  if (state.page === "dailySchedule") bindDailyScheduleEvents();
   if (state.page === "calendar") bindCalendarEvents();
   if (state.page === "time") bindTimeEvents();
   if (state.page === "configuration") bindConfigurationEvents();
@@ -294,6 +299,23 @@ function bindDailyEvents() {
 
   bindTaskTableEvents(state.dailyTasks, { readonly: !state.dailyEditable });
   bindTaskModalEvents();
+}
+
+function bindDailyScheduleEvents() {
+  document.querySelectorAll("[data-schedule-task]").forEach((row) => {
+    row.addEventListener("click", (event) => {
+      if (event.target.closest("a, button, select, input, textarea, label")) return;
+      state.detailTask = state.dailyTasks.find((task) => task.id === row.dataset.scheduleTask) ?? null;
+      render();
+    });
+  });
+
+  document.querySelectorAll("[data-close-detail-modal]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.detailTask = null;
+      render();
+    });
+  });
 }
 
 function bindTaskTableEvents(tasks, { readonly = false } = {}) {

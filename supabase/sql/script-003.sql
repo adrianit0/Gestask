@@ -150,7 +150,12 @@ values
   ('scoring_tipo_task', 'number', '1', false),
   ('scoring_estado_waiting', 'number', '-1', false),
   ('scoring_estado_need_fix', 'number', '2', false),
-  ('scoring_estado_warning', 'number', '1', false)
+  ('scoring_estado_warning', 'number', '1', false),
+  ('PE_diario', 'number', '12', false),
+  ('hora_inicio', 'string', '8:00', false),
+  ('hora_fin', 'string', '17:30', false),
+  ('hora_descanso', 'string', '14:00', false),
+  ('duracion_descanso', 'number', '60', false)
 on conflict (lower(name)) do update
 set
   parameter_type = excluded.parameter_type,
