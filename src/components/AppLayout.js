@@ -5,6 +5,7 @@
       <nav aria-label="Navegación principal">
         ${navButton("backlog", "Backlog", activePage, "backlog")}
         ${navButton("daily", "Tareas diarias", activePage, "daily")}
+        ${navButton("completion", "Completar tareas", activePage, "completion")}
         ${navButton("dailySchedule", "Horario diario", activePage, "dailySchedule")}
         ${navButton("calendar", "Calendario", activePage, "calendar")}
         ${navButton("time", "Gestor de tiempos", activePage, "time")}
@@ -56,6 +57,13 @@ function navIcon(icon) {
         <path d="M3.5 6l1 1l2-2" />
         <path d="M3.5 12l1 1l2-2" />
         <path d="M3.5 18l1 1l2-2" />
+      </svg>
+    `,
+    completion: `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M4 12.5l4 4L20 5" />
+        <path d="M5 20h14" />
+        <path d="M5 4h9" />
       </svg>
     `,
     dailySchedule: `

@@ -136,7 +136,7 @@
   - **Dependencias**: FE-001.
 
 - **QA-001**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Testing manual
   - **Descripción**: Verificar flujo completo.
   - **Archivos**: Navegador + Supabase
@@ -258,7 +258,7 @@
   - **Dependencias**: API-007, API-008.
 
 - **QA-002**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Testing manual
   - **Descripción**: Verificar flujo completo de tipos, fecha límite, comentarios, scoring y ordenación.
   - **Archivos**: Navegador + Supabase, `docs/10-qa-002.md`
@@ -275,7 +275,7 @@
   - **Dependencias**: DOC-005.
 
 - **SQL-006**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: SQL
   - **Descripción**: Añadir campos de cierre de workflow a `tasks`.
   - **Archivos**: `supabase/sql/script-004.sql` o migración equivalente.
@@ -283,7 +283,7 @@
   - **Dependencias**: DOC-006, SQL-003, SQL-004.
 
 - **SQL-007**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: SQL
   - **Descripción**: Añadir soporte de consulta eficiente para `Completar tareas`.
   - **Archivos**: `supabase/sql/script-004.sql` o migración equivalente.
@@ -291,7 +291,7 @@
   - **Dependencias**: SQL-006.
 
 - **API-009**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Edge Functions
   - **Descripción**: Crear endpoint `tasks-completion-list`.
   - **Archivos**: `supabase/functions/tasks-completion-list/index.ts`, código compartido si aplica.
@@ -299,7 +299,7 @@
   - **Dependencias**: SQL-006, SQL-007.
 
 - **API-010**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Edge Functions
   - **Descripción**: Crear endpoint `tasks-completion-resolve`.
   - **Archivos**: `supabase/functions/tasks-completion-resolve/index.ts`, código compartido si aplica.
@@ -307,7 +307,7 @@
   - **Dependencias**: API-009.
 
 - **FE-011**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Frontend
   - **Descripción**: Añadir navegación y página `Completar tareas`.
   - **Archivos**: `src/components/AppLayout.js`, `src/main.js`, `src/pages/CompletionTasksPage.js`, `src/services/taskCompletionService.js`
@@ -315,7 +315,7 @@
   - **Dependencias**: API-009.
 
 - **FE-012**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Frontend
   - **Descripción**: Implementar popups de resolución de `Completar tareas`.
   - **Archivos**: `src/pages/CompletionTasksPage.js`, `src/components` si se extraen modales, `src/styles/global.css`, `src/services/taskCompletionService.js`
@@ -323,7 +323,7 @@
   - **Dependencias**: FE-011, API-010.
 
 - **QA-003**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Testing manual
   - **Descripción**: Verificar flujo completo de `Completar tareas`.
   - **Archivos**: Navegador + Supabase, documentación QA futura.

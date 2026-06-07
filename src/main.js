@@ -4,6 +4,7 @@ import { assertConfig } from "./config/env.js";
 import { AuthPage } from "./pages/AuthPage.js";
 import { BacklogPage } from "./pages/BacklogPage.js";
 import { CalendarPage } from "./pages/CalendarPage.js";
+import { CompletionTasksPage } from "./pages/CompletionTasksPage.js";
 import { DailyTasksPage } from "./pages/DailyTasksPage.js";
 import { DailySchedulePage } from "./pages/DailySchedulePage.js";
 import { ConfigurationPage } from "./pages/ConfigurationPage.js";
@@ -15,6 +16,7 @@ import { createConfiguration, listConfigurations, updateConfigurationProfile } f
 import { createDailyReport, getDailyReport } from "./services/dailyReportService.js";
 import { isAuthenticated } from "./services/sessionService.js";
 import { createTask, listTasks, updateTask } from "./services/taskService.js";
+import { listCompletionTasks, resolveCompletionTask } from "./services/taskCompletionService.js";
 import { deleteTimeEntry, listTimeEntries, saveTimeEntry } from "./services/timeEntryService.js";
 import { getMinutesPerEffortPoint } from "./utils/effortTime.js";
 import { todayIso } from "./utils/format.js";
@@ -35,6 +37,8 @@ const state = {
   dailyReport: null,
   dailyTasks: [],
   dailyEditable: false,
+  completionTasks: [],
+  completionModalTask: null,
   calendarYear: new Date().getFullYear(),
   calendarMonth: new Date().getMonth() + 1,
   calendarDays: [],
@@ -69,6 +73,9 @@ function currentPageHtml() {
   }
   if (state.page === "daily") {
     return DailyTasksPage({ date: state.dailyDate, report: state.dailyReport, tasks: state.dailyTasks, editable: state.dailyEditable, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask, sort: state.dailySort });
+  }
+  if (state.page === "completion") {
+    return CompletionTasksPage({ tasks: state.completionTasks, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, modalTask: state.completionModalTask });
   }
   if (state.page === "dailySchedule") {
     return DailySchedulePage({ report: state.dailyReport, tasks: state.dailyTasks, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, detailTask: state.detailTask });
@@ -110,11 +117,13 @@ function bindAuthEvents() {
 
 function bindLayoutEvents() {
   document.querySelectorAll("[data-page]").forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       state.page = button.dataset.page;
       state.detailTask = null;
       state.modalTask = undefined;
+      state.completionModalTask = null;
       clearMessages();
+      if (state.page === "completion") await loadCompletionTasks({ preserveMessages: true });
       render();
     });
   });
@@ -128,7 +137,7 @@ function bindLayoutEvents() {
 
   document.querySelector("[data-action='logout']")?.addEventListener("click", () => {
     logout();
-    Object.assign(state, { page: "backlog", tasks: [], dailyReport: null, calendarDays: [] });
+    Object.assign(state, { page: "backlog", tasks: [], dailyReport: null, dailyTasks: [], completionTasks: [], completionModalTask: null, calendarDays: [] });
     clearMessages();
     render();
   });
@@ -137,6 +146,7 @@ function bindLayoutEvents() {
 function bindPageEvents() {
   if (state.page === "backlog") bindBacklogEvents();
   if (state.page === "daily") bindDailyEvents();
+  if (state.page === "completion") bindCompletionEvents();
   if (state.page === "dailySchedule") bindDailyScheduleEvents();
   if (state.page === "calendar") bindCalendarEvents();
   if (state.page === "time") bindTimeEvents();
@@ -211,6 +221,38 @@ function bindBacklogEvents() {
 function bindPerformanceEvents() {
   document.querySelector("[data-performance-show-all]")?.addEventListener("change", (event) => {
     state.performanceShowAll = event.target.checked;
+    render();
+  });
+}
+
+function bindCompletionEvents() {
+  document.querySelectorAll("[data-open-completion-resolve]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.completionModalTask = state.completionTasks.find((task) => task.id === button.dataset.openCompletionResolve) ?? null;
+      clearMessages();
+      render();
+    });
+  });
+
+  document.querySelectorAll("[data-close-completion-modal]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.completionModalTask = null;
+      render();
+    });
+  });
+
+  document.querySelector("#completion-resolve-form")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    clearMessages();
+    const payload = normalizeCompletionResolvePayload(formToObject(event.target), event.target.dataset.completionStatus);
+    try {
+      await resolveCompletionTask(payload);
+      state.completionModalTask = null;
+      state.success = "Tarea resuelta correctamente.";
+      await loadAllData({ preserveMessages: true });
+    } catch (error) {
+      state.error = error.message;
+    }
     render();
   });
 }
@@ -484,11 +526,12 @@ function refreshSelectedTask(taskId) {
 
 async function loadAllData({ preserveMessages = false } = {}) {
   await withLoading(async () => {
-    const [tasksResult, dailyResult, calendarResult, configurationsResult] = await Promise.allSettled([
+    const [tasksResult, dailyResult, calendarResult, configurationsResult, completionResult] = await Promise.allSettled([
       listTasks(state.filters),
       getDailyReport(state.dailyDate, state.dailySort),
       getCalendarMonth(state.calendarYear, state.calendarMonth),
       listConfigurations(),
+      listCompletionTasks(),
     ]);
 
     state.timeEntries = listTimeEntries();
@@ -521,6 +564,12 @@ async function loadAllData({ preserveMessages = false } = {}) {
       errors.push(configurationsResult.reason.message);
     }
 
+    if (completionResult.status === "fulfilled") {
+      state.completionTasks = completionResult.value.tasks ?? [];
+    } else {
+      errors.push(completionResult.reason.message);
+    }
+
     if (errors.length) {
       state.success = "";
       state.error = errors.join(" ");
@@ -539,6 +588,13 @@ async function loadBacklogTasks({ preserveMessages = false } = {}) {
   await withLoading(async () => {
     const data = await listTasks(state.filters);
     state.tasks = data.tasks ?? [];
+  }, { preserveMessages });
+}
+
+async function loadCompletionTasks({ preserveMessages = false } = {}) {
+  await withLoading(async () => {
+    const data = await listCompletionTasks();
+    state.completionTasks = data.tasks ?? [];
   }, { preserveMessages });
 }
 
@@ -607,6 +663,18 @@ function normalizeTaskPayload(payload) {
   if (!normalized.more_info) normalized.more_info = null;
   normalized.effort_points = Number(normalized.effort_points || 0);
   normalized.order_points = normalized.order_points === "" ? null : Number(normalized.order_points);
+  return normalized;
+}
+
+function normalizeCompletionResolvePayload(payload, status) {
+  const normalized = { id: payload.id };
+  if (status === "Need PR") {
+    normalized.pr_link = payload.pr_link || "";
+    if (payload.test_cases !== undefined) normalized.test_cases = payload.test_cases || "";
+  }
+  if (status === "PR Hecho") {
+    normalized.imputed_date = payload.imputed_date;
+  }
   return normalized;
 }
 

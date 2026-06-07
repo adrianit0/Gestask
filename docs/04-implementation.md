@@ -27,7 +27,7 @@
 - `supabase/sql/script-001.sql`: tablas, constraints, RLS, triggers de actualización y sincronización con parte diario.
 - `supabase/sql/script-002.sql`: modelo de configuración.
 - `supabase/sql/script-003.sql`: columnas `limit_date`, `ticket_type` y `comments` en `tasks`, con defaults, constraints básicos, reglas PR específicas para `ticket_type = Task`, índices de filtro/ordenación y parámetros base `scoring_*`.
-- Pendiente SQL futuro: columnas `pr_link`, `test_cases` e `imputed_date` para soportar `Completar tareas`.
+- `supabase/sql/script-004.sql`: columnas opcionales `pr_link`, `test_cases` e `imputed_date`, más índices de consulta para soportar `Completar tareas`.
 
 ## Edge Functions creadas
 - `tasks-list`.
@@ -44,7 +44,8 @@
 - `tasks-update` actualizado para `ticket_type`, `limit_date`, comentarios y reglas PR por tipo.
 - `tasks-list` y `daily-report-get` actualizados para devolver `scoring` calculado.
 - `tasks-list` y `daily-report-get` actualizados para validar y aplicar `sort_by` y `sort_direction`.
-- Pendiente Edge Functions futuras: `tasks-completion-list` y `tasks-completion-resolve`.
+- `tasks-completion-list` creado para listar tareas `Done` pendientes de cierre en `Completar tareas`.
+- `tasks-completion-resolve` creado para avanzar transiciones de cierre `Need PR`, `PR Hecho` e `Imputed`.
 
 ## Frontend añadido
 - `src/pages/TimeManagerPage.js`: alta, edición, borrado e historial de registros horarios.
@@ -55,10 +56,10 @@
 - `src/components/TaskTable.js` y `src/styles/global.css`: detalle de tarea compacto con 3 columnas en escritorio.
 - `src/components/TaskTable.js`, `src/main.js` y `src/styles/global.css`: comentarios persistidos desde el detalle de tarea.
 - `src/pages/BacklogPage.js`, `src/pages/DailyTasksPage.js`, `src/components/TaskTable.js` y servicios de tareas/partes: scoring visible y ordenación avanzada en UI.
+- `src/pages/CompletionTasksPage.js`, `src/services/taskCompletionService.js`, `src/components/AppLayout.js`, `src/main.js` y `src/styles/global.css`: navegación, listado y popups de resolución de `Completar tareas`.
 - `src/services/timeEntryService.js`: persistencia local de registros horarios en `localStorage`.
 - `supabase/functions/_shared/configuration.ts`: validación de configuración y cálculo compartido de scoring.
 - `supabase/functions/_shared/taskSorting.ts`: validación y ordenación estable de tareas.
-- Pendiente frontend futuro: página `Completar tareas`, navegación asociada y popups de resolución.
 
 ## Decisiones técnicas
 - SPA con Vite y JavaScript sin framework para mantener una primera versión simple.
