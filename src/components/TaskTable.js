@@ -22,37 +22,53 @@ function taskTable(tasks, { readonly = false, mode = "full" } = {}) {
 
 function header(mode) {
   if (mode === "backlog") {
-    return `<tr><th>Ticket</th><th>Tipo</th><th>Asignación</th><th>Límite</th><th class="title-column">Título</th><th>Scoring</th><th>Acciones</th></tr>`;
+    return `<tr><th>Ticket</th><th>Tipo</th><th>Asignación</th><th>Límite</th><th>Scoring</th><th class="actions-column">Acciones</th></tr>`;
   }
   if (mode === "daily") {
-    return `<tr><th>Ticket</th><th>Tipo</th><th>Asignación</th><th>Límite</th><th class="title-column">Título</th><th>Scoring</th><th>Estado</th><th>PR</th><th>Acciones</th></tr>`;
+    return `<tr><th>Ticket</th><th>Tipo</th><th>Asignación</th><th>Límite</th><th>Scoring</th><th class="status-column">Estado</th><th class="pr-column">PR</th></tr>`;
   }
-  return `<tr><th>Ticket</th><th>Tipo</th><th>Asignación</th><th>Límite</th><th>Finalización</th><th class="title-column">Título</th><th>Scoring</th><th>Esfuerzo</th><th>Orden</th><th>Prioridad</th><th>Estado</th><th>PR</th><th>Más info</th><th>Acciones</th></tr>`;
+  return `<tr><th>Ticket</th><th>Tipo</th><th>Asignación</th><th>Límite</th><th>Finalización</th><th>Scoring</th><th>Esfuerzo</th><th>Orden</th><th>Prioridad</th><th class="status-column">Estado</th><th class="pr-column">PR</th></tr>`;
 }
 
 function row(task, { readonly, mode, compact }) {
   const background = task.task_status === "To do" ? TASK_COLORS["To do"][task.priority] : TASK_COLORS[task.task_status];
   const border = task.task_status === "Done" ? PR_BORDER_COLORS[task.pr_status] : null;
+  const visualStyle = `--task-bg:${background}; --task-border:${border || "transparent"};`;
+  const colspan = mode === "backlog" ? 6 : mode === "daily" ? 7 : 11;
+  const clickableAttrs = compact ? `data-view-task="${task.id}"` : "";
   return `
-    <tr class="${compact ? "clickable-row" : ""}" ${compact ? `data-view-task="${task.id}"` : ""} style="background:${background}; ${border ? `box-shadow: inset 4px 0 0 ${border};` : ""}">
+    <tr class="task-main-row ${compact ? "clickable-row" : ""}" ${clickableAttrs} style="${visualStyle}">
       <td>${ticketCell(task.ticket)}</td>
       <td>${escapeHtml(task.ticket_type || "Bug")}</td>
       <td>${escapeHtml(task.assigned_date)}</td>
       <td>${escapeHtml(task.limit_date || "-")}</td>
       ${mode === "full" ? `<td>${escapeHtml(task.finished_date || "-")}</td>` : ""}
-      <td class="task-title-cell">${escapeHtml(task.title)}</td>
       <td>${escapeHtml(task.scoring ?? "-")}</td>
       ${mode === "full" ? `
         <td>${escapeHtml(task.effort_points)}</td>
         <td>${escapeHtml(task.order_points ?? "-")}</td>
         <td>${escapeHtml(task.priority)}</td>
-        <td>${statusSelect(task, readonly)}</td>
-        <td>${prSelect(task, readonly)}</td>
-        <td>${escapeHtml(task.more_info || "")}</td>
+        <td class="status-cell">${statusSelect(task, readonly)}</td>
+        <td class="pr-cell">${prSelect(task, readonly)}</td>
       ` : ""}
-      ${mode === "daily" ? `<td>${statusSelect(task, readonly)}</td><td>${prSelect(task, readonly)}</td>` : ""}
-      <td><button class="icon-button edit-icon-button" data-edit-task="${task.id}" ${readonly ? "disabled" : ""} aria-label="Editar tarea">${editIcon()}</button></td>
+      ${mode === "daily" ? `<td class="status-cell">${statusSelect(task, readonly)}</td><td class="pr-cell">${prSelect(task, readonly)}</td>` : ""}
+      ${mode === "backlog" ? `<td class="actions-cell">${taskActions(task, readonly)}</td>` : ""}
     </tr>
+    <tr class="task-title-row ${compact ? "clickable-row" : ""}" ${clickableAttrs} style="${visualStyle}">
+      <td class="task-title-cell" colspan="${colspan}">
+        <div>${escapeHtml(task.title)}</div>
+        ${task.more_info ? `<div class="task-more-info">${escapeHtml(task.more_info)}</div>` : ""}
+      </td>
+    </tr>
+  `;
+}
+
+function taskActions(task, readonly) {
+  return `
+    <div class="task-actions">
+      <button class="icon-button edit-icon-button" data-edit-task="${task.id}" ${readonly ? "disabled" : ""} aria-label="Editar tarea">${editIcon()}</button>
+      <button class="icon-button edit-icon-button" data-clone-task="${task.id}" ${readonly ? "disabled" : ""} aria-label="Clonar tarea">${cloneIcon()}</button>
+    </div>
   `;
 }
 
@@ -86,7 +102,14 @@ function editIcon() {
     </svg>
   `;
 }
-
+function cloneIcon() {
+  return `
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <rect x="8" y="8" width="11" height="11" rx="2"></rect>
+      <path d="M5 15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path>
+    </svg>
+  `;
+}
 export function TaskDetailModal(task, { readonly = false } = {}) {
   if (!task) return "";
   return `
@@ -173,7 +196,7 @@ function formatCommentDate(value) {
 }
 
 export function TaskModal(task = null) {
-  const isEdit = Boolean(task);
+  const isEdit = Boolean(task?.id);
   return `
     <div class="modal-backdrop" role="presentation">
       <section class="modal" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">

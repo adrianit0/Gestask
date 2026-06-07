@@ -151,6 +151,15 @@ function bindBacklogEvents() {
     });
   });
 
+  document.querySelectorAll("[data-clone-task]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const task = state.tasks.find((item) => item.id === button.dataset.cloneTask);
+      state.modalTask = task ? cloneTaskDraft(task) : null;
+      state.detailTask = null;
+      render();
+    });
+  });
+
   bindTaskTableEvents(state.tasks);
 
   document.querySelectorAll("[data-filter]").forEach((input) => {
@@ -170,6 +179,11 @@ function bindBacklogEvents() {
   });
 
   bindTaskModalEvents();
+}
+
+function cloneTaskDraft(task) {
+  const { id, created_at, updated_at, scoring, comments, ...draft } = task;
+  return { ...draft, finished_date: "" };
 }
 
 function bindTaskModalEvents() {
