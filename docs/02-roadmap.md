@@ -36,3 +36,15 @@
 - Valores por usuario en `gestask_configuration_profile`.
 - Lectura con fallback a `default_value`.
 - Soporte de parámetros fijos de solo lectura.
+
+## Iteración 7
+- Añadir `limit_date` y `ticket_type` al modelo de tareas.
+- Adaptar reglas de estado PR para `ticket_type = Task`.
+- Ampliar formularios, tablas y detalle de tarea.
+- Añadir comentarios persistidos dentro de la tarea.
+
+## Iteración 8
+- Sistema de scoring configurable por multiplicadores `scoring_*`.
+- Exponer scoring calculado en API y UI.
+- Ordenación avanzada por orden, scoring, fechas, prioridad, estado y tipo.
+- Validación manual y casos límite del nuevo ordenamiento.

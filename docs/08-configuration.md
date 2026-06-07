@@ -1,11 +1,11 @@
-# Configuración
+﻿# Configuración
 
 ## Objetivo
-Añadir una nueva pestaña protegida llamada `Configuración`, accesible desde la navegación principal mediante un icono de rueda dentada.
+Añadir una pestaña protegida llamada `Configuración`, accesible desde la navegación principal mediante un icono de rueda dentada.
 
-La pestaña permitirá al usuario consultar y modificar sus parámetros de configuración, y también crear nuevos parámetros disponibles para configuración.
+La pestaña permite al usuario consultar y modificar sus parámetros de configuración, y también crear nuevos parámetros disponibles para configuración.
 
-Esta documentación define el comportamiento esperado. No implica implementación todavía.
+Esta documentación define el comportamiento esperado y las reglas que deben seguir los parámetros usados por el sistema de scoring.
 
 ## Navegación
 - Nueva pestaña: `Configuración`.
@@ -44,6 +44,27 @@ Valor personalizado de un parámetro para un usuario.
 - `datetime`
 
 El valor almacenado en `default_value` y `value` debe poder validarse y convertirse al tipo indicado por `parameter_type`.
+
+## Parámetros de scoring
+Todo parámetro usado por el sistema de scoring debe empezar por `scoring_`.
+
+Ejemplos:
+- `scoring_dias_pasadas = 0.05`
+- `scoring_prioridad = 5`
+- `scoring_puntos_esfuerzo = 1`
+- `scoring_orden = 1`
+- `scoring_dias_limites = 5`
+- `scoring_tipo_bug = 1`
+- `scoring_tipo_feature = 1`
+- `scoring_tipo_task = 1`
+- `scoring_estado_waiting = -1`
+- `scoring_estado_need_fix = 2`
+
+Reglas:
+- Los parámetros `scoring_*` deben usar `parameter_type = number` salvo que se documente otra necesidad.
+- Si un parámetro de scoring no existe, el cálculo debe usar un valor por defecto definido en `docs/09-scoring-and-ordering.md`.
+- Los usuarios pueden personalizar multiplicadores si el parámetro no está marcado como fijo.
+- Los parámetros fijos permiten bloquear multiplicadores globales.
 
 ## Recuperación de configuración de usuario
 Al recuperar la configuración de un usuario, el sistema debe partir de todos los registros de `gestask_configuration`.
@@ -115,3 +136,4 @@ Validaciones mínimas:
 - Parámetro fijo con perfil existente: devolver valor por defecto e impedir edición.
 - Valor incompatible con `parameter_type`: rechazar guardado.
 - Cambio de valor personalizado de vuelta al valor por defecto: se puede eliminar el perfil o mantenerlo con el mismo valor, pero la opción preferida es eliminarlo para conservar la regla de no persistir defaults.
+- Parámetro `scoring_*` con valor no numérico: rechazar guardado.
