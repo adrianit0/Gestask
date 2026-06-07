@@ -1,5 +1,6 @@
 import { TaskDetailModal } from "../components/TaskTable.js";
 import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
+import { PR_BORDER_COLORS, TASK_COLORS } from "../utils/constants.js";
 import { buildDailySchedule, formatScheduleTime } from "../utils/dailySchedule.js";
 import { escapeHtml } from "../utils/format.js";
 
@@ -22,7 +23,7 @@ export function DailySchedulePage({ report = null, tasks = [], configurations = 
     <section class="panel daily-schedule-panel">
       ${loading ? LoadingState() : report ? DailySchedule(schedule) : EmptyState("No existe parte diario para mostrar el horario.")}
     </section>
-    ${detailTask ? TaskDetailModal(detailTask, { readonly: true }) : ""}
+    ${detailTask ? TaskDetailModal(detailTask, { readonly: false }) : ""}
   `;
 }
 
@@ -54,9 +55,12 @@ function ScheduleItem(item) {
 
   const task = item.task;
   const ticket = task.ticket ? `<a href="https://jira.knowmadmood.com/browse/${encodeURIComponent(task.ticket)}" target="_blank" rel="noreferrer">${escapeHtml(task.ticket)}</a>` : "-";
+  const background = task.task_status === "To do" ? TASK_COLORS["To do"][task.priority] : TASK_COLORS[task.task_status];
+  const border = task.task_status === "Done" ? PR_BORDER_COLORS[task.pr_status] : null;
+  const visualStyle = `--task-bg:${background || "#fff4e7"}; --task-border:${border || "transparent"};`;
 
   return `
-    <article class="schedule-item schedule-task" data-schedule-task="${escapeHtml(task.id)}">
+    <article class="schedule-item schedule-task" data-schedule-task="${escapeHtml(task.id)}" style="${visualStyle}">
       <div class="schedule-time">
         <strong>${escapeHtml(formatScheduleTime(item.startMinutes))}</strong>
         <span>${escapeHtml(formatScheduleTime(item.endMinutes))}</span>

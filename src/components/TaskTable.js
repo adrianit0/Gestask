@@ -22,10 +22,10 @@ function taskTable(tasks, { readonly = false, mode = "full" } = {}) {
 
 function header(mode) {
   if (mode === "backlog") {
-    return `<tr><th>Ticket</th><th>Tipo</th><th>Asignación</th><th>Límite</th><th>Scoring</th><th class="actions-column">Acciones</th></tr>`;
+    return `<tr><th>Ticket</th><th>Tipo</th><th>Asignación</th><th>Límite</th><th>Scoring</th><th>Puntos de Orden</th><th class="actions-column">Acciones</th></tr>`;
   }
   if (mode === "daily") {
-    return `<tr><th>Ticket</th><th>Tipo</th><th>Asignación</th><th>Límite</th><th>Scoring</th><th class="status-column">Estado</th><th class="pr-column">PR</th></tr>`;
+    return `<tr><th>Ticket</th><th>Tipo</th><th>Asignación</th><th>Límite</th><th>Scoring</th><th>Puntos de Orden</th><th class="status-column">Estado</th><th class="pr-column">PR</th></tr>`;
   }
   return `<tr><th>Ticket</th><th>Tipo</th><th>Asignación</th><th>Límite</th><th>Finalización</th><th>Scoring</th><th>Esfuerzo</th><th>Orden</th><th>Prioridad</th><th class="status-column">Estado</th><th class="pr-column">PR</th></tr>`;
 }
@@ -34,7 +34,7 @@ function row(task, { readonly, mode, compact }) {
   const background = task.task_status === "To do" ? TASK_COLORS["To do"][task.priority] : TASK_COLORS[task.task_status];
   const border = task.task_status === "Done" ? PR_BORDER_COLORS[task.pr_status] : null;
   const visualStyle = `--task-bg:${background}; --task-border:${border || "transparent"};`;
-  const colspan = mode === "backlog" ? 6 : mode === "daily" ? 7 : 11;
+  const colspan = mode === "backlog" ? 7 : mode === "daily" ? 8 : 11;
   const clickableAttrs = compact ? `data-view-task="${task.id}"` : "";
   return `
     <tr class="task-main-row ${compact ? "clickable-row" : ""}" ${clickableAttrs} style="${visualStyle}">
@@ -44,6 +44,7 @@ function row(task, { readonly, mode, compact }) {
       <td>${escapeHtml(task.limit_date || "-")}</td>
       ${mode === "full" ? `<td>${escapeHtml(task.finished_date || "-")}</td>` : ""}
       <td>${escapeHtml(task.scoring ?? "-")}</td>
+      ${mode !== "full" ? `<td>${escapeHtml(task.order_points ?? "-")}</td>` : ""}
       ${mode === "full" ? `
         <td>${escapeHtml(task.effort_points)}</td>
         <td>${escapeHtml(task.order_points ?? "-")}</td>
@@ -204,21 +205,21 @@ export function TaskModal(task = null) {
           <h2 id="task-modal-title">${isEdit ? "Editar tarea" : "Crear tarea"}</h2>
           <button class="icon-button" data-close-modal aria-label="Cerrar">X</button>
         </div>
-        <form id="task-form" class="form-grid">
+        <form id="task-form" class="form-grid task-form-grid">
           <input type="hidden" name="id" value="${escapeHtml(task?.id || "")}" />
           <label>Ticket<input name="ticket" value="${escapeHtml(task?.ticket || "")}" /></label>
           <label>Tipo<select name="ticket_type">${TICKET_TYPES.map((type) => `<option ${((task?.ticket_type || "Bug") === type) ? "selected" : ""}>${type}</option>`).join("")}</select></label>
-          <label>Título<input name="title" required value="${escapeHtml(task?.title || "")}" /></label>
+          <label>Prioridad<select name="priority">${PRIORITIES.map((priority) => `<option ${((task?.priority || "Menor") === priority) ? "selected" : ""}>${priority}</option>`).join("")}</select></label>
+          <label class="span-3">Titulo<input name="title" required value="${escapeHtml(task?.title || "")}" /></label>
           <label>Fecha asignación<input name="assigned_date" type="date" required value="${escapeHtml(task?.assigned_date || new Date().toISOString().slice(0, 10))}" /></label>
           <label>Fecha límite<input name="limit_date" type="date" value="${escapeHtml(task?.limit_date || "")}" /></label>
           <label>Fecha finalización<input name="finished_date" type="date" value="${escapeHtml(task?.finished_date || "")}" ${!isEdit || task?.task_status !== "Done" ? "disabled" : ""} /></label>
           <label>Punto de esfuerzo<input name="effort_points" type="number" min="0" value="${escapeHtml(task?.effort_points ?? 3)}" /></label>
           <label>Punto de orden<input name="order_points" type="number" value="${escapeHtml(task?.order_points ?? "")}" /></label>
-          <label>Prioridad<select name="priority">${PRIORITIES.map((priority) => `<option ${((task?.priority || "Menor") === priority) ? "selected" : ""}>${priority}</option>`).join("")}</select></label>
           ${isEdit ? `<label>Estado tarea<select name="task_status">${TASK_STATUSES.map((status) => `<option ${(task?.task_status === status) ? "selected" : ""}>${status}</option>`).join("")}</select></label>` : ""}
           ${isEdit ? `<label>Estado PR<select name="pr_status" ${task?.task_status !== "Done" ? "disabled" : ""}>${prStatusOptions(task)}</select></label>` : ""}
-          <label class="span-2">Más info<textarea name="more_info">${escapeHtml(task?.more_info || "")}</textarea></label>
-          <div class="modal-actions span-2">
+          <label class="span-3">Más info<textarea name="more_info">${escapeHtml(task?.more_info || "")}</textarea></label>
+          <div class="modal-actions span-3">
             <button type="button" class="secondary" data-close-modal>Cancelar</button>
             <button type="submit" class="primary">Guardar</button>
           </div>
@@ -227,3 +228,6 @@ export function TaskModal(task = null) {
     </div>
   `;
 }
+
+
+

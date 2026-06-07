@@ -310,12 +310,7 @@ function bindDailyScheduleEvents() {
     });
   });
 
-  document.querySelectorAll("[data-close-detail-modal]").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.detailTask = null;
-      render();
-    });
-  });
+  bindTaskTableEvents(state.dailyTasks);
 }
 
 function bindTaskTableEvents(tasks, { readonly = false } = {}) {
