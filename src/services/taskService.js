@@ -1,7 +1,8 @@
 ﻿import { callFunction } from "./apiClient.js";
 
 export function listTasks(filters = {}) {
-  const query = Object.fromEntries(Object.entries(filters).filter(([, value]) => value));
+  const allowedQueryKeys = new Set(["search", "priority", "sort_by", "sort_direction"]);
+  const query = Object.fromEntries(Object.entries(filters).filter(([key, value]) => allowedQueryKeys.has(key) && value));
   return callFunction("tasks-list", { query });
 }
 

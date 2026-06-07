@@ -41,6 +41,7 @@ function CalendarDayCard(day, minutesPerEffortPoint) {
   const completedPoints = Number(day.completed_points || 0);
   const completedHours = formatHoursFromEffortPoints(completedPoints, minutesPerEffortPoint);
   const weekdayName = getWeekdayName(day.date);
+  const statusOptions = day.status === "Finde" ? ["Finde", ...DAY_STATUSES] : DAY_STATUSES;
   return `
     <article class="calendar-day ${className}">
       <div class="calendar-day-top">
@@ -49,7 +50,7 @@ function CalendarDayCard(day, minutesPerEffortPoint) {
       </div>
       <div class="points">${completedPoints} pts / ${completedHours}</div>
       <select data-day-status="${day.date}" ${day.status === "Finde" ? "disabled" : ""}>
-        ${DAY_STATUSES.map((status) => `<option ${day.status === status ? "selected" : ""}>${status}</option>`).join("")}
+        ${statusOptions.map((status) => `<option ${day.status === status ? "selected" : ""}>${status}</option>`).join("")}
       </select>
       <div class="tickets">
         ${(day.completed_tasks ?? []).map((task) => `<button data-calendar-task="${task.id}" title="${escapeHtml(task.title)}">${escapeHtml(truncate(task.ticket || task.title))}</button>`).join("")}

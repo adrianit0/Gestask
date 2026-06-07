@@ -3,11 +3,14 @@ import { PRIORITIES, TASK_STATUSES } from "../utils/constants.js";
 import { formatHoursFromEffortPoints } from "../utils/effortTime.js";
 import { escapeHtml } from "../utils/format.js";
 
-export function PerformancePage({ tasks = [], calendarDays = [], minutesPerEffortPoint = 60, loading = false, error = "", success = "" } = {}) {
-  const doneTasks = tasks.filter((task) => task.task_status === "Done");
+const MONTH_SCOPED_FINAL_STATUSES = new Set(["Done", "Undone", "Unfinished"]);
+
+export function PerformancePage({ tasks = [], calendarDays = [], minutesPerEffortPoint = 60, showAll = false, loading = false, error = "", success = "" } = {}) {
+  const visibleTasks = showAll ? tasks : tasks.filter((task) => !MONTH_SCOPED_FINAL_STATUSES.has(task.task_status) || isFinishedInCurrentMonth(task));
+  const doneTasks = visibleTasks.filter((task) => task.task_status === "Done");
   const completedPoints = doneTasks.reduce((sum, task) => sum + Number(task.effort_points || 0), 0);
   const completedHours = formatHoursFromEffortPoints(completedPoints, minutesPerEffortPoint);
-  const openTasks = tasks.filter((task) => task.task_status !== "Done").length;
+  const openTasks = visibleTasks.filter((task) => task.task_status !== "Done").length;
   const deployableTasks = doneTasks.filter((task) => ["Imputed", "Deployed"].includes(task.pr_status)).length;
 
   return `
@@ -20,6 +23,9 @@ export function PerformancePage({ tasks = [], calendarDays = [], minutesPerEffor
     ${ErrorMessage(error)}
     ${SuccessMessage(success)}
     ${loading ? LoadingState() : `
+      <section class="panel filters performance-filters">
+        <label class="checkbox-label"><input data-performance-show-all type="checkbox" ${showAll ? "checked" : ""} /> Mostrar todo</label>
+      </section>
       <section class="metric-grid performance-metrics">
         ${Metric("Tareas abiertas", openTasks)}
         ${Metric("Tareas terminadas", doneTasks.length)}
@@ -30,11 +36,11 @@ export function PerformancePage({ tasks = [], calendarDays = [], minutesPerEffor
       <section class="charts-grid">
         <article class="panel chart-panel">
           <h2>Estados de tarea</h2>
-          ${BarList(countBy(tasks, "task_status"), TASK_STATUSES)}
+          ${BarList(countBy(visibleTasks, "task_status"), TASK_STATUSES)}
         </article>
         <article class="panel chart-panel">
           <h2>Prioridad</h2>
-          ${BarList(countBy(tasks, "priority"), PRIORITIES)}
+          ${BarList(countBy(visibleTasks, "priority"), PRIORITIES)}
         </article>
         <article class="panel chart-panel span-wide">
           <h2>Puntos completados este mes</h2>
@@ -43,6 +49,20 @@ export function PerformancePage({ tasks = [], calendarDays = [], minutesPerEffor
       </section>
     `}
   `;
+}
+
+function isFinishedInCurrentMonth(task) {
+  const date = parseTaskFinishDate(task);
+  if (!date) return false;
+  const now = new Date();
+  return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+}
+
+function parseTaskFinishDate(task) {
+  const value = task.finished_date || task.updated_at;
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 function Metric(label, value) {

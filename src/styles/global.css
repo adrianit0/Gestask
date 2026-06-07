@@ -84,6 +84,45 @@ h1 { font-size: clamp(2rem, 5vw, 3.8rem); line-height: 0.95; letter-spacing: -0.
 .placeholder { min-height: 280px; display: grid; align-content: center; }
 .filters { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; align-items: end; }
 .filters label { display: grid; gap: 0.3rem; }
+.backlog-filters > label:not(.checkbox-label) { min-width: 210px; flex: 1 1 210px; font-weight: 800; }
+.backlog-history-toggle { flex: 1 1 100%; }
+.status-filter-grid {
+  flex: 1 1 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+.status-filter-grid legend {
+  padding: 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.status-filter-option {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.2rem 0.45rem !important;
+  align-items: center;
+  padding: 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fffaf4;
+}
+.status-filter-option span {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+.status-filter-option input { width: auto; }
+.status-filter-option strong { overflow-wrap: anywhere; }
+.performance-filters { align-items: center; }
 .time-layout, .charts-grid, .configuration-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr); gap: 1rem; margin-bottom: 1rem; }
 .time-form, .configuration-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.85rem; }
 .time-form label, .configuration-form label { display: grid; gap: 0.35rem; font-weight: 700; }
@@ -304,6 +343,7 @@ textarea { min-height: 90px; resize: vertical; }
   .page-header { align-items: stretch; flex-direction: column; }
   .form-grid { grid-template-columns: 1fr; }
   .time-layout, .charts-grid, .configuration-layout, .time-form, .configuration-form, .metric-grid { grid-template-columns: 1fr; }
+  .status-filter-grid { grid-template-columns: 1fr; }
   .span-2 { grid-column: span 1; }
   .span-wide { grid-column: auto; }
   .bar-row { grid-template-columns: 1fr; }

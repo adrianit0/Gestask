@@ -40,6 +40,7 @@ const state = {
   timeEntries: [],
   editingTimeEntry: null,
   configurations: [],
+  performanceShowAll: false,
 };
 
 async function boot() {
@@ -77,7 +78,7 @@ function currentPageHtml() {
   if (state.page === "configuration") {
     return ConfigurationPage({ configurations: state.configurations, loading: state.loading, error: state.error, success: state.success });
   }
-  return PerformancePage({ tasks: state.tasks, calendarDays: state.calendarDays, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success });
+  return PerformancePage({ tasks: state.tasks, calendarDays: state.calendarDays, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), showAll: state.performanceShowAll, loading: state.loading, error: state.error, success: state.success });
 }
 
 function bindAuthEvents() {
@@ -135,6 +136,7 @@ function bindPageEvents() {
   if (state.page === "calendar") bindCalendarEvents();
   if (state.page === "time") bindTimeEvents();
   if (state.page === "configuration") bindConfigurationEvents();
+  if (state.page === "charts") bindPerformanceEvents();
 }
 
 function bindBacklogEvents() {
@@ -171,6 +173,26 @@ function bindBacklogEvents() {
     });
   });
 
+  document.querySelectorAll("[data-filter-check]").forEach((input) => {
+    input.addEventListener("change", async () => {
+      clearMessages();
+      state.filters[input.dataset.filterCheck] = input.checked;
+      await loadBacklogTasks({ preserveMessages: true });
+      render();
+    });
+  });
+
+  document.querySelectorAll("[data-status-filter]").forEach((input) => {
+    input.addEventListener("change", async () => {
+      clearMessages();
+      const selectedStatuses = Array.from(document.querySelectorAll("[data-status-filter]:checked")).map((item) => item.value);
+      state.filters.statuses = selectedStatuses;
+      delete state.filters.status;
+      await loadBacklogTasks({ preserveMessages: true });
+      render();
+    });
+  });
+
   document.querySelector("[data-clear-filters]")?.addEventListener("click", async () => {
     clearMessages();
     state.filters = {};
@@ -179,6 +201,13 @@ function bindBacklogEvents() {
   });
 
   bindTaskModalEvents();
+}
+
+function bindPerformanceEvents() {
+  document.querySelector("[data-performance-show-all]")?.addEventListener("change", (event) => {
+    state.performanceShowAll = event.target.checked;
+    render();
+  });
 }
 
 function cloneTaskDraft(task) {
@@ -528,14 +557,23 @@ async function withLoading(action, { preserveMessages = false } = {}) {
 function getFilteredTasks() {
   return state.tasks.filter((task) => {
     const search = state.filters.search?.trim().toLowerCase();
+    const selectedStatuses = Array.isArray(state.filters.statuses) ? state.filters.statuses : [];
     const matchesSearch = !search || [task.title, task.ticket, task.more_info]
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(search));
-    const matchesStatus = !state.filters.status || task.task_status === state.filters.status;
+    const matchesStatus = !selectedStatuses.length || selectedStatuses.includes(task.task_status);
     const matchesPriority = !state.filters.priority || task.priority === state.filters.priority;
     const matchesDate = !state.filters.date || task.assigned_date === state.filters.date || task.finished_date === state.filters.date;
-    return matchesSearch && matchesStatus && matchesPriority && matchesDate;
+    const matchesHistory = state.filters.show_history || !isHiddenBacklogHistoryTask(task);
+    return matchesSearch && matchesStatus && matchesPriority && matchesDate && matchesHistory;
   });
+}
+
+function isHiddenBacklogHistoryTask(task) {
+  if (["Undone", "Unfinished"].includes(task.task_status)) return true;
+  if (task.task_status !== "Done") return false;
+  if (task.ticket_type === "Task") return task.pr_status === "Imputed";
+  return task.pr_status === "Deployed";
 }
 
 function formToObject(form) {
