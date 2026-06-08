@@ -1,5 +1,5 @@
 import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
-import { TaskDetailModal } from "../components/TaskTable.js";
+import { BacklogTaskButton, TaskDetailModal } from "../components/TaskTable.js";
 import { PR_BORDER_COLORS } from "../utils/constants.js";
 import { escapeHtml, todayIso } from "../utils/format.js";
 import { formatHoursFromEffortPoints } from "../utils/effortTime.js";
@@ -37,6 +37,7 @@ function CompletionTasksTable(tasks, minutesPerEffortPoint) {
             <th>Horas</th>
             <th>PR</th>
             <th>Acción</th>
+            <th class="backlog-link-column" aria-label="Backlog"></th>
           </tr>
         </thead>
         <tbody>
@@ -89,9 +90,10 @@ function CompletionTaskRow(task, minutesPerEffortPoint) {
       <td>${escapeHtml(formatHoursFromEffortPoints(task.effort_points, minutesPerEffortPoint))}</td>
       <td><span class="status-pill">${escapeHtml(task.pr_status || "-")}</span></td>
       <td>${resolveButton(task)}</td>
+      <td class="backlog-link-cell">${BacklogTaskButton(task.id)}</td>
     </tr>
     <tr class="task-title-row clickable-row" ${clickableAttrs} style="${visualStyle}">
-      <td class="task-title-cell" colspan="6">
+      <td class="task-title-cell" colspan="7">
         <div>${escapeHtml(task.title || "Sin tÃ­tulo")}</div>
       </td>
     </tr>

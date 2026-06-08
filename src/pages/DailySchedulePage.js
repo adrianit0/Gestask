@@ -1,4 +1,4 @@
-import { TaskDetailModal } from "../components/TaskTable.js";
+import { BacklogTaskButton, TaskDetailModal } from "../components/TaskTable.js";
 import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
 import { PR_BORDER_COLORS, TASK_COLORS } from "../utils/constants.js";
 import { buildDailySchedule, formatScheduleTime } from "../utils/dailySchedule.js";
@@ -70,6 +70,7 @@ function ScheduleItem(item) {
           <span>${ticket}</span>
           <span>${escapeHtml(task.effort_points)} PE</span>
           <span>Orden ${escapeHtml(task.order_points ?? "-")}</span>
+          ${BacklogTaskButton(task.id)}
         </div>
         <h2>${escapeHtml(task.title)}</h2>
         ${task.more_info ? `<p>${escapeHtml(task.more_info)}</p>` : ""}

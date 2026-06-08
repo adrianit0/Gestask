@@ -3,6 +3,11 @@ import { requireUser } from "../_shared/supabase.ts";
 
 const validDailyStatuses = ["To do", "Doing", "Draft", "Need Fix", "Waiting", "Warning"];
 const today = () => new Date().toISOString().slice(0, 10);
+const previousDate = (date: string) => {
+  const previous = new Date(`${date}T00:00:00.000Z`);
+  previous.setUTCDate(previous.getUTCDate() - 1);
+  return previous.toISOString().slice(0, 10);
+};
 
 Deno.serve(async (req) => {
   const options = handleOptions(req);
@@ -27,9 +32,7 @@ Deno.serve(async (req) => {
     .from("daily_reports")
     .select("id, report_date, daily_report_tasks(task_id)")
     .eq("user_id", user.id)
-    .lt("report_date", reportDate)
-    .order("report_date", { ascending: false })
-    .limit(1)
+    .eq("report_date", previousDate(reportDate))
     .maybeSingle();
 
   const previousTaskIds = (previousReport?.daily_report_tasks ?? []).map((item: { task_id: string }) => item.task_id);

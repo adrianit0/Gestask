@@ -301,14 +301,15 @@ textarea { min-height: 90px; resize: vertical; }
 .table-wrap { width: 100%; overflow-x: auto; }
 .task-table { width: 100%; min-width: 1120px; border-collapse: separate; border-spacing: 0; }
 .task-table-backlog { min-width: 760px; table-layout: fixed; }
-.task-table-daily { min-width: 820px; table-layout: fixed; }
-.task-table-completion { min-width: 820px; table-layout: fixed; }
+.task-table-daily { min-width: 872px; table-layout: fixed; }
+.task-table-completion { min-width: 872px; table-layout: fixed; }
 .task-table-completion th:nth-child(1), .task-table-completion .task-main-row td:nth-child(1) { width: 130px; }
 .task-table-completion th:nth-child(2), .task-table-completion .task-main-row td:nth-child(2) { width: 120px; }
 .task-table-completion th:nth-child(3), .task-table-completion .task-main-row td:nth-child(3) { width: 140px; }
 .task-table-completion th:nth-child(4), .task-table-completion .task-main-row td:nth-child(4) { width: 90px; text-align: center; }
 .task-table-completion th:nth-child(5), .task-table-completion .task-main-row td:nth-child(5) { width: 150px; }
 .task-table-completion th:nth-child(6), .task-table-completion .task-main-row td:nth-child(6) { width: 110px; text-align: right; }
+.task-table-completion th:nth-child(7), .task-table-completion .task-main-row td:nth-child(7) { width: 52px; text-align: right; }
 .task-table-backlog th:nth-child(1), .task-table-backlog .task-main-row td:nth-child(1) { width: 130px; }
 .task-table-backlog th:nth-child(2), .task-table-backlog .task-main-row td:nth-child(2),
 .task-table-backlog th:nth-child(3), .task-table-backlog .task-main-row td:nth-child(3) { width: 140px; }
@@ -322,10 +323,12 @@ textarea { min-height: 90px; resize: vertical; }
 .task-table-daily th:nth-child(6), .task-table-daily .task-main-row td:nth-child(6) { width: 110px; text-align: center; }
 .task-table-daily th:nth-child(7), .task-table-daily .task-main-row td:nth-child(7),
 .task-table-daily th:nth-child(8), .task-table-daily .task-main-row td:nth-child(8) { width: 150px; }
+.task-table-daily th:nth-child(9), .task-table-daily .task-main-row td:nth-child(9) { width: 52px; }
 .task-table-daily th:nth-child(5), .task-table-daily .task-main-row td:nth-child(5) { width: 76px; text-align: center; }
 .actions-column, .actions-cell,
 .status-column, .status-cell,
-.pr-column, .pr-cell { text-align: right; }
+.pr-column, .pr-cell,
+.backlog-link-column, .backlog-link-cell { text-align: right; }
 .task-actions { display: flex; justify-content: flex-end; gap: 0.28rem; }
 .task-table th { text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding: 0.12rem 0.38rem; }
 .task-table td { padding: 0.26rem 0.38rem; vertical-align: middle; background: var(--task-bg); border-radius: 0; }
@@ -361,6 +364,23 @@ textarea { min-height: 90px; resize: vertical; }
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+.task-backlog-button {
+  display: inline-grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+}
+.task-backlog-button svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.schedule-card-top .task-backlog-button { margin-left: auto; }
 
 .modal-backdrop {
   position: fixed;

@@ -37,7 +37,7 @@
 - Accede a Backlog y crea tareas.
 - Cambia una tarea a `Done`; se asigna `finished_date` y `pr_status = Need PR` si procede.
 - Accede a `Completar tareas` para avanzar tareas ya finalizadas por los estados `Need PR`, `Need to Impute`, `Imputed` y `Deployed` segun corresponda.
-- Crea un nuevo parte diario; las tareas pendientes del parte anterior pasan a `Unfinished`.
+- Crea un nuevo parte diario.
 - Consulta días anteriores en modo histórico.
 - Visualiza el calendario mensual y marca ausencias o vacaciones.
 - Accede a Configuración, modifica valores propios y crea nuevos parámetros configurables.

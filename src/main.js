@@ -151,6 +151,28 @@ function bindPageEvents() {
   if (state.page === "time") bindTimeEvents();
   if (state.page === "configuration") bindConfigurationEvents();
   if (state.page === "charts") bindPerformanceEvents();
+  bindBacklogTaskNavigation();
+}
+
+function bindBacklogTaskNavigation() {
+  document.querySelectorAll("[data-go-backlog-task]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const task = findKnownTask(button.dataset.goBacklogTask);
+      const search = task?.ticket || task?.title || "";
+      state.page = "backlog";
+      state.filters = { search, show_history: true };
+      state.detailTask = null;
+      state.modalTask = undefined;
+      state.completionModalTask = null;
+      clearMessages();
+      await loadBacklogTasks({ preserveMessages: true });
+      render();
+    });
+  });
+}
+
+function findKnownTask(taskId) {
+  return [...state.tasks, ...state.dailyTasks, ...state.completionTasks].find((task) => task.id === taskId) ?? null;
 }
 
 function bindBacklogEvents() {
