@@ -69,6 +69,7 @@ function ScheduleItem(item) {
         <div class="schedule-card-top">
           <span>${ticket}</span>
           <span>${escapeHtml(task.effort_points)} PE</span>
+          ${item.partial ? `<span class="schedule-partial-tag">Tarea parcial</span>` : ""}
           <span>Orden ${escapeHtml(task.order_points ?? "-")}</span>
           ${BacklogTaskButton(task.id)}
         </div>

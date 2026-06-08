@@ -14,14 +14,14 @@ const DEFAULT_BREAK_DURATION_MINUTES = 60;
 export function buildDailySchedule(tasks = [], configurations = [], minutesPerEffortPoint = 60) {
   const settings = getDailyScheduleSettings(configurations, minutesPerEffortPoint);
   const sortedTasks = [...tasks].sort(compareByOrderDesc);
-  const selectedTasks = selectTasksByEffort(sortedTasks, settings.dailyEffortPoints);
-  const items = createScheduleItems(selectedTasks, settings);
+  const items = createScheduleItems(sortedTasks, settings);
+  const selectedTasks = getScheduledTasks(items);
 
   return {
     items,
     settings,
     selectedTasks,
-    totalEffortPoints: selectedTasks.reduce((total, task) => total + getEffortPoints(task), 0),
+    totalEffortPoints: getScheduledEffortPoints(items, settings.minutesPerEffortPoint),
   };
 }
 
@@ -82,7 +82,13 @@ function createScheduleItems(tasks, settings) {
       const duration = Math.min(remainingMinutes, nextStop - cursor);
       if (duration <= 0) break;
 
-      items.push({ type: "task", task, startMinutes: cursor, endMinutes: cursor + duration });
+      items.push({
+        type: "task",
+        task,
+        startMinutes: cursor,
+        endMinutes: cursor + duration,
+        partial: duration < remainingMinutes && cursor + duration >= settings.endMinutes,
+      });
       cursor += duration;
       remainingMinutes -= duration;
     }
@@ -102,20 +108,26 @@ function createBreakItem(settings) {
   };
 }
 
-function selectTasksByEffort(tasks, dailyEffortPoints) {
-  const selected = [];
-  let accumulated = 0;
+function getScheduledTasks(items) {
+  const scheduledTasks = [];
+  const scheduledIds = new Set();
 
-  for (const task of tasks) {
-    const effortPoints = getEffortPoints(task);
-    if (effortPoints <= 0) continue;
-    if (accumulated + effortPoints > dailyEffortPoints) break;
-    selected.push(task);
-    accumulated += effortPoints;
-    if (accumulated >= dailyEffortPoints) break;
+  for (const item of items) {
+    if (item.type !== "task" || !item.task || scheduledIds.has(item.task.id)) continue;
+    scheduledTasks.push(item.task);
+    scheduledIds.add(item.task.id);
   }
 
-  return selected;
+  return scheduledTasks;
+}
+
+function getScheduledEffortPoints(items, minutesPerEffortPoint) {
+  const scheduledMinutes = items
+    .filter((item) => item.type === "task")
+    .reduce((total, item) => total + Math.max(0, item.endMinutes - item.startMinutes), 0);
+
+  const effortPoints = scheduledMinutes / minutesPerEffortPoint;
+  return Number.isInteger(effortPoints) ? effortPoints : Number(effortPoints.toFixed(2));
 }
 
 function compareByOrderDesc(a, b) {

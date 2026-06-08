@@ -188,6 +188,10 @@ h1 { font-size: clamp(2rem, 5vw, 3.8rem); line-height: 0.95; letter-spacing: -0.
   padding: 0.18rem 0.45rem;
   background: rgba(255, 128, 0, 0.1);
 }
+.schedule-card-top .schedule-partial-tag {
+  background: #fff1d6;
+  color: #9a5a00;
+}
 .schedule-task { cursor: pointer; }
 .schedule-task:hover .schedule-card { border-color: var(--primary); }
 .schedule-break .schedule-time { background: #e7f7ed; }
