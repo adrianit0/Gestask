@@ -139,6 +139,22 @@ h1 { font-size: clamp(2rem, 5vw, 3.8rem); line-height: 0.95; letter-spacing: -0.
 .daily-bars { min-height: 210px; display: flex; align-items: end; gap: 0.35rem; overflow-x: auto; padding-top: 1rem; }
 .daily-bar { min-width: 30px; display: grid; justify-items: center; gap: 0.35rem; color: var(--muted); font-size: 0.75rem; }
 .daily-bar div { width: 100%; border-radius: 10px 10px 4px 4px; background: linear-gradient(180deg, #5eb91e, #d7f5b8); border: 1px solid rgba(0,0,0,0.05); }
+.daily-bar strong, .weekday-bar strong { color: var(--text); font-size: 0.78rem; letter-spacing: -0.03em; }
+.task-bar div { background: linear-gradient(180deg, #2680eb, #cfe5ff); }
+.created-task-bar div { background: linear-gradient(180deg, #8a5cf6, #e4d8ff); }
+.created-points-bar div { background: linear-gradient(180deg, #db7c12, #ffe2bf); }
+.cumulative-bars { align-items: end; }
+.cumulative-bar div { background: linear-gradient(180deg, #ff8000, #ffe0bd); }
+.combined-cumulative-bar div { background: linear-gradient(180deg, #111827, #cfd7e6); }
+.difference-bar.positive div { background: linear-gradient(180deg, #b45309, #fde68a); }
+.difference-bar.negative div { background: linear-gradient(180deg, #047857, #bbf7d0); }
+.difference-bar.neutral div { background: linear-gradient(180deg, #6b7280, #e5e7eb); }
+.difference-bar.negative strong { color: #047857; }
+.difference-bar.positive strong { color: #92400e; }
+.weekday-bars { min-height: 220px; display: grid; grid-template-columns: repeat(7, minmax(42px, 1fr)); align-items: end; gap: 0.6rem; padding-top: 1rem; }
+.weekday-bar { display: grid; justify-items: center; gap: 0.35rem; color: var(--muted); font-size: 0.76rem; }
+.weekday-bar div { width: 100%; min-width: 28px; max-width: 58px; border-radius: 12px 12px 5px 5px; background: linear-gradient(180deg, #1f9d7a, #cef4e9); border: 1px solid rgba(0,0,0,0.05); }
+.weekday-bar small { font-size: 0.68rem; font-weight: 800; white-space: nowrap; }
 .schedule-summary { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; }
 .schedule-summary span {
   display: inline-flex;
