@@ -339,7 +339,7 @@
   - **Dependencias**: DOC-005.
 
 - **SQL-008**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: SQL
   - **Descripción**: Añadir soporte eficiente para consultar tareas ordenables.
   - **Archivos**: `supabase/sql/script-006.sql` o migración equivalente.
@@ -347,7 +347,7 @@
   - **Dependencias**: DOC-007.
 
 - **API-011**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Edge Functions
   - **Descripción**: Crear endpoint `tasks-order-list`.
   - **Archivos**: `supabase/functions/tasks-order-list/index.ts`
@@ -355,7 +355,7 @@
   - **Dependencias**: DOC-007, SQL-008.
 
 - **API-012**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Edge Functions
   - **Descripción**: Crear endpoint batch `tasks-order-update`.
   - **Archivos**: `supabase/functions/tasks-order-update/index.ts`
@@ -363,7 +363,7 @@
   - **Dependencias**: API-011.
 
 - **FE-013**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Frontend
   - **Descripción**: Añadir navegación, servicio y página `Ordenar tareas`.
   - **Archivos**: `src/components/AppLayout.js`, `src/main.js`, `src/pages/OrderTasksPage.js`, `src/services/taskOrderService.js`, `src/styles/global.css`
@@ -371,7 +371,7 @@
   - **Dependencias**: API-011, API-012.
 
 - **FE-014**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Frontend
   - **Descripción**: Implementar acción `Ordenar automaticamente`.
   - **Archivos**: `src/pages/OrderTasksPage.js`, `src/services/taskOrderService.js`
@@ -385,3 +385,4 @@
   - **Archivos**: Navegador + Supabase, `docs/11-order-tasks.md`
   - **Criterio de aceptación**: Pasan los casos manuales de listado, subida, bajada, orden automático, errores y verificación de una única llamada batch.
   - **Dependencias**: FE-014.
+  - **Nota**: Build frontend validado; pendiente prueba manual real contra Supabase desplegado.

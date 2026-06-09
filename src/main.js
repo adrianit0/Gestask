@@ -8,6 +8,7 @@ import { CompletionTasksPage } from "./pages/CompletionTasksPage.js";
 import { DailyTasksPage } from "./pages/DailyTasksPage.js";
 import { DailySchedulePage } from "./pages/DailySchedulePage.js";
 import { ConfigurationPage } from "./pages/ConfigurationPage.js";
+import { OrderTasksPage } from "./pages/OrderTasksPage.js";
 import { PerformancePage } from "./pages/PerformancePage.js";
 import { TimeManagerPage } from "./pages/TimeManagerPage.js";
 import { login, logout, register } from "./services/authService.js";
@@ -16,6 +17,7 @@ import { createConfiguration, listConfigurations, updateConfigurationProfile } f
 import { createDailyReport, getDailyReport } from "./services/dailyReportService.js";
 import { isAuthenticated } from "./services/sessionService.js";
 import { createTask, listTasks, updateTask } from "./services/taskService.js";
+import { listOrderTasks, updateOrderTasks } from "./services/taskOrderService.js";
 import { listCompletionTasks, resolveCompletionTask } from "./services/taskCompletionService.js";
 import { deleteTimeEntry, listTimeEntries, saveTimeEntry } from "./services/timeEntryService.js";
 import { getMinutesPerEffortPoint } from "./utils/effortTime.js";
@@ -39,6 +41,7 @@ const state = {
   dailyEditable: false,
   completionTasks: [],
   completionModalTask: null,
+  orderTasks: [],
   calendarYear: new Date().getFullYear(),
   calendarMonth: new Date().getMonth() + 1,
   calendarDays: [],
@@ -76,6 +79,9 @@ function currentPageHtml() {
   }
   if (state.page === "completion") {
     return CompletionTasksPage({ tasks: state.completionTasks, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, modalTask: state.completionModalTask, detailTask: state.detailTask });
+  }
+  if (state.page === "order") {
+    return OrderTasksPage({ tasks: state.orderTasks, loading: state.loading, error: state.error, success: state.success });
   }
   if (state.page === "dailySchedule") {
     return DailySchedulePage({ report: state.dailyReport, tasks: state.dailyTasks, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
@@ -136,7 +142,7 @@ function bindLayoutEvents() {
 
   document.querySelector("[data-action='logout']")?.addEventListener("click", () => {
     logout();
-    Object.assign(state, { page: "backlog", tasks: [], dailyReport: null, dailyTasks: [], completionTasks: [], completionModalTask: null, calendarDays: [] });
+    Object.assign(state, { page: "backlog", tasks: [], dailyReport: null, dailyTasks: [], completionTasks: [], completionModalTask: null, orderTasks: [], calendarDays: [] });
     clearMessages();
     render();
   });
@@ -146,6 +152,7 @@ function bindPageEvents() {
   if (state.page === "backlog") bindBacklogEvents();
   if (state.page === "daily") bindDailyEvents();
   if (state.page === "completion") bindCompletionEvents();
+  if (state.page === "order") bindOrderEvents();
   if (state.page === "dailySchedule") bindDailyScheduleEvents();
   if (state.page === "calendar") bindCalendarEvents();
   if (state.page === "time") bindTimeEvents();
@@ -172,7 +179,7 @@ function bindBacklogTaskNavigation() {
 }
 
 function findKnownTask(taskId) {
-  return [...state.tasks, ...state.dailyTasks, ...state.completionTasks].find((task) => task.id === taskId) ?? null;
+  return [...state.tasks, ...state.dailyTasks, ...state.completionTasks, ...state.orderTasks].find((task) => task.id === taskId) ?? null;
 }
 
 function bindBacklogEvents() {
@@ -279,6 +286,85 @@ function bindCompletionEvents() {
   });
 
   bindTaskTableEvents(state.completionTasks, { readonly: true });
+}
+
+function bindOrderEvents() {
+  document.querySelectorAll("[data-order-move]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const fromIndex = Number(button.dataset.orderIndex);
+      const toIndex = button.dataset.orderMove === "up" ? fromIndex - 1 : fromIndex + 1;
+      await saveOrderUpdates(calculateMoveUpdates(state.orderTasks, fromIndex, toIndex));
+    });
+  });
+
+  document.querySelector("[data-order-normalize]")?.addEventListener("click", async () => {
+    await saveOrderUpdates(calculateNormalizeUpdates(state.orderTasks));
+  });
+}
+
+async function saveOrderUpdates(updates) {
+  clearMessages();
+  if (!updates.length) {
+    state.success = "El orden ya está actualizado.";
+    render();
+    return;
+  }
+
+  state.loading = true;
+  render();
+  try {
+    const data = await updateOrderTasks(updates);
+    state.orderTasks = data.tasks ?? [];
+    applyOrderPointsToLoadedTasks(updates);
+    state.success = "Orden actualizado correctamente.";
+  } catch (error) {
+    state.error = error.message;
+  } finally {
+    state.loading = false;
+  }
+  render();
+}
+
+function calculateMoveUpdates(tasks, fromIndex, toIndex) {
+  if (!Number.isInteger(fromIndex) || !Number.isInteger(toIndex)) return [];
+  if (fromIndex < 0 || fromIndex >= tasks.length || toIndex < 0 || toIndex >= tasks.length || fromIndex === toIndex) return [];
+
+  if (fromIndex < toIndex) {
+    return compactChangedUpdates([
+      { id: tasks[fromIndex].id, order_points: Number(tasks[toIndex].order_points) },
+      ...tasks.slice(fromIndex + 1, toIndex + 1).map((task) => ({ id: task.id, order_points: Number(task.order_points) + 1 })),
+    ], tasks);
+  }
+
+  return compactChangedUpdates([
+    { id: tasks[fromIndex].id, order_points: Number(tasks[toIndex].order_points) },
+    ...tasks.slice(toIndex, fromIndex).map((task) => ({ id: task.id, order_points: Number(task.order_points) - 1 })),
+  ], tasks);
+}
+
+function calculateNormalizeUpdates(tasks) {
+  const ascendingTasks = [...tasks].sort((a, b) => {
+    const orderCompared = Number(a.order_points) - Number(b.order_points);
+    if (orderCompared !== 0) return orderCompared;
+    const createdCompared = new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    if (createdCompared !== 0) return createdCompared;
+    return String(a.id).localeCompare(String(b.id));
+  });
+
+  return compactChangedUpdates(ascendingTasks.map((task, index) => ({ id: task.id, order_points: index + 1 })), tasks);
+}
+
+function compactChangedUpdates(updates, currentTasks) {
+  const currentById = new Map(currentTasks.map((task) => [task.id, Number(task.order_points)]));
+  return updates.filter((update) => Number.isInteger(update.order_points) && currentById.get(update.id) !== update.order_points);
+}
+
+function applyOrderPointsToLoadedTasks(updates) {
+  const orderById = new Map(updates.map((update) => [update.id, update.order_points]));
+  const apply = (task) => orderById.has(task.id) ? { ...task, order_points: orderById.get(task.id) } : task;
+  state.tasks = state.tasks.map(apply);
+  state.dailyTasks = state.dailyTasks.map(apply);
+  state.completionTasks = state.completionTasks.map(apply);
 }
 
 function cloneTaskDraft(task) {
@@ -561,12 +647,13 @@ function refreshSelectedTask(taskId) {
 
 async function loadAllData({ preserveMessages = false } = {}) {
   await withLoading(async () => {
-    const [tasksResult, dailyResult, calendarResult, configurationsResult, completionResult] = await Promise.allSettled([
+    const [tasksResult, dailyResult, calendarResult, configurationsResult, completionResult, orderResult] = await Promise.allSettled([
       listTasks(state.filters),
       getDailyReport(state.dailyDate, state.dailySort),
       getCalendarMonth(state.calendarYear, state.calendarMonth),
       listConfigurations(),
       listCompletionTasks(),
+      listOrderTasks(),
     ]);
 
     state.timeEntries = listTimeEntries();
@@ -603,6 +690,12 @@ async function loadAllData({ preserveMessages = false } = {}) {
       state.completionTasks = completionResult.value.tasks ?? [];
     } else {
       errors.push(completionResult.reason.message);
+    }
+
+    if (orderResult.status === "fulfilled") {
+      state.orderTasks = orderResult.value.tasks ?? [];
+    } else {
+      errors.push(orderResult.reason.message);
     }
 
     if (errors.length) {

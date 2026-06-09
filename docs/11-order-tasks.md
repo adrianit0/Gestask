@@ -1,7 +1,7 @@
 # Ordenar tareas
 
 ## Estado
-Especificación documentada. No implementado.
+Implementado. Pendiente validación manual completa en navegador contra Supabase desplegado.
 
 ## Objetivo
 Crear una pestaña `Ordenar tareas` para ajustar el orden manual de ejecución de las tareas operativas usando `order_points`, sin editar tareas una por una y evitando llamadas repetidas al servidor.

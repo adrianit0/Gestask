@@ -7,6 +7,7 @@
         ${navButton("daily", "Tareas diarias", activePage, "daily")}
         ${navButton("dailySchedule", "Horario diario", activePage, "dailySchedule")}
         ${navButton("completion", "Completar tareas", activePage, "completion")}        
+        ${navButton("order", "Ordenar tareas", activePage, "order")}
         ${navButton("calendar", "Calendario", activePage, "calendar")}
         ${navButton("time", "Gestor de tiempos", activePage, "time")}
         ${navButton("charts", "Gráficas de rendimiento", activePage, "charts")}
@@ -64,6 +65,16 @@ function navIcon(icon) {
         <path d="M4 12.5l4 4L20 5" />
         <path d="M5 20h14" />
         <path d="M5 4h9" />
+      </svg>
+    `,
+    order: `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M8 6h12" />
+        <path d="M8 12h12" />
+        <path d="M8 18h12" />
+        <path d="m3 9 2-2 2 2" />
+        <path d="M5 7v11" />
+        <path d="m3 16 2 2 2-2" />
       </svg>
     `,
     dailySchedule: `

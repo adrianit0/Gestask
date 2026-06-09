@@ -213,6 +213,74 @@ h1 { font-size: clamp(2rem, 5vw, 3.8rem); line-height: 0.95; letter-spacing: -0.
 .configuration-form button { grid-column: 1 / -1; }
 .configuration-table { min-width: 980px; }
 .configuration-value-form { min-width: 180px; }
+.order-page-header {
+  align-items: end;
+}
+.page-description {
+  max-width: 720px;
+  margin-bottom: 0;
+  color: var(--muted);
+  font-weight: 700;
+}
+.order-panel {
+  overflow: hidden;
+}
+.order-task-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: separate;
+  border-spacing: 0 0.45rem;
+}
+.order-task-table th {
+  padding: 0.15rem 0.55rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+}
+.order-task-table td {
+  padding: 0.65rem 0.55rem;
+  background: #fffaf4;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.order-task-table td:first-child {
+  border-left: 1px solid var(--line);
+  border-radius: 16px 0 0 16px;
+}
+.order-task-table td:last-child {
+  border-right: 1px solid var(--line);
+  border-radius: 0 16px 16px 0;
+}
+.position-cell,
+.points-cell {
+  font-weight: 900;
+  text-align: center;
+}
+.order-title-cell {
+  max-width: 360px;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+.order-move-button {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+}
+.order-move-button svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .completion-modal { width: min(620px, 100%); }
 .completion-resolve-form {
   display: grid;
