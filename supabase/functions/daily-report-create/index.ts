@@ -3,11 +3,6 @@ import { requireUser } from "../_shared/supabase.ts";
 
 const validDailyStatuses = ["To do", "Doing", "Draft", "Need Fix", "Waiting", "Warning"];
 const today = () => new Date().toISOString().slice(0, 10);
-const previousDate = (date: string) => {
-  const previous = new Date(`${date}T00:00:00.000Z`);
-  previous.setUTCDate(previous.getUTCDate() - 1);
-  return previous.toISOString().slice(0, 10);
-};
 
 Deno.serve(async (req) => {
   const options = handleOptions(req);
@@ -27,24 +22,6 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (existing) return errorResponse("El parte diario está ya creado", 409);
-
-  const { data: previousReport } = await supabase
-    .from("daily_reports")
-    .select("id, report_date, daily_report_tasks(task_id)")
-    .eq("user_id", user.id)
-    .eq("report_date", previousDate(reportDate))
-    .maybeSingle();
-
-  const previousTaskIds = (previousReport?.daily_report_tasks ?? []).map((item: { task_id: string }) => item.task_id);
-  if (previousTaskIds.length > 0) {
-    await supabase
-      .from("tasks")
-      .update({ task_status: "Unfinished" })
-      .eq("user_id", user.id)
-      .in("id", previousTaskIds)
-      .neq("task_status", "Done")
-      .neq("task_status", "Undone");
-  }
 
   const { data: report, error: reportError } = await supabase
     .from("daily_reports")
