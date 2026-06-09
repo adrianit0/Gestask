@@ -289,6 +289,35 @@ function bindCompletionEvents() {
 }
 
 function bindOrderEvents() {
+  document.querySelectorAll("[data-order-row]").forEach((row) => {
+    row.addEventListener("dragstart", (event) => {
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", row.dataset.orderIndex);
+      row.classList.add("dragging");
+    });
+
+    row.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      clearOrderDropTargets();
+      row.classList.add("drop-target");
+    });
+
+    row.addEventListener("dragleave", () => {
+      row.classList.remove("drop-target");
+    });
+
+    row.addEventListener("drop", async (event) => {
+      event.preventDefault();
+      const fromIndex = Number(event.dataTransfer.getData("text/plain"));
+      const toIndex = Number(row.dataset.orderIndex);
+      clearOrderDropTargets();
+      await saveOrderUpdates(calculateMoveUpdates(state.orderTasks, fromIndex, toIndex));
+    });
+
+    row.addEventListener("dragend", clearOrderDropTargets);
+  });
+
   document.querySelectorAll("[data-order-move]").forEach((button) => {
     button.addEventListener("click", async () => {
       const fromIndex = Number(button.dataset.orderIndex);
@@ -300,6 +329,10 @@ function bindOrderEvents() {
   document.querySelector("[data-order-normalize]")?.addEventListener("click", async () => {
     await saveOrderUpdates(calculateNormalizeUpdates(state.orderTasks));
   });
+}
+
+function clearOrderDropTargets() {
+  document.querySelectorAll("[data-order-row]").forEach((row) => row.classList.remove("dragging", "drop-target"));
 }
 
 async function saveOrderUpdates(updates) {

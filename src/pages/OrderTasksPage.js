@@ -7,7 +7,7 @@ export function OrderTasksPage({ tasks = [], loading = false, error = "", succes
       <div>
         <p class="eyebrow">Orden manual</p>
         <h1>Ordenar tareas</h1>
-        <p class="page-description">Solo aparecen tareas pendientes con puntos de orden. Cada movimiento se guarda en una única actualización batch.</p>
+        <p class="page-description">Solo aparecen tareas pendientes con puntos de orden. Arrastra una fila para moverla varias posiciones o usa los botones como alternativa.</p>
       </div>
       <button class="secondary" data-order-normalize ${tasks.length ? "" : "disabled"}>Ordenar automáticamente</button>
     </section>
@@ -49,8 +49,8 @@ function orderTaskList(tasks) {
 
 function orderTaskRow(task, index, tasks) {
   return `
-    <tr>
-      <td class="position-cell">${index + 1}</td>
+    <tr class="order-task-row" draggable="true" data-order-row data-order-index="${index}">
+      <td class="position-cell"><span class="drag-handle" aria-hidden="true">::</span>${index + 1}</td>
       <td>${ticketCell(task.ticket)}</td>
       <td class="order-title-cell">${escapeHtml(task.title)}</td>
       <td>${escapeHtml(task.ticket_type || "Bug")}</td>

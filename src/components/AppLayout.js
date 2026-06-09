@@ -7,10 +7,10 @@
         ${navButton("daily", "Tareas diarias", activePage, "daily")}
         ${navButton("dailySchedule", "Horario diario", activePage, "dailySchedule")}
         ${navButton("completion", "Completar tareas", activePage, "completion")}        
-        ${navButton("order", "Ordenar tareas", activePage, "order")}
         ${navButton("calendar", "Calendario", activePage, "calendar")}
         ${navButton("time", "Gestor de tiempos", activePage, "time")}
         ${navButton("charts", "Gráficas de rendimiento", activePage, "charts")}
+        ${navButton("order", "Ordenar tareas", activePage, "order")}
         <button class="nav-link icon-nav ${activePage === "configuration" ? "active" : ""}" data-page="configuration" aria-label="Configuración" title="Configuración">
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="M12 8.5a3.5 3.5 0 1 0 0 7a3.5 3.5 0 0 0 0-7Z" />
