@@ -10,6 +10,8 @@ Todas las funciones devuelven JSON y validan método HTTP.
 - `GET /functions/v1/tasks-list?status=&priority=&date=&search=&ticket_type=&sort_by=&sort_direction=`
 - `GET /functions/v1/tasks-completion-list`
 - `PATCH /functions/v1/tasks-completion-resolve`
+- `GET /functions/v1/tasks-order-list`
+- `PATCH /functions/v1/tasks-order-update`
 - `POST /functions/v1/tasks-create`
 - `PATCH /functions/v1/tasks-update`
 
@@ -175,6 +177,83 @@ Reglas:
 - Tras resolver, `pr_status` pasa a `Deployed`.
 - No aplica a `Task`, porque su workflow termina en `Imputed`.
 
+### `tasks-order-list`
+
+Lista tareas disponibles para la pestaña `Ordenar tareas`.
+
+No acepta filtros funcionales. La API debe aplicar siempre las reglas de inclusión documentadas.
+
+Reglas de inclusión:
+- Incluir tareas con `task_status` distinto de `Done`, `Undone` y `Unfinished`.
+- Incluir solo tareas con `order_points` no nulo.
+- Excluir tareas de otros usuarios.
+
+Orden de respuesta:
+- `order_points` descendente.
+- `created_at desc` e `id asc` como desempate estable si hubiera empates.
+
+Respuesta esperada:
+
+```json
+{
+  "tasks": [
+    {
+      "id": "uuid",
+      "ticket": "ABC-123",
+      "ticket_type": "Bug",
+      "title": "Título",
+      "order_points": 8,
+      "priority": "Prioritaria",
+      "task_status": "Doing",
+      "assigned_date": "2026-06-09",
+      "limit_date": null
+    }
+  ]
+}
+```
+
+### `tasks-order-update`
+
+Actualiza `order_points` de varias tareas ordenables en una única llamada.
+
+Payload:
+
+```json
+{
+  "updates": [
+    { "id": "uuid-a", "order_points": 5 },
+    { "id": "uuid-b", "order_points": 4 }
+  ]
+}
+```
+
+Reglas:
+- Método `PATCH`.
+- `updates` debe ser un array no vacío.
+- Cada `id` debe existir, pertenecer al usuario autenticado y ser ordenable.
+- Cada `order_points` debe ser entero.
+- No se permiten IDs duplicados.
+- La función debe aplicar los cambios en una única operación lógica. Si alguna validación falla, no debe aplicar cambios parciales.
+- La respuesta debe devolver las tareas ordenables ya recalculadas para refrescar la UI sin una llamada adicional si es viable.
+
+Respuesta esperada:
+
+```json
+{
+  "tasks": [
+    {
+      "id": "uuid-a",
+      "order_points": 5
+    }
+  ]
+}
+```
+
+Errores específicos:
+- `Invalid order payload.`
+- `Task is not orderable.`
+- `Duplicate task id.`
+
 ## Partes diarios
 - `POST /functions/v1/daily-report-create`
 - `GET /functions/v1/daily-report-get?date=YYYY-MM-DD&sort_by=&sort_direction=`
@@ -216,3 +295,6 @@ Errores nuevos esperados:
 - `Invalid scoring configuration.`
 - `Invalid completion transition.`
 - `Invalid imputed date.`
+- `Invalid order payload.`
+- `Task is not orderable.`
+- `Duplicate task id.`

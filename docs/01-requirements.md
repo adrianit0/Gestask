@@ -22,6 +22,11 @@
 - `Completar tareas` no debe aplicar scoring ni permitir criterios de ordenación configurables por el usuario.
 - `Completar tareas` debe mostrar siempre las tareas ordenadas por estado PR en este orden: `Need PR`, `Need to Impute`, `Imputed`, `Deployed`; dentro de cada estado, debe ordenar por `finished_date` de menor a mayor.
 - Desde `Completar tareas`, el usuario debe poder resolver los pasos pendientes mediante popups guiados segun `pr_status` y `ticket_type`.
+- Debe existir una pestaña nueva llamada `Ordenar tareas` para reorganizar manualmente tareas operativas mediante `order_points`.
+- `Ordenar tareas` debe mostrar solo tareas con `task_status` distinto de `Done`, `Undone` y `Unfinished`, y con `order_points` informado.
+- `Ordenar tareas` debe presentar las tareas de mayor a menor `order_points`.
+- Desde `Ordenar tareas`, el usuario debe poder mover tareas arriba y abajo, recalculando los `order_points` afectados de forma consistente con el orden visual.
+- `Ordenar tareas` debe ofrecer una acción `Ordenar automaticamente` que normaliza los `order_points` de las tareas visibles a una secuencia escalonada desde `1` hasta el número de tareas ordenables.
 
 ## No funcionales
 - Responsive.
@@ -37,6 +42,7 @@
 - Accede a Backlog y crea tareas.
 - Cambia una tarea a `Done`; se asigna `finished_date` y `pr_status = Need PR` si procede.
 - Accede a `Completar tareas` para avanzar tareas ya finalizadas por los estados `Need PR`, `Need to Impute`, `Imputed` y `Deployed` segun corresponda.
+- Accede a `Ordenar tareas` para ajustar la prioridad manual de ejecución sin editar cada tarea individualmente.
 - Crea un nuevo parte diario.
 - Consulta días anteriores en modo histórico.
 - Visualiza el calendario mensual y marca ausencias o vacaciones.
@@ -44,6 +50,7 @@
 - Crea o edita una tarea indicando opcionalmente `limit_date` y seleccionando `ticket_type`.
 - Consulta el detalle de tarea, añade comentarios y guarda los cambios dentro de la tarea.
 - Cambia el criterio de ordenación del backlog o de tareas diarias y el listado se actualiza respetando filtros activos.
+- Reordena tareas operativas con puntos de orden y confirma la operación en una única llamada batch.
 
 ## Reglas de negocio
 - Estados de tarea: `To do`, `Doing`, `Draft`, `Undone`, `Unfinished`, `Need Fix`, `Waiting`, `Done`, `Warning`.
@@ -64,6 +71,12 @@
 - Solo existe un parte diario por usuario y fecha.
 - Tareas válidas para parte diario: `To do`, `Doing`, `Draft`, `Need Fix`, `Waiting`, `Warning`.
 - Tareas no cargadas: `Done`, `Undone`, `Unfinished`.
+- Tareas ordenables manualmente: cualquier tarea con `task_status` distinto de `Done`, `Undone` y `Unfinished`, y con `order_points` no nulo.
+- En `Ordenar tareas`, el listado base siempre se ordena por `order_points` descendente.
+- En `Ordenar tareas`, si una tarea se mueve hacia abajo en la lista, la tarea movida toma el `order_points` de la tarea que queda justo encima de ella en la nueva posición; las tareas desplazadas entre la posición original y la nueva posición incrementan su `order_points` en `1`.
+- En `Ordenar tareas`, si una tarea se mueve hacia arriba en la lista, la tarea movida toma el `order_points` de la tarea que queda justo debajo de ella en la nueva posición; las tareas desplazadas entre la nueva posición y la posición original decrementan su `order_points` en `1`.
+- En `Ordenar automaticamente`, las tareas ordenables se reenumeran por `order_points` ascendente: la menor recibe `1`, la siguiente `2`, y así sucesivamente hasta la mayor.
+- Las operaciones de reordenación deben enviarse preferentemente como una única operación batch con todos los cambios calculados, evitando una llamada por tarea.
 - Sábados y domingos son `Finde`.
 - Si un parámetro no tiene perfil de usuario, se devuelve el `default_value` sin insertar registro personalizado.
 - Si `fixed_value = true`, se devuelve siempre el `default_value`, se ignora cualquier valor personalizado existente y el campo queda en solo lectura.
@@ -92,3 +105,5 @@ Cada usuario solo puede ver y modificar sus valores propios de configuración. L
 - `sort_by` y `sort_direction` deben validarse contra el catálogo permitido.
 - En `Completar tareas`, `pr_link` y `test_cases` son opcionales y no deben bloquear la transición a `Need to Impute`.
 - En `Completar tareas`, `imputed_date` debe ser una fecha válida; si `finished_date` no existe, el popup debe usar la fecha actual como fallback documentado por la implementación.
+- En `Ordenar tareas`, se deben rechazar tareas inexistentes, tareas de otro usuario, tareas sin `order_points` y tareas con estado final no ordenable.
+- En `Ordenar tareas`, la operación batch debe rechazar duplicados de `id` y valores `order_points` no enteros.

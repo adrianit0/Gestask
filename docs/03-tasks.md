@@ -329,3 +329,59 @@
   - **Archivos**: Navegador + Supabase, documentación QA futura.
   - **Criterio de aceptación**: Se valida inclusión/exclusión de tareas, transiciones por tipo, datos opcionales de PR/test cases, edición de `imputed_date` y cierre final en `Deployed`.
   - **Dependencias**: FE-012.
+
+- **DOC-007**
+  - **Estado**: Hecho
+  - **Área**: Documentación
+  - **Descripción**: Documentar la funcionalidad `Ordenar tareas` bajo SDD.
+  - **Archivos**: `docs/01-requirements.md`, `docs/02-roadmap.md`, `docs/04-implementation.md`, `docs/05-data-model.md`, `docs/06-api-contracts.md`, `docs/07-ui-specification.md`, `docs/09-scoring-and-ordering.md`, `docs/11-order-tasks.md`
+  - **Criterio de aceptación**: Reglas de inclusión, orden visual, algoritmo de movimiento, contrato batch, UI y QA quedan documentados sin implementación.
+  - **Dependencias**: DOC-005.
+
+- **SQL-008**
+  - **Estado**: Pendiente
+  - **Área**: SQL
+  - **Descripción**: Añadir soporte eficiente para consultar tareas ordenables.
+  - **Archivos**: `supabase/sql/script-006.sql` o migración equivalente.
+  - **Criterio de aceptación**: Existe índice adecuado para consultar por `user_id`, `task_status` y `order_points` sin romper RLS ni datos existentes.
+  - **Dependencias**: DOC-007.
+
+- **API-011**
+  - **Estado**: Pendiente
+  - **Área**: Edge Functions
+  - **Descripción**: Crear endpoint `tasks-order-list`.
+  - **Archivos**: `supabase/functions/tasks-order-list/index.ts`
+  - **Criterio de aceptación**: Devuelve solo tareas no finales con `order_points` informado, ordenadas por `order_points desc` con desempate estable.
+  - **Dependencias**: DOC-007, SQL-008.
+
+- **API-012**
+  - **Estado**: Pendiente
+  - **Área**: Edge Functions
+  - **Descripción**: Crear endpoint batch `tasks-order-update`.
+  - **Archivos**: `supabase/functions/tasks-order-update/index.ts`
+  - **Criterio de aceptación**: Valida payload completo, rechaza tareas no ordenables, aplica cambios sin parciales y evita una llamada por tarea.
+  - **Dependencias**: API-011.
+
+- **FE-013**
+  - **Estado**: Pendiente
+  - **Área**: Frontend
+  - **Descripción**: Añadir navegación, servicio y página `Ordenar tareas`.
+  - **Archivos**: `src/components/AppLayout.js`, `src/main.js`, `src/pages/OrderTasksPage.js`, `src/services/taskOrderService.js`, `src/styles/global.css`
+  - **Criterio de aceptación**: La navegación muestra `Ordenar tareas`, la página lista tareas ordenables y permite mover arriba/abajo con una llamada batch por operación.
+  - **Dependencias**: API-011, API-012.
+
+- **FE-014**
+  - **Estado**: Pendiente
+  - **Área**: Frontend
+  - **Descripción**: Implementar acción `Ordenar automaticamente`.
+  - **Archivos**: `src/pages/OrderTasksPage.js`, `src/services/taskOrderService.js`
+  - **Criterio de aceptación**: La acción normaliza `order_points` de `1` a `N`, envía solo los cambios necesarios en una única llamada batch y refresca la lista.
+  - **Dependencias**: FE-013.
+
+- **QA-004**
+  - **Estado**: Pendiente
+  - **Área**: Testing manual
+  - **Descripción**: Verificar flujo completo de `Ordenar tareas`.
+  - **Archivos**: Navegador + Supabase, `docs/11-order-tasks.md`
+  - **Criterio de aceptación**: Pasan los casos manuales de listado, subida, bajada, orden automático, errores y verificación de una única llamada batch.
+  - **Dependencias**: FE-014.

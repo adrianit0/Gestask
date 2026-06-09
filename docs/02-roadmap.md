@@ -54,3 +54,10 @@
 - Añadir modelo de datos previsto para `pr_link`, `test_cases` e `imputed_date`.
 - Definir endpoints futuros para listar y resolver tareas pendientes de cierre.
 - Implementar la pestaña `Completar tareas` y sus popups guiados cuando se autorice el desarrollo.
+
+## Iteración 10
+- Documentar la funcionalidad `Ordenar tareas` bajo SDD.
+- Definir reglas de inclusión, orden visual y reordenación por `order_points`.
+- Definir endpoint batch para actualizar el orden en una única llamada.
+- Definir UI de listado con acciones subir, bajar y `Ordenar automaticamente`.
+- Implementar la pestaña `Ordenar tareas` cuando se autorice el desarrollo.

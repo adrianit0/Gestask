@@ -11,6 +11,7 @@
 - Pestaña Configuración con catálogo global y valores por usuario.
 - Documentación funcional y técnica para `limit_date`, `ticket_type`, comentarios, scoring configurable y ordenación avanzada.
 - Documentación funcional y técnica para la funcionalidad futura `Completar tareas`; no está implementada.
+- Documentación funcional y técnica para la funcionalidad futura `Ordenar tareas`; no está implementada.
 - Verificación parcial de QA-002 documentada en `docs/10-qa-002.md`.
 - Build de frontend verificado con `npm.cmd run build` en una iteración previa.
 
@@ -70,6 +71,7 @@
 - El scoring se documenta como campo calculado, no necesariamente persistido, para evitar desincronización con cambios de configuración.
 - La fecha límite `limit_date` se define nullable para no bloquear el flujo actual de creación de tareas.
 - `ticket_type = Task` se separa del flujo PR porque su estado final esperado es `Imputed`, no despliegue.
+- `Ordenar tareas` se especifica como operación batch para evitar una actualización HTTP por tarea y mantener consistencia de orden manual.
 
 ## Pendiente
 - Conectar y desplegar contra un proyecto Supabase real.
@@ -81,3 +83,4 @@
 - Ejecutar QA-002 en navegador contra Supabase real y cerrar la tarea cuando todos los casos pasen.
 - Añadir comentarios persistidos desde el detalle de tarea.
 - Implementar `Completar tareas` cuando se autorice el desarrollo.
+- Implementar `Ordenar tareas` cuando se autorice el desarrollo.

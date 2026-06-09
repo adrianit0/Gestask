@@ -1,7 +1,7 @@
 # Especificación UI
 
 ## Navegación
-Barra superior fija con Backlog, Tareas Diarias, Completar tareas, Calendario, Gestor de Tiempos, Gráficas de Rendimiento, Configuración y Logout.
+Barra superior fija con Backlog, Tareas Diarias, Completar tareas, Ordenar tareas, Calendario, Gestor de Tiempos, Gráficas de Rendimiento, Configuración y Logout.
 
 La pestaña Configuración debe representarse con un icono de rueda dentada.
 
@@ -145,6 +145,42 @@ Al pulsar `Resolver`, debe abrirse un popup con:
 Reglas:
 - Tras confirmar, la tarea pasa a `pr_status = Deployed`.
 - Las tareas `Task` no muestran este paso porque su workflow termina en `Imputed`.
+
+## Ordenar tareas
+Pantalla operativa para ajustar el orden manual de tareas pendientes usando `order_points`.
+
+La vista debe mostrar exclusivamente:
+- Tareas con `task_status` distinto de `Done`, `Undone` y `Unfinished`.
+- Tareas con `order_points` informado.
+
+Orden fijo de presentación:
+- `order_points` descendente.
+- Desempate estable por `created_at desc` e `id asc` si hubiera empates.
+
+Campos mínimos de tabla o lista:
+- Posición visual.
+- Ticket como hipervínculo cuando exista.
+- Tipo.
+- Título.
+- Estado.
+- Prioridad.
+- Fecha de inicio.
+- Fecha límite.
+- Puntos de orden.
+- Acciones para mover arriba y mover abajo.
+
+Acciones:
+- `Subir`: mueve la tarea una posición hacia arriba si no es la primera.
+- `Bajar`: mueve la tarea una posición hacia abajo si no es la última.
+- `Ordenar automaticamente`: recalcula todas las tareas visibles a una secuencia desde `1` hasta `N`.
+
+Reglas de UX:
+- La primera tarea no debe permitir `Subir`.
+- La última tarea no debe permitir `Bajar`.
+- Tras mover una tarea, la UI debe recalcular el orden localmente y enviar una única llamada batch con las tareas afectadas.
+- Mientras se guarda, los controles deben quedar deshabilitados o mostrar estado de carga para evitar dobles envíos.
+- Si falla el guardado, la UI debe restaurar el último orden confirmado o mostrar un error claro sin perder la lista.
+- La acción `Ordenar automaticamente` debe mostrar confirmación si el número de tareas afectadas es alto o si se detectan empates relevantes.
 
 ## Calendario
 Grid mensual. Cada día muestra estado, puntos y tickets/tareas finalizadas.

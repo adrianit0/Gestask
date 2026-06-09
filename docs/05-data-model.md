@@ -57,6 +57,13 @@ Campos relevantes actuales y previstos:
 - Para `Task`, `Imputed` es estado final y no existe transición a `Deployed`.
 - Para `Bug` y `Feature`, `Deployed` es el estado final del workflow posterior a `Done`.
 
+### Reglas de orden manual
+- `order_points` es la fuente de verdad del orden manual operativo.
+- Una tarea solo participa en `Ordenar tareas` si `order_points` no es `null` y `task_status` no es `Done`, `Undone` ni `Unfinished`.
+- El orden visual de la pestaña `Ordenar tareas` es `order_points desc`.
+- La funcionalidad no requiere una tabla nueva si la actualización batch actúa sobre `tasks.order_points`.
+- La actualización batch debe estar acotada por `user_id = auth.uid()` y validar que todas las tareas pertenecen al usuario autenticado.
+
 ## daily_reports
 Parte diario único por usuario y fecha.
 
@@ -96,6 +103,7 @@ Debe devolverse en los listados de tareas cuando la UI lo necesite para mostrar 
 - `tasks(user_id, ticket_type)` para filtros y reglas por tipo.
 - `tasks(user_id, task_status, pr_status)` para la vista `Completar tareas`.
 - `tasks(user_id, imputed_date)` si se consultan cierres o imputaciones por fecha.
+- `tasks(user_id, task_status, order_points)` para listar y actualizar eficientemente la vista `Ordenar tareas`.
 
 ## Reglas automáticas
 - Trigger `normalize_task_state` mantiene coherencia entre `task_status`, `finished_date`, `pr_status` y `ticket_type`.
