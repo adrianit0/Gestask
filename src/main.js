@@ -78,7 +78,7 @@ function currentPageHtml() {
     return CompletionTasksPage({ tasks: state.completionTasks, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, modalTask: state.completionModalTask, detailTask: state.detailTask });
   }
   if (state.page === "dailySchedule") {
-    return DailySchedulePage({ report: state.dailyReport, tasks: state.dailyTasks, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, detailTask: state.detailTask });
+    return DailySchedulePage({ report: state.dailyReport, tasks: state.dailyTasks, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
   }
   if (state.page === "calendar") {
     return CalendarPage({ year: state.calendarYear, month: state.calendarMonth, days: state.calendarDays, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success });
@@ -377,6 +377,7 @@ function bindDailyScheduleEvents() {
   });
 
   bindTaskTableEvents(state.dailyTasks);
+  bindTaskModalEvents();
 }
 
 function bindTaskTableEvents(tasks, { readonly = false } = {}) {
@@ -390,6 +391,16 @@ function bindTaskTableEvents(tasks, { readonly = false } = {}) {
 
   document.querySelectorAll("[data-close-detail-modal]").forEach((button) => {
     button.addEventListener("click", () => {
+      state.detailTask = null;
+      render();
+    });
+  });
+
+  document.querySelectorAll("[data-edit-detail-task]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const task = tasks.find((item) => item.id === button.dataset.editDetailTask) ?? findKnownTask(button.dataset.editDetailTask);
+      if (!task) return;
+      state.modalTask = task;
       state.detailTask = null;
       render();
     });

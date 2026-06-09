@@ -1,10 +1,10 @@
-import { BacklogTaskButton, TaskDetailModal } from "../components/TaskTable.js";
+import { BacklogTaskButton, TaskDetailModal, TaskModal } from "../components/TaskTable.js";
 import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
 import { PR_BORDER_COLORS, TASK_COLORS } from "../utils/constants.js";
 import { buildDailySchedule, formatScheduleTime } from "../utils/dailySchedule.js";
 import { escapeHtml } from "../utils/format.js";
 
-export function DailySchedulePage({ report = null, tasks = [], configurations = [], minutesPerEffortPoint = 60, loading = false, error = "", success = "", detailTask = null } = {}) {
+export function DailySchedulePage({ report = null, tasks = [], configurations = [], minutesPerEffortPoint = 60, loading = false, error = "", success = "", modalTask = undefined, detailTask = null } = {}) {
   const schedule = buildDailySchedule(tasks, configurations, minutesPerEffortPoint);
 
   return `
@@ -23,6 +23,7 @@ export function DailySchedulePage({ report = null, tasks = [], configurations = 
     <section class="panel daily-schedule-panel">
       ${loading ? LoadingState() : report ? DailySchedule(schedule) : EmptyState("No existe parte diario para mostrar el horario.")}
     </section>
+    ${modalTask !== undefined ? TaskModal(modalTask) : ""}
     ${detailTask ? TaskDetailModal(detailTask, { readonly: false }) : ""}
   `;
 }

@@ -5,8 +5,8 @@
       <nav aria-label="Navegación principal">
         ${navButton("backlog", "Backlog", activePage, "backlog")}
         ${navButton("daily", "Tareas diarias", activePage, "daily")}
-        ${navButton("completion", "Completar tareas", activePage, "completion")}
         ${navButton("dailySchedule", "Horario diario", activePage, "dailySchedule")}
+        ${navButton("completion", "Completar tareas", activePage, "completion")}        
         ${navButton("calendar", "Calendario", activePage, "calendar")}
         ${navButton("time", "Gestor de tiempos", activePage, "time")}
         ${navButton("charts", "Gráficas de rendimiento", activePage, "charts")}

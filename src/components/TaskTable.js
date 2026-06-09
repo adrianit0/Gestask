@@ -120,6 +120,15 @@ function cloneIcon() {
   `;
 }
 
+function closeIcon() {
+  return `
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M6 6l12 12"></path>
+      <path d="M18 6 6 18"></path>
+    </svg>
+  `;
+}
+
 function arrowRightIcon() {
   return `
     <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -138,7 +147,10 @@ export function TaskDetailModal(task, { readonly = false } = {}) {
             <p class="eyebrow">Detalle de tarea</p>
             <h2 id="task-detail-title">${escapeHtml(task.title)}</h2>
           </div>
-          <button class="icon-button" data-close-detail-modal aria-label="Cerrar">X</button>
+          <div class="modal-header-actions">
+            ${readonly ? "" : `<button class="icon-button edit-icon-button detail-edit-button" data-edit-detail-task="${escapeHtml(task.id)}" aria-label="Editar tarea">${editIcon()}</button>`}
+            <button class="icon-button close-icon-button" data-close-detail-modal aria-label="Cerrar">${closeIcon()}</button>
+          </div>
         </div>
         <div class="detail-grid">
           ${detailItem("Ticket", task.ticket ? ticketCell(task.ticket) : "-")}
@@ -159,9 +171,6 @@ export function TaskDetailModal(task, { readonly = false } = {}) {
           ${detailItem("Más info", escapeHtml(task.more_info || "-"), "span-3 detail-info")}
         </div>
         ${TaskComments(task, { readonly })}
-        <div class="modal-actions">
-          <button type="button" class="secondary" data-close-detail-modal>Cerrar</button>
-        </div>
       </section>
     </div>
   `;
