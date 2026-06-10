@@ -155,7 +155,8 @@ values
   ('hora_inicio', 'string', '8:00', false),
   ('hora_fin', 'string', '17:30', false),
   ('hora_descanso', 'string', '14:00', false),
-  ('duracion_descanso', 'number', '60', false)
+  ('duracion_descanso', 'number', '60', false),
+  ('hora_horario_offset', 'number', '0', false)
 on conflict (lower(name)) do update
 set
   parameter_type = excluded.parameter_type,

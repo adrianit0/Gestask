@@ -3,6 +3,7 @@ export const START_TIME_CONFIGURATION_NAME = "hora_inicio";
 export const END_TIME_CONFIGURATION_NAME = "hora_fin";
 export const BREAK_TIME_CONFIGURATION_NAME = "hora_descanso";
 export const BREAK_DURATION_CONFIGURATION_NAME = "duracion_descanso";
+export const SCHEDULE_TIME_OFFSET_CONFIGURATION_NAME = "hora_horario_offset";
 
 const DEFAULT_DAILY_EFFORT_POINTS = 12;
 const DEFAULT_START_TIME = "8:00";
@@ -10,6 +11,7 @@ const DAILY_BLOCK_DURATION_MINUTES = 60;
 const DEFAULT_END_TIME = "17:30";
 const DEFAULT_BREAK_TIME = "14:00";
 const DEFAULT_BREAK_DURATION_MINUTES = 60;
+const DEFAULT_SCHEDULE_TIME_OFFSET_HOURS = 0;
 
 export function buildDailySchedule(tasks = [], configurations = [], minutesPerEffortPoint = 60) {
   const settings = getDailyScheduleSettings(configurations, minutesPerEffortPoint);
@@ -30,6 +32,7 @@ export function getDailyScheduleSettings(configurations = [], minutesPerEffortPo
   const endMinutes = getTimeConfiguration(configurations, END_TIME_CONFIGURATION_NAME, DEFAULT_END_TIME);
   const breakStartMinutes = getTimeConfiguration(configurations, BREAK_TIME_CONFIGURATION_NAME, DEFAULT_BREAK_TIME);
   const breakDurationMinutes = getNumberConfiguration(configurations, BREAK_DURATION_CONFIGURATION_NAME, DEFAULT_BREAK_DURATION_MINUTES);
+  const scheduleTimeOffsetHours = getNumberConfiguration(configurations, SCHEDULE_TIME_OFFSET_CONFIGURATION_NAME, DEFAULT_SCHEDULE_TIME_OFFSET_HOURS);
   const dailyEffortPoints = getNumberConfiguration(configurations, DAILY_EFFORT_CONFIGURATION_NAME, DEFAULT_DAILY_EFFORT_POINTS);
   const safeMinutesPerEffortPoint = Number(minutesPerEffortPoint);
 
@@ -39,12 +42,13 @@ export function getDailyScheduleSettings(configurations = [], minutesPerEffortPo
     endMinutes: endMinutes > startMinutes ? endMinutes : startMinutes,
     breakStartMinutes,
     breakDurationMinutes: breakDurationMinutes > 0 ? breakDurationMinutes : DEFAULT_BREAK_DURATION_MINUTES,
+    scheduleTimeOffsetMinutes: Number.isFinite(scheduleTimeOffsetHours) ? scheduleTimeOffsetHours * 60 : 0,
     minutesPerEffortPoint: Number.isFinite(safeMinutesPerEffortPoint) && safeMinutesPerEffortPoint > 0 ? safeMinutesPerEffortPoint : 60,
   };
 }
 
-export function formatScheduleTime(minutes) {
-  const normalized = Math.max(0, Math.round(Number(minutes) || 0));
+export function formatScheduleTime(minutes, offsetMinutes = 0) {
+  const normalized = Math.max(0, Math.round((Number(minutes) || 0) + (Number(offsetMinutes) || 0)));
   const hours = Math.floor(normalized / 60);
   const mins = normalized % 60;
   return `${hours}:${String(mins).padStart(2, "0")}`;

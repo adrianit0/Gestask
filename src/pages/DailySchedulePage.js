@@ -6,6 +6,7 @@ import { escapeHtml } from "../utils/format.js";
 
 export function DailySchedulePage({ report = null, tasks = [], configurations = [], minutesPerEffortPoint = 60, loading = false, error = "", success = "", modalTask = undefined, detailTask = null } = {}) {
   const schedule = buildDailySchedule(tasks, configurations, minutesPerEffortPoint);
+  const timeOffset = schedule.settings.scheduleTimeOffsetMinutes;
 
   return `
     <section class="page-header">
@@ -15,7 +16,7 @@ export function DailySchedulePage({ report = null, tasks = [], configurations = 
       </div>
       <div class="schedule-summary">
         <span>${escapeHtml(schedule.totalEffortPoints)} / ${escapeHtml(schedule.settings.dailyEffortPoints)} PE</span>
-        <span>${escapeHtml(formatScheduleTime(schedule.settings.startMinutes))} - ${escapeHtml(formatScheduleTime(schedule.settings.endMinutes))}</span>
+        <span>${escapeHtml(formatScheduleTime(schedule.settings.startMinutes, timeOffset))} - ${escapeHtml(formatScheduleTime(schedule.settings.endMinutes, timeOffset))}</span>
       </div>
     </section>
     ${ErrorMessage(error)}
@@ -33,19 +34,19 @@ function DailySchedule(schedule) {
 
   return `
     <div class="daily-schedule-list">
-      ${schedule.items.map(ScheduleItem).join("")}
+      ${schedule.items.map((item) => ScheduleItem(item, schedule.settings.scheduleTimeOffsetMinutes)).join("")}
     </div>
   `;
 }
 
-function ScheduleItem(item) {
+function ScheduleItem(item, timeOffset = 0) {
   if (item.type === "break" || item.type === "daily") {
     const className = item.type === "break" ? "schedule-break" : "schedule-daily";
     return `
       <article class="schedule-item ${className}">
         <div class="schedule-time">
-          <strong>${escapeHtml(formatScheduleTime(item.startMinutes))}</strong>
-          <span>${escapeHtml(formatScheduleTime(item.endMinutes))}</span>
+          <strong>${escapeHtml(formatScheduleTime(item.startMinutes, timeOffset))}</strong>
+          <span>${escapeHtml(formatScheduleTime(item.endMinutes, timeOffset))}</span>
         </div>
         <div class="schedule-card">
           <h2>${escapeHtml(item.title)}</h2>
@@ -63,8 +64,8 @@ function ScheduleItem(item) {
   return `
     <article class="schedule-item schedule-task" data-schedule-task="${escapeHtml(task.id)}" style="${visualStyle}">
       <div class="schedule-time">
-        <strong>${escapeHtml(formatScheduleTime(item.startMinutes))}</strong>
-        <span>${escapeHtml(formatScheduleTime(item.endMinutes))}</span>
+        <strong>${escapeHtml(formatScheduleTime(item.startMinutes, timeOffset))}</strong>
+        <span>${escapeHtml(formatScheduleTime(item.endMinutes, timeOffset))}</span>
       </div>
       <div class="schedule-card">
         <div class="schedule-card-top">
