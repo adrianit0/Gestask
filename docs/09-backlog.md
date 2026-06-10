@@ -27,7 +27,7 @@
   - **Estado**: Hecho
   - **Área**: Documentación
   - **Descripción**: Registrar implementación.
-  - **Archivos**: `docs/04-implementation.md`
+  - **Archivos**: `docs/10-decisions.md`
   - **Criterio de aceptación**: Cambios y pendientes trazados.
   - **Dependencias**: Resto.
 
@@ -99,7 +99,7 @@
   - **Estado**: Hecho
   - **Área**: Documentación
   - **Descripción**: Definir pestaña Configuración.
-  - **Archivos**: `docs/08-configuration.md`
+  - **Archivos**: `docs/06-configuration.md`
   - **Criterio de aceptación**: Comportamiento, modelo y reglas de configuración documentados.
   - **Dependencias**: DOC-002.
 
@@ -149,7 +149,7 @@
   - **Estado**: Hecho
   - **Área**: Documentación
   - **Descripción**: Documentar `limit_date`, `ticket_type`, comentarios, scoring y ordenación avanzada.
-  - **Archivos**: `docs/01-requirements.md`, `docs/02-roadmap.md`, `docs/05-data-model.md`, `docs/06-api-contracts.md`, `docs/07-ui-specification.md`, `docs/08-configuration.md`, `docs/09-scoring-and-ordering.md`
+  - **Archivos**: `docs/01-requirements.md`, `docs/02-roadmap.md`, `docs/03-data-model.md`, `docs/04-api-contracts.md`, `docs/05-ui-specification.md`, `docs/06-configuration.md`, `docs/07-scoring.md`
   - **Criterio de aceptación**: Requisitos, reglas de negocio, contratos, UI, configuración y cálculo de scoring quedan trazados.
   - **Dependencias**: DOC-002, DOC-004.
 
@@ -261,16 +261,16 @@
   - **Estado**: Hecho
   - **Área**: Testing manual
   - **Descripción**: Verificar flujo completo de tipos, fecha límite, comentarios, scoring y ordenación.
-  - **Archivos**: Navegador + Supabase, `docs/10-qa-002.md`
-  - **Criterio de aceptación**: Todos los casos manuales de `docs/09-scoring-and-ordering.md` pasan correctamente.
+  - **Archivos**: Navegador + Supabase.
+  - **Criterio de aceptación**: Todos los casos manuales de `docs/07-scoring.md` pasan correctamente.
   - **Dependencias**: FE-010.
-  - **Nota**: Verificación parcial documentada; pendiente ejecución real en navegador contra Supabase.
+  - **Nota**: Verificación parcial completada por inspección de código y `npm run build`; pendiente ejecución real en navegador contra Supabase con `script-003.sql` aplicado.
 
 - **DOC-006**
   - **Estado**: Hecho
   - **Área**: Documentación
   - **Descripción**: Documentar la funcionalidad `Completar tareas`.
-  - **Archivos**: `docs/01-requirements.md`, `docs/02-roadmap.md`, `docs/04-implementation.md`, `docs/05-data-model.md`, `docs/06-api-contracts.md`, `docs/07-ui-specification.md`
+  - **Archivos**: `docs/01-requirements.md`, `docs/02-roadmap.md`, `docs/03-data-model.md`, `docs/04-api-contracts.md`, `docs/05-ui-specification.md`, `docs/10-decisions.md`
   - **Criterio de aceptación**: Reglas de inclusión, popups, transiciones, datos futuros y contratos previstos quedan documentados sin implementación.
   - **Dependencias**: DOC-005.
 
@@ -334,7 +334,7 @@
   - **Estado**: Hecho
   - **Área**: Documentación
   - **Descripción**: Documentar la funcionalidad `Ordenar tareas` bajo SDD.
-  - **Archivos**: `docs/01-requirements.md`, `docs/02-roadmap.md`, `docs/04-implementation.md`, `docs/05-data-model.md`, `docs/06-api-contracts.md`, `docs/07-ui-specification.md`, `docs/09-scoring-and-ordering.md`, `docs/11-order-tasks.md`
+  - **Archivos**: `docs/01-requirements.md`, `docs/02-roadmap.md`, `docs/03-data-model.md`, `docs/04-api-contracts.md`, `docs/05-ui-specification.md`, `docs/07-scoring.md`, `docs/08-order-tasks.md`, `docs/10-decisions.md`
   - **Criterio de aceptación**: Reglas de inclusión, orden visual, algoritmo de movimiento, contrato batch, UI y QA quedan documentados sin implementación.
   - **Dependencias**: DOC-005.
 
@@ -382,7 +382,7 @@
   - **Estado**: Pendiente
   - **Área**: Testing manual
   - **Descripción**: Verificar flujo completo de `Ordenar tareas`.
-  - **Archivos**: Navegador + Supabase, `docs/11-order-tasks.md`
+  - **Archivos**: Navegador + Supabase, `docs/08-order-tasks.md`
   - **Criterio de aceptación**: Pasan los casos manuales de listado, subida, bajada, orden automático, errores y verificación de una única llamada batch.
   - **Dependencias**: FE-014.
   - **Nota**: Build frontend validado; pendiente prueba manual real contra Supabase desplegado.

@@ -62,7 +62,7 @@ Ejemplos:
 
 Reglas:
 - Los parámetros `scoring_*` deben usar `parameter_type = number` salvo que se documente otra necesidad.
-- Si un parámetro de scoring no existe, el cálculo debe usar un valor por defecto definido en `docs/09-scoring-and-ordering.md`.
+- Si un parámetro de scoring no existe, el cálculo debe usar un valor por defecto definido en `docs/07-scoring.md`.
 - Los usuarios pueden personalizar multiplicadores si el parámetro no está marcado como fijo.
 - Los parámetros fijos permiten bloquear multiplicadores globales.
 

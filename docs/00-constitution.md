@@ -33,7 +33,7 @@ Gestask es una plataforma web personal de productividad laboral para gestionar b
 
 ## Evolución
 - Cada iteración debe actualizar documentación, SQL, funciones y frontend cuando aplique.
-- Las decisiones técnicas se registran en `docs/04-implementation.md`.
+- Las decisiones técnicas se registran en `docs/10-decisions.md`.
 - No se rompen contratos públicos sin documentar migración.
 
 ## Convenciones
