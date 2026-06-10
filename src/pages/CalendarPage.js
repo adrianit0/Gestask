@@ -1,11 +1,18 @@
 import { ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
+import { closeIcon } from "../components/TaskTable.js";
 import { DAY_STATUSES } from "../utils/constants.js";
 import { formatHoursFromEffortPoints } from "../utils/effortTime.js";
 import { escapeHtml, truncate } from "../utils/format.js";
 
 const WEEK_DAYS = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"];
 
-export function CalendarPage({ year, month, days = [], minutesPerEffortPoint = 60, loading = false, error = "", success = "" } = {}) {
+const CALENDAR_TASK_COLORS = {
+  Bug: { background: "#ffe3df", border: "#d92d20" },
+  Feature: { background: "#e9e4ff", border: "#6a5cf6" },
+  Task: { background: "#dff1ff", border: "#2680eb" },
+};
+
+export function CalendarPage({ year, month, days = [], minutesPerEffortPoint = 60, loading = false, error = "", success = "", modalDay = null } = {}) {
   const current = new Date();
   const selectedYear = year ?? current.getFullYear();
   const selectedMonth = month ?? current.getMonth() + 1;
@@ -24,6 +31,39 @@ export function CalendarPage({ year, month, days = [], minutesPerEffortPoint = 6
       <button class="secondary" data-load-calendar>Consultar</button>
     </section>
     <section class="panel">${loading ? LoadingState() : CalendarGrid(days, minutesPerEffortPoint)}</section>
+    ${modalDay ? CalendarDayModal(modalDay) : ""}
+  `;
+}
+
+function CalendarDayModal(day) {
+  const weekdayName = getWeekdayName(day.date);
+  return `
+    <div class="modal-backdrop" role="presentation">
+      <section class="modal calendar-day-modal" role="dialog" aria-modal="true" aria-labelledby="calendar-day-modal-title">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow">Calendario</p>
+            <h2 id="calendar-day-modal-title">${weekdayName} ${day.day} — ${escapeHtml(day.date)}</h2>
+          </div>
+          <button class="icon-button close-icon-button" data-close-calendar-modal aria-label="Cerrar">${closeIcon()}</button>
+        </div>
+        <form id="calendar-day-form" class="calendar-day-form">
+          <input type="hidden" name="day" value="${escapeHtml(day.date)}" />
+          <label>Tipo de día
+            <select name="status">
+              ${DAY_STATUSES.map((status) => `<option ${day.status === status ? "selected" : ""}>${status}</option>`).join("")}
+            </select>
+          </label>
+          <label>Observaciones
+            <textarea name="note" placeholder="Ej. Mudanza, médico por la tarde...">${escapeHtml(day.note || "")}</textarea>
+          </label>
+          <div class="modal-actions">
+            <button type="button" class="secondary" data-close-calendar-modal>Cancelar</button>
+            <button type="submit" class="primary">Guardar</button>
+          </div>
+        </form>
+      </section>
+    </div>
   `;
 }
 
@@ -41,22 +81,31 @@ function CalendarDayCard(day, minutesPerEffortPoint) {
   const completedPoints = Number(day.completed_points || 0);
   const completedHours = formatHoursFromEffortPoints(completedPoints, minutesPerEffortPoint);
   const weekdayName = getWeekdayName(day.date);
-  const statusOptions = day.status === "Finde" ? ["Finde", ...DAY_STATUSES] : DAY_STATUSES;
+  const editable = day.status !== "Finde";
   return `
-    <article class="calendar-day ${className}">
+    <article class="calendar-day ${className} ${editable ? "calendar-day-editable" : ""}" ${editable ? `data-calendar-day="${day.date}"` : ""}>
       <div class="calendar-day-top">
         <strong>${day.day}<small>${weekdayName}</small></strong>
         <span>${escapeHtml(day.status)}</span>
       </div>
       <div class="points">${completedPoints} pts / ${completedHours}</div>
-      <select data-day-status="${day.date}" ${day.status === "Finde" ? "disabled" : ""}>
-        ${statusOptions.map((status) => `<option ${day.status === status ? "selected" : ""}>${status}</option>`).join("")}
-      </select>
+      ${day.note ? `<p class="calendar-day-note" title="${escapeHtml(day.note)}">${escapeHtml(truncate(day.note, 70))}</p>` : ""}
       <div class="tickets">
-        ${(day.completed_tasks ?? []).map((task) => `<button data-calendar-task="${task.id}" title="${escapeHtml(task.title)}">${escapeHtml(truncate(task.ticket || task.title))}</button>`).join("")}
+        ${(day.completed_tasks ?? []).map(CalendarTaskButton).join("")}
       </div>
       ${day.is_today ? `<div class="today-pill">Hoy</div>` : ""}
     </article>
+  `;
+}
+
+function CalendarTaskButton(task) {
+  const colors = CALENDAR_TASK_COLORS[task.ticket_type] ?? { background: "rgba(255, 255, 255, 0.72)", border: "rgba(0, 0, 0, 0.2)" };
+  return `
+    <button class="calendar-task" data-calendar-task="${task.id}" title="${escapeHtml(task.title)}" style="--ctask-bg:${colors.background}; --ctask-border:${colors.border};">
+      <strong>${escapeHtml(task.ticket || truncate(task.title))}</strong>
+      <span>${escapeHtml(task.title)}</span>
+      <em>${Number(task.effort_points || 0)} pts</em>
+    </button>
   `;
 }
 

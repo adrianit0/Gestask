@@ -45,9 +45,11 @@ const state = {
   calendarYear: new Date().getFullYear(),
   calendarMonth: new Date().getMonth() + 1,
   calendarDays: [],
+  calendarModalDay: null,
   timeEntries: [],
   editingTimeEntry: null,
   configurations: [],
+  configurationModalOpen: false,
   performanceShowAll: false,
 };
 
@@ -87,13 +89,13 @@ function currentPageHtml() {
     return DailySchedulePage({ report: state.dailyReport, tasks: state.dailyTasks, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
   }
   if (state.page === "calendar") {
-    return CalendarPage({ year: state.calendarYear, month: state.calendarMonth, days: state.calendarDays, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success });
+    return CalendarPage({ year: state.calendarYear, month: state.calendarMonth, days: state.calendarDays, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, modalDay: state.calendarModalDay });
   }
   if (state.page === "time") {
     return TimeManagerPage({ tasks: state.tasks, entries: state.timeEntries, editingEntry: state.editingTimeEntry, error: state.error, success: state.success });
   }
   if (state.page === "configuration") {
-    return ConfigurationPage({ configurations: state.configurations, loading: state.loading, error: state.error, success: state.success });
+    return ConfigurationPage({ configurations: state.configurations, loading: state.loading, error: state.error, success: state.success, showCreateModal: state.configurationModalOpen });
   }
   return PerformancePage({ tasks: state.tasks, calendarDays: state.calendarDays, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), showAll: state.performanceShowAll, loading: state.loading, error: state.error, success: state.success });
 }
@@ -128,6 +130,8 @@ function bindLayoutEvents() {
       state.detailTask = null;
       state.modalTask = undefined;
       state.completionModalTask = null;
+      state.configurationModalOpen = false;
+      state.calendarModalDay = null;
       clearMessages();
       render();
     });
@@ -553,22 +557,40 @@ function bindCalendarEvents() {
   document.querySelector("[data-load-calendar]")?.addEventListener("click", async () => {
     state.calendarYear = Number(document.querySelector("[data-calendar-year]").value);
     state.calendarMonth = Number(document.querySelector("[data-calendar-month]").value);
+    state.calendarModalDay = null;
     await loadCalendar();
     render();
   });
 
-  document.querySelectorAll("[data-day-status]").forEach((select) => {
-    select.addEventListener("change", async () => {
+  document.querySelectorAll("[data-calendar-day]").forEach((card) => {
+    card.addEventListener("click", (event) => {
+      if (event.target.closest("button")) return;
+      state.calendarModalDay = state.calendarDays.find((day) => day.date === card.dataset.calendarDay) ?? null;
       clearMessages();
-      try {
-        await updateCalendarDayStatus({ day: select.dataset.dayStatus, status: select.value });
-        state.success = "Estado de día actualizado.";
-        await loadCalendar();
-      } catch (error) {
-        state.error = error.message;
-      }
       render();
     });
+  });
+
+  document.querySelectorAll("[data-close-calendar-modal]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.calendarModalDay = null;
+      render();
+    });
+  });
+
+  document.querySelector("#calendar-day-form")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    clearMessages();
+    const payload = formToObject(event.target);
+    try {
+      await updateCalendarDayStatus({ day: payload.day, status: payload.status, note: payload.note?.trim() || null });
+      state.calendarModalDay = null;
+      state.success = "Día actualizado.";
+      await loadCalendar();
+    } catch (error) {
+      state.error = error.message;
+    }
+    render();
   });
 
   document.querySelectorAll("[data-calendar-task]").forEach((button) => {
@@ -639,12 +661,42 @@ function bindConfigurationEvents() {
     });
   });
 
+  document.querySelectorAll("[data-reset-configuration]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      clearMessages();
+      const configuration = state.configurations.find((item) => item.id === button.dataset.resetConfiguration);
+      if (!configuration) return;
+      try {
+        await updateConfigurationProfile({ configuration_id: configuration.id, value: configuration.default_value });
+        state.success = "Parámetro restablecido al valor por defecto.";
+        await loadConfigurations({ preserveMessages: true });
+      } catch (error) {
+        state.error = error.message;
+      }
+      render();
+    });
+  });
+
+  document.querySelector("[data-open-configuration-modal]")?.addEventListener("click", () => {
+    state.configurationModalOpen = true;
+    clearMessages();
+    render();
+  });
+
+  document.querySelectorAll("[data-close-configuration-modal]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.configurationModalOpen = false;
+      render();
+    });
+  });
+
   document.querySelector("#configuration-create-form")?.addEventListener("submit", async (event) => {
     event.preventDefault();
     clearMessages();
     const payload = normalizeConfigurationPayload(formToObject(event.target));
     try {
       await createConfiguration(payload);
+      state.configurationModalOpen = false;
       state.success = "Parámetro creado.";
       await loadConfigurations({ preserveMessages: true });
     } catch (error) {

@@ -71,7 +71,7 @@ export function PerformancePage({ tasks = [], calendarDays = [], minutesPerEffor
           ${CumulativePointsChart(calendarDays)}
         </article>
         <article class="panel chart-panel span-wide">
-          <h2>Ritmo acumulado creado + terminado</h2>
+          <h2>Ritmo acumulado terminado - creado</h2>
           ${CumulativeCreatedCompletedChart(calendarDays, tasks)}
         </article>
         <article class="panel chart-panel">
@@ -289,17 +289,17 @@ function CumulativeCreatedCompletedChart(days, tasks) {
   const assignedStats = getAssignedStatsByDay(days, tasks);
   let total = 0;
   const values = days.map((day) => {
-    total += (assignedStats.get(day.date)?.points ?? 0) + Number(day.completed_points || 0);
+    total += Number(day.completed_points || 0) - (assignedStats.get(day.date)?.points ?? 0);
     return total;
   });
   const max = Math.max(1, ...values);
   return `
-    <div class="daily-bars cumulative-bars" aria-label="Puntos acumulados creados y terminados">
+    <div class="daily-bars cumulative-bars" aria-label="Puntos de diferencia entre terminados y creados">
       ${days.map((day, index) => {
         const value = values[index];
         const height = value ? Math.max(12, Math.round((value / max) * 170)) : 8;
         return `
-          <div class="daily-bar combined-cumulative-bar" title="${escapeHtml(`${day.date}: ${value} puntos creados + terminados acumulados`)}">
+          <div class="daily-bar combined-cumulative-bar" title="${escapeHtml(`${day.date}: ${value} puntos terminados acumulados - creados`)}">
             <div style="height:${height}px"></div>
             <strong>${value}</strong>
             <span>${day.day}</span>

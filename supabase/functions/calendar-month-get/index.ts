@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
 
   const { data: doneTasks, error: taskError } = await supabase
     .from("tasks")
-    .select("id, ticket, title, effort_points, finished_date")
+    .select("id, ticket, title, ticket_type, effort_points, finished_date")
     .eq("user_id", user.id)
     .eq("task_status", "Done")
     .gte("finished_date", firstDay)

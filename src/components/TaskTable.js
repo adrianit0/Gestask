@@ -120,7 +120,7 @@ function cloneIcon() {
   `;
 }
 
-function closeIcon() {
+export function closeIcon() {
   return `
     <svg aria-hidden="true" viewBox="0 0 24 24">
       <path d="M6 6l12 12"></path>
@@ -237,8 +237,11 @@ export function TaskModal(task = null) {
     <div class="modal-backdrop" role="presentation">
       <section class="modal" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
         <div class="modal-header">
-          <h2 id="task-modal-title">${isEdit ? "Editar tarea" : "Crear tarea"}</h2>
-          <button class="icon-button" data-close-modal aria-label="Cerrar">X</button>
+          <div>
+            <p class="eyebrow">Tareas</p>
+            <h2 id="task-modal-title">${isEdit ? "Editar tarea" : "Crear tarea"}</h2>
+          </div>
+          <button class="icon-button close-icon-button" data-close-modal aria-label="Cerrar">${closeIcon()}</button>
         </div>
         <form id="task-form" class="form-grid task-form-grid">
           <input type="hidden" name="id" value="${escapeHtml(task?.id || "")}" />

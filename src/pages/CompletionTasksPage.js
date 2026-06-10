@@ -1,5 +1,5 @@
 import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
-import { BacklogTaskButton, TaskDetailModal } from "../components/TaskTable.js";
+import { BacklogTaskButton, TaskDetailModal, closeIcon } from "../components/TaskTable.js";
 import { PR_BORDER_COLORS } from "../utils/constants.js";
 import { escapeHtml, todayIso } from "../utils/format.js";
 import { formatHoursFromEffortPoints } from "../utils/effortTime.js";
@@ -129,7 +129,7 @@ function CompletionResolveModal(task, minutesPerEffortPoint) {
             <p class="eyebrow">Completar tareas</p>
             <h2 id="completion-modal-title">${escapeHtml(title)}</h2>
           </div>
-          <button class="icon-button" data-close-completion-modal aria-label="Cerrar">x</button>
+          <button class="icon-button close-icon-button" data-close-completion-modal aria-label="Cerrar">${closeIcon()}</button>
         </div>
         ${CompletionResolveForm(task, minutesPerEffortPoint)}
       </section>
