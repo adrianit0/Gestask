@@ -4,8 +4,8 @@ import { PR_BORDER_COLORS, TASK_COLORS } from "../utils/constants.js";
 import { buildDailySchedule, formatScheduleTime } from "../utils/dailySchedule.js";
 import { escapeHtml } from "../utils/format.js";
 
-export function DailySchedulePage({ report = null, tasks = [], configurations = [], minutesPerEffortPoint = 60, loading = false, error = "", success = "", modalTask = undefined, detailTask = null } = {}) {
-  const schedule = buildDailySchedule(tasks, configurations, minutesPerEffortPoint);
+export function DailySchedulePage({ report = null, date = null, tasks = [], configurations = [], minutesPerEffortPoint = 60, loading = false, error = "", success = "", modalTask = undefined, detailTask = null } = {}) {
+  const schedule = buildDailySchedule(tasks, configurations, minutesPerEffortPoint, date);
   const timeOffset = schedule.settings.scheduleTimeOffsetMinutes;
 
   return `
@@ -15,6 +15,7 @@ export function DailySchedulePage({ report = null, tasks = [], configurations = 
         <h1>Horario diario</h1>
       </div>
       <div class="schedule-summary">
+        ${schedule.settings.intensive ? `<span>Horario intensivo</span>` : ""}
         <span>${escapeHtml(schedule.totalEffortPoints)} / ${escapeHtml(schedule.settings.dailyEffortPoints)} PE</span>
         <span>${escapeHtml(formatScheduleTime(schedule.settings.startMinutes, timeOffset))} - ${escapeHtml(formatScheduleTime(schedule.settings.endMinutes, timeOffset))}</span>
       </div>

@@ -86,10 +86,10 @@ function currentPageHtml() {
     return OrderTasksPage({ tasks: state.orderTasks, loading: state.loading, error: state.error, success: state.success });
   }
   if (state.page === "dailySchedule") {
-    return DailySchedulePage({ report: state.dailyReport, tasks: state.dailyTasks, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
+    return DailySchedulePage({ report: state.dailyReport, date: state.dailyDate, tasks: state.dailyTasks, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
   }
   if (state.page === "calendar") {
-    return CalendarPage({ year: state.calendarYear, month: state.calendarMonth, days: state.calendarDays, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, modalDay: state.calendarModalDay });
+    return CalendarPage({ year: state.calendarYear, month: state.calendarMonth, days: state.calendarDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, modalDay: state.calendarModalDay });
   }
   if (state.page === "time") {
     return TimeManagerPage({ tasks: state.tasks, entries: state.timeEntries, editingEntry: state.editingTimeEntry, error: state.error, success: state.success });
@@ -97,7 +97,7 @@ function currentPageHtml() {
   if (state.page === "configuration") {
     return ConfigurationPage({ configurations: state.configurations, loading: state.loading, error: state.error, success: state.success, showCreateModal: state.configurationModalOpen });
   }
-  return PerformancePage({ tasks: state.tasks, calendarDays: state.calendarDays, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), showAll: state.performanceShowAll, loading: state.loading, error: state.error, success: state.success });
+  return PerformancePage({ tasks: state.tasks, calendarDays: state.calendarDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), showAll: state.performanceShowAll, loading: state.loading, error: state.error, success: state.success });
 }
 
 function bindAuthEvents() {

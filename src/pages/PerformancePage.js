@@ -1,17 +1,22 @@
 import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
 import { PRIORITIES, TASK_STATUSES } from "../utils/constants.js";
+import { getDailyScheduleSettings, isIntensiveDate } from "../utils/dailySchedule.js";
 import { formatHoursFromEffortPoints } from "../utils/effortTime.js";
 import { escapeHtml } from "../utils/format.js";
 
 const MONTH_SCOPED_FINAL_STATUSES = new Set(["Done", "Undone", "Unfinished"]);
 
-export function PerformancePage({ tasks = [], calendarDays = [], minutesPerEffortPoint = 60, showAll = false, loading = false, error = "", success = "" } = {}) {
+export function PerformancePage({ tasks = [], calendarDays = [], configurations = [], minutesPerEffortPoint = 60, showAll = false, loading = false, error = "", success = "" } = {}) {
   const visibleTasks = showAll ? tasks : tasks.filter((task) => !MONTH_SCOPED_FINAL_STATUSES.has(task.task_status) || isFinishedInCurrentMonth(task));
   const doneTasks = visibleTasks.filter((task) => task.task_status === "Done");
   const completedPoints = doneTasks.reduce((sum, task) => sum + Number(task.effort_points || 0), 0);
   const completedHours = formatHoursFromEffortPoints(completedPoints, minutesPerEffortPoint);
   const openTasks = visibleTasks.filter((task) => !MONTH_SCOPED_FINAL_STATUSES.has(task.task_status)).length;
   const deployableTasks = doneTasks.filter((task) => ["Imputed", "Deployed"].includes(task.pr_status)).length;
+  const workableDays = calendarDays.filter((day) => day.status === "Laboral");
+  const intensiveDays = workableDays.filter((day) => isIntensiveDate(day.date, configurations)).length;
+  const monthlyTargetPoints = workableDays.reduce((sum, day) => sum + getDailyScheduleSettings(configurations, minutesPerEffortPoint, day.date).dailyEffortPoints, 0);
+  const monthlyCompletionPercentage = monthlyTargetPoints > 0 ? Number(((completedPoints / monthlyTargetPoints) * 100).toFixed(1)) : 0;
 
   return `
     <section class="page-header">
@@ -29,9 +34,17 @@ export function PerformancePage({ tasks = [], calendarDays = [], minutesPerEffor
       <section class="metric-grid performance-metrics">
         ${Metric("Tareas abiertas", openTasks)}
         ${Metric("Tareas terminadas", doneTasks.length)}
-        ${Metric("Puntos completados", completedPoints)}
-        ${Metric("Horas completadas", completedHours)}
         ${Metric("Listas para cierre", deployableTasks)}
+      </section>
+      <section class="metric-grid performance-metrics">
+        ${Metric("PE completados", completedPoints)}
+        ${showAll ? "" : Metric("PE totales del mes", monthlyTargetPoints)}
+        ${showAll ? "" : Metric("% completado del mes", `${monthlyCompletionPercentage}%`)}
+      </section>
+      <section class="metric-grid performance-metrics">
+        ${Metric("Horas completadas", completedHours)}
+        ${Metric("Dias laborables del mes", workableDays.length)}
+        ${Metric("Dias intensivos del mes", intensiveDays)}
       </section>
       <section class="charts-grid">
         <article class="panel chart-panel">

@@ -1,10 +1,12 @@
 import { ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
 import { closeIcon } from "../components/TaskTable.js";
 import { DAY_STATUSES } from "../utils/constants.js";
+import { getDailyScheduleSettings } from "../utils/dailySchedule.js";
 import { formatHoursFromEffortPoints } from "../utils/effortTime.js";
 import { escapeHtml, truncate } from "../utils/format.js";
 
 const WEEK_DAYS = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"];
+const WORK_WEEK_DAYS = 5;
 
 const CALENDAR_TASK_COLORS = {
   Bug: { background: "#ffe3df", border: "#d92d20" },
@@ -12,7 +14,7 @@ const CALENDAR_TASK_COLORS = {
   Task: { background: "#dff1ff", border: "#2680eb" },
 };
 
-export function CalendarPage({ year, month, days = [], minutesPerEffortPoint = 60, loading = false, error = "", success = "", modalDay = null } = {}) {
+export function CalendarPage({ year, month, days = [], configurations = [], minutesPerEffortPoint = 60, loading = false, error = "", success = "", modalDay = null } = {}) {
   const current = new Date();
   const selectedYear = year ?? current.getFullYear();
   const selectedMonth = month ?? current.getMonth() + 1;
@@ -30,7 +32,7 @@ export function CalendarPage({ year, month, days = [], minutesPerEffortPoint = 6
       <input data-calendar-month type="number" min="1" max="12" value="${selectedMonth}" />
       <button class="secondary" data-load-calendar>Consultar</button>
     </section>
-    <section class="panel">${loading ? LoadingState() : CalendarGrid(days, minutesPerEffortPoint)}</section>
+    <section class="panel">${loading ? LoadingState() : CalendarGrid(days, configurations, minutesPerEffortPoint)}</section>
     ${modalDay ? CalendarDayModal(modalDay) : ""}
   `;
 }
@@ -67,19 +69,21 @@ function CalendarDayModal(day) {
   `;
 }
 
-function CalendarGrid(days, minutesPerEffortPoint) {
-  const leadingEmptyDays = days.length ? getMondayFirstWeekdayIndex(days[0].date) : 0;
-  const weekdayHeaders = WEEK_DAYS.map((day) => `<div class="calendar-weekday">${day}</div>`).join("");
+function CalendarGrid(days, configurations, minutesPerEffortPoint) {
+  const workDays = days.filter((day) => getMondayFirstWeekdayIndex(day.date) < WORK_WEEK_DAYS);
+  const leadingEmptyDays = workDays.length ? getMondayFirstWeekdayIndex(workDays[0].date) : 0;
+  const weekdayHeaders = WEEK_DAYS.slice(0, WORK_WEEK_DAYS).map((day) => `<div class="calendar-weekday">${day}</div>`).join("");
   const emptyCells = Array.from({ length: leadingEmptyDays }, () => `<div class="calendar-empty" aria-hidden="true"></div>`).join("");
-  const dayCards = days.map((day) => CalendarDayCard(day, minutesPerEffortPoint)).join("");
+  const dayCards = workDays.map((day) => CalendarDayCard(day, configurations, minutesPerEffortPoint)).join("");
 
   return `<div class="calendar-grid">${weekdayHeaders}${emptyCells}${dayCards}</div>`;
 }
 
-function CalendarDayCard(day, minutesPerEffortPoint) {
+function CalendarDayCard(day, configurations, minutesPerEffortPoint) {
   const className = dayClass(day);
   const completedPoints = Number(day.completed_points || 0);
   const completedHours = formatHoursFromEffortPoints(completedPoints, minutesPerEffortPoint);
+  const requiredPoints = getDailyScheduleSettings(configurations, minutesPerEffortPoint, day.date).dailyEffortPoints;
   const weekdayName = getWeekdayName(day.date);
   const editable = day.status !== "Finde";
   return `
@@ -88,7 +92,7 @@ function CalendarDayCard(day, minutesPerEffortPoint) {
         <strong>${day.day}<small>${weekdayName}</small></strong>
         <span>${escapeHtml(day.status)}</span>
       </div>
-      <div class="points">${completedPoints} pts / ${completedHours}</div>
+      <div class="points">${completedPoints} / ${requiredPoints} pts — ${completedHours}</div>
       ${day.note ? `<p class="calendar-day-note" title="${escapeHtml(day.note)}">${escapeHtml(truncate(day.note, 70))}</p>` : ""}
       <div class="tickets">
         ${(day.completed_tasks ?? []).map(CalendarTaskButton).join("")}

@@ -4,6 +4,11 @@ export const END_TIME_CONFIGURATION_NAME = "hora_fin";
 export const BREAK_TIME_CONFIGURATION_NAME = "hora_descanso";
 export const BREAK_DURATION_CONFIGURATION_NAME = "duracion_descanso";
 export const SCHEDULE_TIME_OFFSET_CONFIGURATION_NAME = "hora_horario_offset";
+export const INTENSIVE_DAILY_EFFORT_CONFIGURATION_NAME = "PE_diario_intensivo";
+export const INTENSIVE_START_TIME_CONFIGURATION_NAME = "hora_inicio_intensivo";
+export const INTENSIVE_END_TIME_CONFIGURATION_NAME = "hora_fin_intensivo";
+export const INTENSIVE_WEEK_DAYS_CONFIGURATION_NAME = "dias_semana_intensivo";
+export const INTENSIVE_MONTHS_CONFIGURATION_NAME = "meses_intensivo";
 
 const DEFAULT_DAILY_EFFORT_POINTS = 12;
 const DEFAULT_START_TIME = "8:00";
@@ -12,9 +17,14 @@ const DEFAULT_END_TIME = "17:30";
 const DEFAULT_BREAK_TIME = "14:00";
 const DEFAULT_BREAK_DURATION_MINUTES = 60;
 const DEFAULT_SCHEDULE_TIME_OFFSET_HOURS = 0;
+const DEFAULT_INTENSIVE_DAILY_EFFORT_POINTS = 9;
+const DEFAULT_INTENSIVE_START_TIME = "8:00";
+const DEFAULT_INTENSIVE_END_TIME = "15:00";
+const DEFAULT_INTENSIVE_WEEK_DAYS = "5";
+const DEFAULT_INTENSIVE_MONTHS = "7,8";
 
-export function buildDailySchedule(tasks = [], configurations = [], minutesPerEffortPoint = 60) {
-  const settings = getDailyScheduleSettings(configurations, minutesPerEffortPoint);
+export function buildDailySchedule(tasks = [], configurations = [], minutesPerEffortPoint = 60, date = null) {
+  const settings = getDailyScheduleSettings(configurations, minutesPerEffortPoint, date);
   const sortedTasks = [...tasks].sort(compareByOrderDesc);
   const items = createScheduleItems(sortedTasks, settings);
   const selectedTasks = getScheduledTasks(items);
@@ -27,24 +37,46 @@ export function buildDailySchedule(tasks = [], configurations = [], minutesPerEf
   };
 }
 
-export function getDailyScheduleSettings(configurations = [], minutesPerEffortPoint = 60) {
-  const startMinutes = getTimeConfiguration(configurations, START_TIME_CONFIGURATION_NAME, DEFAULT_START_TIME);
-  const endMinutes = getTimeConfiguration(configurations, END_TIME_CONFIGURATION_NAME, DEFAULT_END_TIME);
-  const breakStartMinutes = getTimeConfiguration(configurations, BREAK_TIME_CONFIGURATION_NAME, DEFAULT_BREAK_TIME);
+export function getDailyScheduleSettings(configurations = [], minutesPerEffortPoint = 60, date = null) {
+  const intensive = isIntensiveDate(date, configurations);
+  const startMinutes = intensive
+    ? getTimeConfiguration(configurations, INTENSIVE_START_TIME_CONFIGURATION_NAME, DEFAULT_INTENSIVE_START_TIME)
+    : getTimeConfiguration(configurations, START_TIME_CONFIGURATION_NAME, DEFAULT_START_TIME);
+  const endMinutes = intensive
+    ? getTimeConfiguration(configurations, INTENSIVE_END_TIME_CONFIGURATION_NAME, DEFAULT_INTENSIVE_END_TIME)
+    : getTimeConfiguration(configurations, END_TIME_CONFIGURATION_NAME, DEFAULT_END_TIME);
+  const safeEndMinutes = endMinutes > startMinutes ? endMinutes : startMinutes;
+  // Intensive days have no break: aligning the break start with the end of the day keeps it out of the schedule.
+  const breakStartMinutes = intensive
+    ? safeEndMinutes
+    : getTimeConfiguration(configurations, BREAK_TIME_CONFIGURATION_NAME, DEFAULT_BREAK_TIME);
   const breakDurationMinutes = getNumberConfiguration(configurations, BREAK_DURATION_CONFIGURATION_NAME, DEFAULT_BREAK_DURATION_MINUTES);
   const scheduleTimeOffsetHours = getNumberConfiguration(configurations, SCHEDULE_TIME_OFFSET_CONFIGURATION_NAME, DEFAULT_SCHEDULE_TIME_OFFSET_HOURS);
-  const dailyEffortPoints = getNumberConfiguration(configurations, DAILY_EFFORT_CONFIGURATION_NAME, DEFAULT_DAILY_EFFORT_POINTS);
+  const dailyEffortPoints = intensive
+    ? getNumberConfiguration(configurations, INTENSIVE_DAILY_EFFORT_CONFIGURATION_NAME, DEFAULT_INTENSIVE_DAILY_EFFORT_POINTS)
+    : getNumberConfiguration(configurations, DAILY_EFFORT_CONFIGURATION_NAME, DEFAULT_DAILY_EFFORT_POINTS);
   const safeMinutesPerEffortPoint = Number(minutesPerEffortPoint);
 
   return {
-    dailyEffortPoints: dailyEffortPoints > 0 ? dailyEffortPoints : DEFAULT_DAILY_EFFORT_POINTS,
+    intensive,
+    dailyEffortPoints: dailyEffortPoints > 0 ? dailyEffortPoints : intensive ? DEFAULT_INTENSIVE_DAILY_EFFORT_POINTS : DEFAULT_DAILY_EFFORT_POINTS,
     startMinutes,
-    endMinutes: endMinutes > startMinutes ? endMinutes : startMinutes,
+    endMinutes: safeEndMinutes,
     breakStartMinutes,
     breakDurationMinutes: breakDurationMinutes > 0 ? breakDurationMinutes : DEFAULT_BREAK_DURATION_MINUTES,
     scheduleTimeOffsetMinutes: Number.isFinite(scheduleTimeOffsetHours) ? scheduleTimeOffsetHours * 60 : 0,
     minutesPerEffortPoint: Number.isFinite(safeMinutesPerEffortPoint) && safeMinutesPerEffortPoint > 0 ? safeMinutesPerEffortPoint : 60,
   };
+}
+
+export function isIntensiveDate(date, configurations = []) {
+  const parsed = parseDate(date);
+  if (!parsed) return false;
+  const intensiveWeekDays = getNumberListConfiguration(configurations, INTENSIVE_WEEK_DAYS_CONFIGURATION_NAME, DEFAULT_INTENSIVE_WEEK_DAYS);
+  const intensiveMonths = getNumberListConfiguration(configurations, INTENSIVE_MONTHS_CONFIGURATION_NAME, DEFAULT_INTENSIVE_MONTHS);
+  // ISO week day: 1 = lunes ... 7 = domingo.
+  const isoWeekDay = parsed.getDay() === 0 ? 7 : parsed.getDay();
+  return intensiveWeekDays.includes(isoWeekDay) || intensiveMonths.includes(parsed.getMonth() + 1);
 }
 
 export function formatScheduleTime(minutes, offsetMinutes = 0) {
@@ -153,6 +185,26 @@ function getEffortPoints(task) {
 function getNumberConfiguration(configurations, name, fallback) {
   const value = Number(configurations.find((configuration) => configuration.name === name)?.value);
   return Number.isFinite(value) ? value : fallback;
+}
+
+function getNumberListConfiguration(configurations, name, fallback) {
+  const value = configurations.find((configuration) => configuration.name === name)?.value ?? fallback;
+  const numbers = parseNumberList(value);
+  return numbers.length ? numbers : parseNumberList(fallback);
+}
+
+function parseNumberList(value) {
+  return String(value ?? "")
+    .split(",")
+    .map((part) => Number(part.trim()))
+    .filter((part) => Number.isInteger(part));
+}
+
+function parseDate(value) {
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  const match = String(value ?? "").trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return null;
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
 }
 
 function getTimeConfiguration(configurations, name, fallback) {
