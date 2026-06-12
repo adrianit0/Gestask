@@ -257,6 +257,12 @@ export function TaskModal(task = null) {
           ${isEdit ? `<label>Estado tarea<select name="task_status">${TASK_STATUSES.map((status) => `<option ${(task?.task_status === status) ? "selected" : ""}>${status}</option>`).join("")}</select></label>` : ""}
           ${isEdit ? `<label>Estado PR<select name="pr_status" ${task?.task_status !== "Done" ? "disabled" : ""}>${prStatusOptions(task)}</select></label>` : ""}
           <label class="span-3">Más info<textarea name="more_info">${escapeHtml(task?.more_info || "")}</textarea></label>
+          ${isEdit ? `
+            <div class="task-delete-zone span-3">
+              <p class="task-delete-warning">Eliminar la tarea es permanente: esta acción no se puede deshacer.</p>
+              <button type="button" class="secondary danger-button" data-delete-task="${escapeHtml(task.id)}">Eliminar tarea</button>
+            </div>
+          ` : ""}
           <div class="modal-actions span-3">
             <button type="button" class="secondary" data-close-modal>Cancelar</button>
             <button type="submit" class="primary">Guardar</button>

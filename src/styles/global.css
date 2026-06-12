@@ -570,6 +570,20 @@ textarea { min-height: 90px; resize: vertical; }
 .modal-header .close-icon-button, .modal-header .edit-icon-button { width: 2.2rem; height: 2.2rem; border-radius: 999px; }
 .close-icon-button:hover { background: #ffe5e1; border-color: #ffbbb3; color: var(--danger); }
 .modal-actions { display: flex; justify-content: flex-end; gap: 0.7rem; padding-top: 0.35rem; }
+.task-delete-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  padding: 0.7rem 1rem;
+  border: 1px solid #ffbbb3;
+  border-radius: 12px;
+  background: #ffe5e1;
+}
+.task-delete-warning { margin: 0; color: var(--danger); font-size: 0.85rem; font-weight: 700; }
+.task-delete-zone .danger-button { border-color: #ffbbb3; }
+.task-delete-zone .danger-button:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
 @keyframes modal-backdrop-in {
   from { opacity: 0; }
 }

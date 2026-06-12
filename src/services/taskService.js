@@ -13,3 +13,7 @@ export function createTask(payload) {
 export function updateTask(payload) {
   return callFunction("tasks-update", { method: "PATCH", body: payload });
 }
+
+export function deleteTask(id) {
+  return callFunction("tasks-delete", { method: "DELETE", body: { id } });
+}

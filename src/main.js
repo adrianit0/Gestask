@@ -16,7 +16,7 @@ import { getCalendarMonth, updateCalendarDayStatus } from "./services/calendarSe
 import { createConfiguration, listConfigurations, updateConfigurationProfile } from "./services/configurationService.js";
 import { createDailyReport, getDailyReport } from "./services/dailyReportService.js";
 import { isAuthenticated } from "./services/sessionService.js";
-import { createTask, listTasks, updateTask } from "./services/taskService.js";
+import { createTask, deleteTask, listTasks, updateTask } from "./services/taskService.js";
 import { listOrderTasks, updateOrderTasks } from "./services/taskOrderService.js";
 import { listCompletionTasks, resolveCompletionTask } from "./services/taskCompletionService.js";
 import { deleteTimeEntry, listTimeEntries, saveTimeEntry } from "./services/timeEntryService.js";
@@ -419,6 +419,22 @@ function bindTaskModalEvents() {
 
   const taskForm = document.querySelector("#task-form");
   taskForm?.elements.ticket_type?.addEventListener("change", () => syncTaskPrStatusOptions(taskForm));
+
+  document.querySelector("[data-delete-task]")?.addEventListener("click", async (event) => {
+    const taskId = event.currentTarget.dataset.deleteTask;
+    if (!window.confirm("¿Seguro que quieres eliminar esta tarea? Esta acción no se puede deshacer.")) return;
+    clearMessages();
+    try {
+      await deleteTask(taskId);
+      state.modalTask = undefined;
+      state.detailTask = null;
+      state.success = "Tarea eliminada correctamente.";
+      await loadAllData({ preserveMessages: true });
+    } catch (error) {
+      state.error = error.message;
+    }
+    render();
+  });
 
   document.querySelector("#task-form")?.addEventListener("submit", async (event) => {
     event.preventDefault();
