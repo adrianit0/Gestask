@@ -3,12 +3,12 @@ import { PRIORITIES, TASK_STATUSES } from "../utils/constants.js";
 import { getDailyScheduleSettings, isIntensiveDate } from "../utils/dailySchedule.js";
 import { formatHoursFromEffortPoints } from "../utils/effortTime.js";
 import { escapeHtml } from "../utils/format.js";
+import { getCompletionProgressMetrics, getVisiblePerformanceTasks, MONTH_SCOPED_FINAL_STATUSES } from "../utils/performanceMetrics.js";
 
-const MONTH_SCOPED_FINAL_STATUSES = new Set(["Done", "Undone", "Unfinished"]);
 const PERFORMANCE_TASK_STATUSES = TASK_STATUSES.filter((status) => !["Undone", "Unfinished"].includes(status));
 
 export function PerformancePage({ tasks = [], calendarDays = [], configurations = [], minutesPerEffortPoint = 60, showAll = false, loading = false, error = "", success = "" } = {}) {
-  const visibleTasks = showAll ? tasks : tasks.filter((task) => !MONTH_SCOPED_FINAL_STATUSES.has(task.task_status) || isFinishedInCurrentMonth(task));
+  const visibleTasks = getVisiblePerformanceTasks(tasks, showAll);
   const doneTasks = visibleTasks.filter((task) => task.task_status === "Done");
   const completedPoints = doneTasks.reduce((sum, task) => sum + Number(task.effort_points || 0), 0);
   const completedHours = formatHoursFromEffortPoints(completedPoints, minutesPerEffortPoint);
@@ -20,9 +20,7 @@ export function PerformancePage({ tasks = [], calendarDays = [], configurations 
   const currentTargetPoints = workableDays.filter((day) => isDateUntilToday(day.date)).reduce((sum, day) => sum + getDailyScheduleSettings(configurations, minutesPerEffortPoint, day.date).dailyEffortPoints, 0);
   const monthlyCompletionPercentage = monthlyTargetPoints > 0 ? Number(((completedPoints / monthlyTargetPoints) * 100).toFixed(1)) : 0;
   const currentMonthPercentage = monthlyTargetPoints > 0 ? Number(((currentTargetPoints / monthlyTargetPoints) * 100).toFixed(1)) : 0;
-  const currentCompletionRatio = currentTargetPoints > 0 ? completedPoints / currentTargetPoints : 0;
-  const currentCompletionPercentage = Number((currentCompletionRatio * 100).toFixed(1));
-  const differenceRatio = currentCompletionRatio > 0 ? Number((1 / currentCompletionRatio).toFixed(2)) : 0;
+  const completionProgress = getCompletionProgressMetrics(visibleTasks, calendarDays, configurations, minutesPerEffortPoint);
 
   return `
     <section class="page-header">
@@ -50,8 +48,8 @@ export function PerformancePage({ tasks = [], calendarDays = [], configurations 
       ${showAll ? "" : `
         <section class="metric-grid performance-metrics">
           ${Metric("% actual del mes", `${currentMonthPercentage}%`)}
-          ${Metric("% completado hasta ahora", `${currentCompletionPercentage}%`)}
-          ${Metric("Ratio de diferencia", differenceRatio ? `x${differenceRatio}` : "0")}
+          ${Metric("% completado hasta ahora", `${completionProgress.currentCompletionPercentage}% / ${completionProgress.yesterdayCompletionPercentage}%`)}
+          ${Metric("Ratio de diferencia", completionProgress.differenceRatio ? `x${completionProgress.differenceRatio}` : "0")}
         </section>
       `}
       <section class="metric-grid performance-metrics">
@@ -128,20 +126,6 @@ function DailyCompletedTasksChart(days) {
       }).join("")}
     </div>
   `;
-}
-
-function isFinishedInCurrentMonth(task) {
-  const date = parseTaskFinishDate(task);
-  if (!date) return false;
-  const now = new Date();
-  return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
-}
-
-function parseTaskFinishDate(task) {
-  const value = task.finished_date || task.updated_at;
-  if (!value) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 function isDateUntilToday(dateValue) {

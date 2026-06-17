@@ -2,9 +2,11 @@ import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../compo
 import { BacklogTaskButton, TaskDetailModal, closeIcon } from "../components/TaskTable.js";
 import { PR_BORDER_COLORS } from "../utils/constants.js";
 import { escapeHtml, todayIso } from "../utils/format.js";
-import { formatHoursFromEffortPoints } from "../utils/effortTime.js";
+import { effortPointsToHours, formatHoursFromEffortPoints } from "../utils/effortTime.js";
+import { getCompletionProgressMetrics, getVisiblePerformanceTasks } from "../utils/performanceMetrics.js";
 
-export function CompletionTasksPage({ tasks = [], minutesPerEffortPoint = 60, loading = false, error = "", success = "", modalTask = null, detailTask = null } = {}) {
+export function CompletionTasksPage({ tasks = [], performanceTasks = [], calendarDays = [], configurations = [], minutesPerEffortPoint = 60, loading = false, error = "", success = "", modalTask = null, detailTask = null } = {}) {
+  const completionProgress = getCompletionProgressMetrics(getVisiblePerformanceTasks(performanceTasks), calendarDays, configurations, minutesPerEffortPoint);
   return `
     <section class="page-header">
       <div>
@@ -17,7 +19,7 @@ export function CompletionTasksPage({ tasks = [], minutesPerEffortPoint = 60, lo
     <section class="panel">
       ${loading ? LoadingState() : CompletionTasksTable(tasks, minutesPerEffortPoint)}
     </section>
-    ${modalTask ? CompletionResolveModal(modalTask, minutesPerEffortPoint) : ""}
+    ${modalTask ? CompletionResolveModal(modalTask, minutesPerEffortPoint, completionProgress.differenceRatio) : ""}
     ${detailTask ? TaskDetailModal(detailTask, { readonly: true }) : ""}
   `;
 }
@@ -114,7 +116,7 @@ function canResolve(task) {
   return false;
 }
 
-function CompletionResolveModal(task, minutesPerEffortPoint) {
+function CompletionResolveModal(task, minutesPerEffortPoint, differenceRatio) {
   const title = {
     "Need PR": "Informar PR",
     "Need to Impute": "Imputar horas",
@@ -131,15 +133,15 @@ function CompletionResolveModal(task, minutesPerEffortPoint) {
           </div>
           <button class="icon-button close-icon-button" data-close-completion-modal aria-label="Cerrar">${closeIcon()}</button>
         </div>
-        ${CompletionResolveForm(task, minutesPerEffortPoint)}
+        ${CompletionResolveForm(task, minutesPerEffortPoint, differenceRatio)}
       </section>
     </div>
   `;
 }
 
-function CompletionResolveForm(task, minutesPerEffortPoint) {
+function CompletionResolveForm(task, minutesPerEffortPoint, differenceRatio) {
   if (task.pr_status === "Need PR") return NeedPrForm(task);
-  if (task.pr_status === "Need to Impute") return NeedToImputeForm(task, minutesPerEffortPoint);
+  if (task.pr_status === "Need to Impute") return NeedToImputeForm(task, minutesPerEffortPoint, differenceRatio);
   if (task.pr_status === "Imputed") return ImputedForm(task);
   return `<p class="state warning">Esta tarea no tiene una transición de resoluciÃ³n disponible.</p>`;
 }
@@ -164,8 +166,10 @@ function NeedPrForm(task) {
   `;
 }
 
-function NeedToImputeForm(task, minutesPerEffortPoint) {
+function NeedToImputeForm(task, minutesPerEffortPoint, differenceRatio) {
   const imputedDate = task.imputed_date || task.finished_date || todayIso();
+  const hoursToImpute = effortPointsToHours(task.effort_points, minutesPerEffortPoint);
+  const reviewedHoursToImpute = differenceRatio > 0 ? hoursToImpute * differenceRatio : 0;
   return `
     <form id="completion-resolve-form" class="completion-resolve-form" data-completion-status="Need to Impute">
       <input type="hidden" name="id" value="${escapeHtml(task.id)}" />
@@ -173,7 +177,8 @@ function NeedToImputeForm(task, minutesPerEffortPoint) {
         <p><span>Ticket</span>${ticketCell(task.ticket)}</p>
         <p><span>Título</span><strong>${escapeHtml(task.title || "Sin título")}</strong></p>
         <p><span>Fecha de resolución</span><strong>${escapeHtml(task.finished_date || "-")}</strong></p>
-        <p><span>Horas a imputar</span><strong>${escapeHtml(formatHoursFromEffortPoints(task.effort_points, minutesPerEffortPoint))}</strong></p>
+        <p><span>Horas a imputar</span><strong>${escapeHtml(formatHoursAndMinutes(hoursToImpute))}</strong></p>
+        <p><span>Horas a imputar revisado</span><strong>${escapeHtml(formatHoursAndMinutes(reviewedHoursToImpute, { roundMinutesToNearest: 10 }))}</strong></p>
       </div>
       <label>Fecha de imputación
         <input name="imputed_date" type="date" value="${escapeHtml(imputedDate)}" required />
@@ -209,4 +214,19 @@ function ticketCell(ticket) {
     return `<a href="${escapeHtml(value)}" target="_blank" rel="noreferrer">${escapeHtml(value)}</a>`;
   }
   return `<a href="https://jira.knowmadmood.com/browse/${encodeURIComponent(value)}" target="_blank" rel="noreferrer">${escapeHtml(value)}</a>`;
+}
+
+function formatHoursAndMinutes(hours, { roundMinutesToNearest = 1 } = {}) {
+  const value = Number(hours || 0);
+  if (!Number.isFinite(value) || value <= 0) return "0h";
+
+  const nearest = Number(roundMinutesToNearest);
+  const minuteStep = Number.isFinite(nearest) && nearest > 0 ? nearest : 1;
+  const totalMinutes = Math.round((value * 60) / minuteStep) * minuteStep;
+  const wholeHours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (wholeHours && minutes) return `${wholeHours}h ${minutes}m`;
+  if (wholeHours) return `${wholeHours}h`;
+  return `${minutes}m`;
 }
