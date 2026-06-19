@@ -52,6 +52,7 @@ const state = {
   configurations: [],
   configurationModalOpen: false,
   performanceShowAll: false,
+  performanceChartGroup: "points",
 };
 
 async function boot() {
@@ -98,7 +99,7 @@ function currentPageHtml() {
   if (state.page === "configuration") {
     return ConfigurationPage({ configurations: state.configurations, loading: state.loading, error: state.error, success: state.success, showCreateModal: state.configurationModalOpen });
   }
-  return PerformancePage({ tasks: state.tasks, calendarDays: state.calendarDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), showAll: state.performanceShowAll, loading: state.loading, error: state.error, success: state.success });
+  return PerformancePage({ tasks: state.tasks, calendarDays: state.calendarDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), showAll: state.performanceShowAll, chartGroup: state.performanceChartGroup, loading: state.loading, error: state.error, success: state.success });
 }
 
 function bindAuthEvents() {
@@ -256,6 +257,13 @@ function bindPerformanceEvents() {
   document.querySelector("[data-performance-show-all]")?.addEventListener("change", (event) => {
     state.performanceShowAll = event.target.checked;
     render();
+  });
+
+  document.querySelectorAll("[data-performance-group]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.performanceChartGroup = button.dataset.performanceGroup;
+      render();
+    });
   });
 }
 

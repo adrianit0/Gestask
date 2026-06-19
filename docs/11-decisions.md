@@ -43,6 +43,11 @@
 - `Ordenar tareas` se especifica como operación batch para evitar una actualización HTTP por tarea y mantener consistencia de orden manual.
 - La inclusión de horas extra del `Horario diario` se modela como estado de UI no persistido: amplía la hora de fin efectiva en `PE_diario_extra * Minute_PE` minutos sin alterar la jornada configurada.
 - Las gráficas de `Rendimiento` excluyen las tareas `Undone` y `Unfinished` mediante un filtro común aplicado antes de calcular cualquier serie basada en tareas, para que no contaminen tareas nuevas, creadas ni puntos de esfuerzo.
+- Las gráficas de `Rendimiento` se agrupan en cuatro bloques diferenciados (`Rendimiento de puntos`, `Rendimiento de tareas`, `Rendimiento acumulado`, `Distribución y resumen`) seleccionables desde un menú lateral izquierdo; el grupo activo se modela como estado de UI no persistido (`performanceChartGroup`, por defecto `points`).
+- Se corrige la inconsistencia de las gráficas acumuladas: `Ritmo acumulado creado del mes` acumula puntos nuevos/creados (antes acumulaba completados pese a la etiqueta) y se añade `Ritmo terminado acumulado del mes` para el acumulado de completados, dejando coherentes las tres series del grupo acumulado.
+- `Estados de tarea` y `Prioridad` permanecen siempre visibles encima del menú de grupos (no se mueven a ningún grupo) y se mantienen como barras horizontales por ser distribuciones categóricas.
+- Las gráficas de diferencia (`Diferencia entre nuevas y terminadas`, puntos y tareas) y las tres del grupo `Rendimiento acumulado` se representan como gráfica de línea SVG con línea base en 0; el resto de series diarias siguen como barras verticales.
+- Convenio de signo en gráficas comparativas (diferencias diarias y grupo acumulado): completado/terminado = positivo, nuevo/creado = negativo. La diferencia diaria se calcula como `terminadas − nuevas` y el acumulado creado se dibuja en negativo. No aplica a las gráficas que solo muestran creados (`Puntos nuevos este mes`, `Tareas creadas por día`).
 
 ## Pendiente
 - Conectar y desplegar contra un proyecto Supabase real.

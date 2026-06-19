@@ -133,6 +133,36 @@ h1 { font-size: clamp(2rem, 5vw, 3.8rem); line-height: 0.95; letter-spacing: -0.
 .metric-card strong { font-size: clamp(1.6rem, 4vw, 2.6rem); letter-spacing: -0.06em; }
 .chart-panel h2 { margin-bottom: 1rem; }
 .span-wide { grid-column: 1 / -1; }
+.performance-charts { display: grid; grid-template-columns: minmax(180px, 220px) minmax(0, 1fr); gap: 1rem; margin-bottom: 1rem; align-items: start; }
+.performance-chart-menu { display: grid; gap: 0.45rem; position: sticky; top: 1rem; }
+.chart-menu-item {
+  text-align: left;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  font-weight: 800;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chart-menu-item:hover { border-color: var(--primary); }
+.chart-menu-item.active { background: linear-gradient(180deg, var(--primary), #ffb259); border-color: var(--primary); color: #fff; }
+.performance-chart-content { display: grid; gap: 1rem; min-width: 0; }
+.created-cumulative-bar div { background: linear-gradient(180deg, #db7c12, #ffe2bf); }
+.distribution-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+.line-chart { overflow-x: auto; padding-top: 0.5rem; min-height: 200px; }
+.line-chart svg { display: block; }
+.line-zero { stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 4 4; }
+.line-path { fill: none; stroke: var(--primary); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.line-point circle { stroke: #fff; stroke-width: 1.5; }
+.line-point.positive circle { fill: #b45309; }
+.line-point.negative circle { fill: #047857; }
+.line-point.neutral circle { fill: #6b7280; }
+.line-value { font-size: 0.66rem; font-weight: 800; fill: var(--text); }
+.line-point.positive .line-value { fill: #92400e; }
+.line-point.negative .line-value { fill: #047857; }
+.line-label { font-size: 0.7rem; fill: var(--muted); }
 .bar-row { display: grid; grid-template-columns: 120px minmax(0, 1fr) 42px; align-items: center; gap: 0.75rem; margin-bottom: 0.7rem; }
 .bar-track { height: 18px; overflow: hidden; border-radius: 999px; background: #fff1e2; border: 1px solid var(--line); }
 .bar-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--primary), #ffc078); }
@@ -750,7 +780,8 @@ textarea { min-height: 90px; resize: vertical; }
   .app-shell { padding: 1rem; }
   .page-header { align-items: stretch; flex-direction: column; }
   .form-grid, .task-form-grid { grid-template-columns: 1fr; }
-  .time-layout, .charts-grid, .time-form, .configuration-form, .metric-grid { grid-template-columns: 1fr; }
+  .time-layout, .charts-grid, .time-form, .configuration-form, .metric-grid, .performance-charts, .distribution-charts { grid-template-columns: 1fr; }
+  .performance-chart-menu { position: static; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); overflow-x: auto; }
   .status-filter-grid { grid-template-columns: 1fr; }
   .span-2 { grid-column: span 1; }
   .span-3 { grid-column: span 1; }

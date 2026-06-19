@@ -200,6 +200,49 @@ Grid mensual. Cada día muestra estado, puntos y tickets/tareas finalizadas.
 ## Gráficas de Rendimiento
 Vista con métricas y gráficas del mes consultado.
 
+### Bloque de métricas
+La parte superior mantiene las tarjetas de métricas (tareas abiertas/terminadas, puntos, porcentajes, horas y días) y el selector `Mostrar todo`. Este bloque es siempre visible, independientemente del grupo de gráficas seleccionado.
+
+### Gráficas de distribución siempre visibles
+Encima del área de grupos se muestran, siempre visibles y como barras horizontales, las gráficas categóricas de distribución:
+- Estados de tarea
+- Prioridad
+
+### Organización de las gráficas por grupos
+El resto de gráficas (series por día) se dividen en grupos diferenciados. A la izquierda del área de gráficas hay un menú vertical con un elemento por grupo; al seleccionar un grupo se muestran únicamente sus gráficas en el panel de la derecha. Por defecto se muestra el primer grupo (`Rendimiento de puntos`).
+
+Grupos y gráficas que contienen, en orden:
+
+1. **Rendimiento de puntos**
+   - Puntos completados este mes
+   - Puntos nuevos este mes
+   - Diferencia entre nuevas y terminadas (puntos)
+2. **Rendimiento de tareas**
+   - Tareas terminadas por día
+   - Tareas creadas por día
+   - Diferencia entre nuevas y terminadas (tareas)
+3. **Rendimiento acumulado** (las tres gráficas son de línea)
+   - Ritmo terminado acumulado del mes (acumulado de puntos completados, positivo)
+   - Ritmo acumulado creado del mes (acumulado de puntos nuevos/creados, dibujado en negativo)
+   - Diferencia entre nuevas y terminadas (acumulado de completados − creados)
+4. **Distribución y resumen**
+   - Trabajo por día de la semana
+
+Nota sobre los acumulados: «terminado» acumula los puntos completados del calendario y «creado» acumula los puntos nuevos asignados por día; ambas series son independientes y la tercera gráfica representa el acumulado de su diferencia.
+
+### Convenio de signo
+En todas las gráficas donde se comparan o combinan ambos conceptos (las dos de diferencia diaria y las tres del grupo acumulado):
+- Lo **completado/terminado/finalizado** cuenta como valor **positivo** (por encima del 0).
+- Lo **nuevo/creado** cuenta como valor **negativo** (por debajo del 0).
+- En consecuencia, la diferencia diaria se calcula como `terminadas − nuevas`.
+
+El convenio no aplica a las gráficas que muestran solo creados (`Puntos nuevos este mes`, `Tareas creadas por día`), que siguen como barras positivas.
+
+### Representación de las gráficas
+- Las series diarias de magnitudes no negativas (puntos completados/nuevos, tareas terminadas/creadas) se representan como barras verticales.
+- Las gráficas de **diferencia** (puntos y tareas) y las **tres del grupo acumulado** se representan como **gráfica de línea con línea base en 0**: los valores positivos se dibujan por encima y los negativos por debajo del eje cero.
+- Estados de tarea y Prioridad se representan como barras horizontales.
+
 Regla de inclusión de tareas:
 - Las tareas con `task_status` igual a `Undone` o `Unfinished` no cuentan en ninguna gráfica.
 - La exclusión aplica a todas las gráficas basadas en tareas: tanto las de tareas nuevas/creadas como las de puntos de esfuerzo (nuevos, diferencias y acumulados).

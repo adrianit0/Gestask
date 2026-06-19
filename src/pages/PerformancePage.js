@@ -7,7 +7,14 @@ import { getCompletionProgressMetrics, getCountablePerformanceTasks, getVisibleP
 
 const PERFORMANCE_TASK_STATUSES = TASK_STATUSES.filter((status) => !UNCOUNTED_PERFORMANCE_STATUSES.has(status));
 
-export function PerformancePage({ tasks = [], calendarDays = [], configurations = [], minutesPerEffortPoint = 60, showAll = false, loading = false, error = "", success = "" } = {}) {
+const CHART_GROUPS = [
+  { id: "points", label: "Rendimiento de puntos" },
+  { id: "tasks", label: "Rendimiento de tareas" },
+  { id: "cumulative", label: "Rendimiento acumulado" },
+  { id: "distribution", label: "Distribución y resumen" },
+];
+
+export function PerformancePage({ tasks = [], calendarDays = [], configurations = [], minutesPerEffortPoint = 60, showAll = false, chartGroup = "points", loading = false, error = "", success = "" } = {}) {
   const countableTasks = getCountablePerformanceTasks(tasks);
   const visibleTasks = getVisiblePerformanceTasks(countableTasks, showAll);
   const doneTasks = visibleTasks.filter((task) => task.task_status === "Done");
@@ -22,6 +29,7 @@ export function PerformancePage({ tasks = [], calendarDays = [], configurations 
   const monthlyCompletionPercentage = monthlyTargetPoints > 0 ? Number(((completedPoints / monthlyTargetPoints) * 100).toFixed(1)) : 0;
   const currentMonthPercentage = monthlyTargetPoints > 0 ? Number(((currentTargetPoints / monthlyTargetPoints) * 100).toFixed(1)) : 0;
   const completionProgress = getCompletionProgressMetrics(visibleTasks, calendarDays, configurations, minutesPerEffortPoint);
+  const activeGroup = CHART_GROUPS.some((group) => group.id === chartGroup) ? chartGroup : CHART_GROUPS[0].id;
 
   return `
     <section class="page-header">
@@ -58,54 +66,58 @@ export function PerformancePage({ tasks = [], calendarDays = [], configurations 
         ${Metric("Dias laborables del mes", workableDays.length)}
         ${Metric("Dias intensivos del mes", intensiveDays)}
       </section>
-      <section class="charts-grid">
-        <article class="panel chart-panel">
-          <h2>Estados de tarea</h2>
-          ${BarList(countBy(visibleTasks, "task_status"), PERFORMANCE_TASK_STATUSES)}
-        </article>
-        <article class="panel chart-panel">
-          <h2>Prioridad</h2>
-          ${BarList(countBy(visibleTasks, "priority"), PRIORITIES)}
-        </article>
-        <article class="panel chart-panel span-wide">
-          <h2>Puntos completados este mes</h2>
-          ${CalendarPointsChart(calendarDays)}
-        </article>
-        <article class="panel chart-panel span-wide">
-          <h2>Puntos nuevos este mes</h2>
-          ${DailyNewPointsChart(calendarDays, countableTasks)}
-        </article>
-        <article class="panel chart-panel span-wide">
-          <h2>Diferencia entre nuevas y terminadas</h2>
-          ${DailyPointDifferenceChart(calendarDays, countableTasks)}
-        </article>
-        <article class="panel chart-panel span-wide">
-          <h2>Tareas terminadas por dia</h2>
-          ${DailyCompletedTasksChart(calendarDays)}
-        </article>
-        <article class="panel chart-panel span-wide">
-          <h2>Tareas creadas por dia</h2>
-          ${DailyCreatedTasksChart(calendarDays, countableTasks)}
-        </article>
-        <article class="panel chart-panel span-wide">
-          <h2>Diferencia entre nuevas y terminadas</h2>
-          ${DailyTaskDifferenceChart(calendarDays, countableTasks)}
-        </article>
-        <article class="panel chart-panel span-wide">
-          <h2>Ritmo acumulado del mes</h2>
-          ${CumulativePointsChart(calendarDays)}
-        </article>
-        <article class="panel chart-panel span-wide">
-          <h2>Ritmo acumulado terminado - creado</h2>
-          ${CumulativeCreatedCompletedChart(calendarDays, countableTasks)}
-        </article>
-        <article class="panel chart-panel">
-          <h2>Trabajo por dia de la semana</h2>
-          ${WeekdayCompletionChart(calendarDays)}
-        </article>
+      <section class="distribution-charts">
+        ${ChartPanel("Estados de tarea", BarList(countBy(visibleTasks, "task_status"), PERFORMANCE_TASK_STATUSES))}
+        ${ChartPanel("Prioridad", BarList(countBy(visibleTasks, "priority"), PRIORITIES))}
+      </section>
+      <section class="performance-charts">
+        <aside class="performance-chart-menu" aria-label="Grupos de graficas">
+          ${CHART_GROUPS.map((group) => `
+            <button class="chart-menu-item ${group.id === activeGroup ? "active" : ""}" data-performance-group="${group.id}" aria-pressed="${group.id === activeGroup}">
+              ${escapeHtml(group.label)}
+            </button>
+          `).join("")}
+        </aside>
+        <div class="performance-chart-content">
+          ${renderChartGroup(activeGroup, { visibleTasks, countableTasks, calendarDays })}
+        </div>
       </section>
     `}
   `;
+}
+
+function ChartPanel(title, body) {
+  return `
+    <article class="panel chart-panel">
+      <h2>${escapeHtml(title)}</h2>
+      ${body}
+    </article>
+  `;
+}
+
+function renderChartGroup(groupId, { visibleTasks, countableTasks, calendarDays }) {
+  if (groupId === "tasks") {
+    return [
+      ChartPanel("Tareas terminadas por dia", DailyCompletedTasksChart(calendarDays)),
+      ChartPanel("Tareas creadas por dia", DailyCreatedTasksChart(calendarDays, countableTasks)),
+      ChartPanel("Diferencia entre nuevas y terminadas", DailyTaskDifferenceChart(calendarDays, countableTasks)),
+    ].join("");
+  }
+  if (groupId === "cumulative") {
+    return [
+      ChartPanel("Ritmo terminado acumulado del mes", CumulativeCompletedPointsChart(calendarDays)),
+      ChartPanel("Ritmo acumulado creado del mes", CumulativeCreatedPointsChart(calendarDays, countableTasks)),
+      ChartPanel("Diferencia entre nuevas y terminadas", CumulativeCreatedCompletedChart(calendarDays, countableTasks)),
+    ].join("");
+  }
+  if (groupId === "distribution") {
+    return ChartPanel("Trabajo por dia de la semana", WeekdayCompletionChart(calendarDays));
+  }
+  return [
+    ChartPanel("Puntos completados este mes", CalendarPointsChart(calendarDays)),
+    ChartPanel("Puntos nuevos este mes", DailyNewPointsChart(calendarDays, countableTasks)),
+    ChartPanel("Diferencia entre nuevas y terminadas", DailyPointDifferenceChart(calendarDays, countableTasks)),
+  ].join("");
 }
 
 function DailyCompletedTasksChart(days) {
@@ -183,28 +195,23 @@ function CalendarPointsChart(days) {
   `;
 }
 
-function CumulativePointsChart(days) {
-  if (!days.length) return EmptyState("Consulta un mes en Calendario para ver el acumulado.");
+function CumulativeCompletedPointsChart(days) {
+  if (!days.length) return EmptyState("Consulta un mes en Calendario para ver el acumulado terminado.");
+  const values = accumulate(days.map((day) => Number(day.completed_points || 0)));
+  return LineChart(days, values, "puntos terminados acumulados", "Puntos terminados acumulados por dia");
+}
+
+function CumulativeCreatedPointsChart(days, tasks) {
+  if (!days.length) return EmptyState("Consulta un mes en Calendario para ver el acumulado creado.");
+  const assignedStats = getAssignedStatsByDay(days, tasks);
+  // Convenio: lo creado cuenta como negativo, por lo que el acumulado se dibuja por debajo del 0.
+  const values = accumulate(days.map((day) => -(assignedStats.get(day.date)?.points ?? 0)));
+  return LineChart(days, values, "puntos creados acumulados", "Puntos creados acumulados por dia");
+}
+
+function accumulate(values) {
   let total = 0;
-  const accumulatedDays = days.map((day) => {
-    total += Number(day.completed_points || 0);
-    return { ...day, accumulated: total };
-  });
-  const max = Math.max(1, ...accumulatedDays.map((day) => day.accumulated));
-  return `
-    <div class="daily-bars cumulative-bars" aria-label="Puntos completados acumulados por dia">
-      ${accumulatedDays.map((day) => {
-        const height = day.accumulated ? Math.max(12, Math.round((day.accumulated / max) * 170)) : 8;
-        return `
-          <div class="daily-bar cumulative-bar" title="${escapeHtml(`${day.date}: ${day.accumulated} puntos acumulados`)}">
-            <div style="height:${height}px"></div>
-            <strong>${day.accumulated}</strong>
-            <span>${day.day}</span>
-          </div>
-        `;
-      }).join("")}
-    </div>
-  `;
+  return values.map((value) => (total += value));
 }
 
 function WeekdayCompletionChart(days) {
@@ -268,9 +275,8 @@ function DailyNewPointsChart(days, tasks) {
 function DailyPointDifferenceChart(days, tasks) {
   if (!days.length) return EmptyState("Consulta un mes en Calendario para ver la diferencia de puntos.");
   const assignedStats = getAssignedStatsByDay(days, tasks);
-  const values = days.map((day) => (assignedStats.get(day.date)?.points ?? 0) - Number(day.completed_points || 0));
-  const max = Math.max(1, ...values.map((value) => Math.abs(value)));
-  return DifferenceBars(days, values, max, "puntos", "Diferencia diaria entre puntos nuevos y completados");
+  const values = days.map((day) => Number(day.completed_points || 0) - (assignedStats.get(day.date)?.points ?? 0));
+  return LineChart(days, values, "puntos", "Diferencia diaria entre puntos terminados y nuevos");
 }
 
 function DailyCreatedTasksChart(days, tasks) {
@@ -298,53 +304,50 @@ function DailyCreatedTasksChart(days, tasks) {
 function DailyTaskDifferenceChart(days, tasks) {
   if (!days.length) return EmptyState("Consulta un mes en Calendario para ver la diferencia de tareas.");
   const assignedStats = getAssignedStatsByDay(days, tasks);
-  const values = days.map((day) => (assignedStats.get(day.date)?.tasks ?? 0) - getCompletedTasksCount(day));
-  const max = Math.max(1, ...values.map((value) => Math.abs(value)));
-  return DifferenceBars(days, values, max, "tareas", "Diferencia diaria entre tareas nuevas y terminadas");
+  const values = days.map((day) => getCompletedTasksCount(day) - (assignedStats.get(day.date)?.tasks ?? 0));
+  return LineChart(days, values, "tareas", "Diferencia diaria entre tareas terminadas y nuevas");
 }
 
 function CumulativeCreatedCompletedChart(days, tasks) {
   if (!days.length) return EmptyState("Consulta un mes en Calendario para ver el acumulado creado y terminado.");
   const assignedStats = getAssignedStatsByDay(days, tasks);
-  let total = 0;
-  const values = days.map((day) => {
-    total += Number(day.completed_points || 0) - (assignedStats.get(day.date)?.points ?? 0);
-    return total;
-  });
-  const max = Math.max(1, ...values);
-  return `
-    <div class="daily-bars cumulative-bars" aria-label="Puntos de diferencia entre terminados y creados">
-      ${days.map((day, index) => {
-        const value = values[index];
-        const height = value ? Math.max(12, Math.round((value / max) * 170)) : 8;
-        return `
-          <div class="daily-bar combined-cumulative-bar" title="${escapeHtml(`${day.date}: ${value} puntos terminados acumulados - creados`)}">
-            <div style="height:${height}px"></div>
-            <strong>${value}</strong>
-            <span>${day.day}</span>
-          </div>
-        `;
-      }).join("")}
-    </div>
-  `;
+  const values = accumulate(days.map((day) => Number(day.completed_points || 0) - (assignedStats.get(day.date)?.points ?? 0)));
+  return LineChart(days, values, "puntos terminados - creados acumulados", "Acumulado de puntos terminados menos creados");
 }
 
-function DifferenceBars(days, values, max, unit, label) {
+function LineChart(days, values, unit, label) {
+  const step = 36;
+  const plotHeight = 150;
+  const paddingTop = 20;
+  const paddingBottom = 26;
+  const width = Math.max(days.length * step, step);
+  const height = paddingTop + plotHeight + paddingBottom;
+  const top = Math.max(0, ...values);
+  const bottom = Math.min(0, ...values);
+  const range = (top - bottom) || 1;
+  const xFor = (index) => Math.round(step / 2 + index * step);
+  const yFor = (value) => Math.round(paddingTop + ((top - value) / range) * plotHeight);
+  const zeroY = yFor(0);
+  const points = values.map((value, index) => `${xFor(index)},${yFor(value)}`).join(" ");
   return `
-    <div class="daily-bars difference-bars" aria-label="${escapeHtml(label)}">
-      ${days.map((day, index) => {
-        const value = values[index];
-        const height = value ? Math.max(12, Math.round((Math.abs(value) / max) * 130)) : 8;
-        const className = value < 0 ? "negative" : value > 0 ? "positive" : "neutral";
-        const formattedValue = value > 0 ? `+${value}` : String(value);
-        return `
-          <div class="daily-bar difference-bar ${className}" title="${escapeHtml(`${day.date}: ${formattedValue} ${unit}`)}">
-            <div style="height:${height}px"></div>
-            <strong>${formattedValue}</strong>
-            <span>${day.day}</span>
-          </div>
-        `;
-      }).join("")}
+    <div class="line-chart" role="img" aria-label="${escapeHtml(label)}">
+      <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+        <line class="line-zero" x1="0" y1="${zeroY}" x2="${width}" y2="${zeroY}"></line>
+        <polyline class="line-path" points="${points}"></polyline>
+        ${days.map((day, index) => {
+          const value = values[index];
+          const className = value < 0 ? "negative" : value > 0 ? "positive" : "neutral";
+          const formattedValue = value > 0 ? `+${value}` : String(value);
+          const valueY = value < 0 ? yFor(value) + 16 : yFor(value) - 9;
+          return `
+            <g class="line-point ${className}">
+              <circle cx="${xFor(index)}" cy="${yFor(value)}" r="4"><title>${escapeHtml(`${day.date}: ${formattedValue} ${unit}`)}</title></circle>
+              <text class="line-value" x="${xFor(index)}" y="${valueY}" text-anchor="middle">${formattedValue}</text>
+              <text class="line-label" x="${xFor(index)}" y="${height - 8}" text-anchor="middle">${escapeHtml(String(day.day))}</text>
+            </g>
+          `;
+        }).join("")}
+      </svg>
     </div>
   `;
 }
