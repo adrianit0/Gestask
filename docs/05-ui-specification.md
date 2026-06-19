@@ -14,6 +14,9 @@ La vista debe permitir:
 - Mostrar `ticket_type`, `limit_date` y `scoring` cuando el ancho disponible lo permita.
 - Mantener scroll horizontal en móvil si la tabla supera el ancho disponible.
 
+## Indicador de comentarios en tablas de tareas
+Todas las tablas de tareas (Backlog, Tareas Diarias y vista completa) muestran, junto al título de la tarea, un indicador con el número de comentarios que tiene. El indicador solo se muestra cuando la tarea tiene al menos un comentario.
+
 ## Modal de creación y edición de tarea
 Debe incluir:
 - Ticket.
@@ -74,6 +77,7 @@ Reglas de UX:
 - No permitir guardar comentarios vacíos.
 - Mostrar fecha y autor si el modelo elegido lo soporta.
 - Mantener el historial visible debajo de la información principal.
+- El historial se muestra en orden inverso al de almacenamiento: el comentario más reciente aparece primero.
 
 ## Tareas Diarias
 Selector de fecha, botón Nuevo día, aviso de modo histórico y listado ordenado por `order_points` descendente por defecto.

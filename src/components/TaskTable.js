@@ -57,7 +57,10 @@ function row(task, { readonly, mode, compact }) {
     </tr>
     <tr class="task-title-row ${compact ? "clickable-row" : ""}" ${clickableAttrs} style="${visualStyle}">
       <td class="task-title-cell" colspan="${colspan}">
-        <div>${escapeHtml(task.title)}</div>
+        <div class="task-title-line">
+          <span>${escapeHtml(task.title)}</span>
+          ${commentCountBadge(task)}
+        </div>
         ${task.more_info ? `<div class="task-more-info">${escapeHtml(task.more_info)}</div>` : ""}
       </td>
     </tr>
@@ -70,6 +73,24 @@ function taskActions(task, readonly) {
       <button class="icon-button edit-icon-button" data-edit-task="${task.id}" ${readonly ? "disabled" : ""} aria-label="Editar tarea">${editIcon()}</button>
       <button class="icon-button edit-icon-button" data-clone-task="${task.id}" ${readonly ? "disabled" : ""} aria-label="Clonar tarea">${cloneIcon()}</button>
     </div>
+  `;
+}
+
+function getCommentCount(task) {
+  return Array.isArray(task.comments) ? task.comments.length : 0;
+}
+
+function commentCountBadge(task) {
+  const count = getCommentCount(task);
+  if (!count) return "";
+  return `<span class="task-comment-count" title="${count} ${count === 1 ? "comentario" : "comentarios"}" aria-label="${count} ${count === 1 ? "comentario" : "comentarios"}">${commentIcon()}${count}</span>`;
+}
+
+function commentIcon() {
+  return `
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5a9 9 0 0 1-4-1L3 20l1-4.5a8.38 8.38 0 0 1-1-4A8.38 8.38 0 0 1 11.5 3A8.38 8.38 0 0 1 21 11.5Z"></path>
+    </svg>
   `;
 }
 
@@ -193,6 +214,7 @@ function externalLink(value, label) {
 }
 function TaskComments(task, { readonly = false } = {}) {
   const comments = Array.isArray(task.comments) ? task.comments : [];
+  const orderedComments = comments.slice().reverse();
   return `
     <section class="task-comments">
       <div class="task-comments-header">
@@ -200,7 +222,7 @@ function TaskComments(task, { readonly = false } = {}) {
         <span>${comments.length}</span>
       </div>
       <div class="task-comments-list">
-        ${comments.length ? comments.map(commentItem).join("") : `<p class="task-comment-empty">Sin comentarios todavía.</p>`}
+        ${orderedComments.length ? orderedComments.map(commentItem).join("") : `<p class="task-comment-empty">Sin comentarios todavía.</p>`}
       </div>
       ${readonly ? "" : `
         <form class="task-comment-form" data-task-comment-form="${task.id}">

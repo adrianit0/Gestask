@@ -523,6 +523,21 @@ textarea { min-height: 90px; resize: vertical; }
   font-size: 0.8rem;
 }
 .task-title-cell { width: auto; font-weight: 850; line-height: 1.15; overflow-wrap: anywhere; }
+.task-title-line { display: flex; align-items: center; gap: 0.4rem; }
+.task-comment-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex: 0 0 auto;
+  padding: 0.05rem 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+.task-comment-count svg { width: 0.85rem; height: 0.85rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .task-more-info { margin-top: 0.16rem; color: var(--muted); font-size: 0.74rem; font-weight: 650; line-height: 1.18; white-space: pre-wrap; }
 .clickable-row { cursor: pointer; transition: filter 140ms ease; }
 .clickable-row:hover { filter: saturate(1.06); }
