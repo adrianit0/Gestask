@@ -4,8 +4,8 @@ import { PR_BORDER_COLORS, TASK_COLORS } from "../utils/constants.js";
 import { buildDailySchedule, formatScheduleTime } from "../utils/dailySchedule.js";
 import { escapeHtml } from "../utils/format.js";
 
-export function DailySchedulePage({ report = null, date = null, tasks = [], configurations = [], minutesPerEffortPoint = 60, loading = false, error = "", success = "", modalTask = undefined, detailTask = null } = {}) {
-  const schedule = buildDailySchedule(tasks, configurations, minutesPerEffortPoint, date);
+export function DailySchedulePage({ report = null, date = null, tasks = [], configurations = [], minutesPerEffortPoint = 60, includeExtraHours = false, loading = false, error = "", success = "", modalTask = undefined, detailTask = null } = {}) {
+  const schedule = buildDailySchedule(tasks, configurations, minutesPerEffortPoint, date, { includeExtraHours });
   const timeOffset = schedule.settings.scheduleTimeOffsetMinutes;
 
   return `
@@ -23,20 +23,34 @@ export function DailySchedulePage({ report = null, date = null, tasks = [], conf
     ${ErrorMessage(error)}
     ${SuccessMessage(success)}
     <section class="panel daily-schedule-panel">
-      ${loading ? LoadingState() : report ? DailySchedule(schedule) : EmptyState("No existe parte diario para mostrar el horario.")}
+      ${loading ? LoadingState() : report ? DailySchedule(schedule, includeExtraHours) : EmptyState("No existe parte diario para mostrar el horario.")}
     </section>
     ${modalTask !== undefined ? TaskModal(modalTask) : ""}
     ${detailTask ? TaskDetailModal(detailTask, { readonly: false }) : ""}
   `;
 }
 
-function DailySchedule(schedule) {
-  if (!schedule.items.length) return EmptyState("No hay tareas con esfuerzo para planificar en el horario diario.");
-
-  return `
+function DailySchedule(schedule, includeExtraHours = false) {
+  const list = schedule.items.length
+    ? `
     <div class="daily-schedule-list">
       ${schedule.items.map((item) => ScheduleItem(item, schedule.settings.scheduleTimeOffsetMinutes)).join("")}
     </div>
+  `
+    : EmptyState("No hay tareas con esfuerzo para planificar en el horario diario.");
+
+  return `
+    ${list}
+    ${ExtraHoursToggle(includeExtraHours)}
+  `;
+}
+
+function ExtraHoursToggle(includeExtraHours = false) {
+  const label = includeExtraHours ? "Mostrar menos horas" : "(+) Incluir horas";
+  return `
+    <button type="button" class="schedule-include-toggle" data-toggle-extra-hours aria-pressed="${includeExtraHours}">
+      ${escapeHtml(label)}
+    </button>
   `;
 }
 

@@ -61,3 +61,8 @@
 - Definir endpoint batch para actualizar el orden en una única llamada.
 - Definir UI de listado con acciones subir, bajar y `Ordenar automaticamente`.
 - Implementar la pestaña `Ordenar tareas` cuando se autorice el desarrollo.
+
+## Iteración 11
+- Documentar la funcionalidad `Horario diario` bajo SDD (`docs/09-daily-schedule.md`).
+- Añadir el parámetro `PE_diario_extra` al catálogo de configuración (defecto `3`).
+- Implementar el botón "Incluir horas" / "Mostrar menos horas" que amplía la hora de fin efectiva por `PE_diario_extra` PE.

@@ -3,12 +3,13 @@ import { PRIORITIES, TASK_STATUSES } from "../utils/constants.js";
 import { getDailyScheduleSettings, isIntensiveDate } from "../utils/dailySchedule.js";
 import { formatHoursFromEffortPoints } from "../utils/effortTime.js";
 import { escapeHtml } from "../utils/format.js";
-import { getCompletionProgressMetrics, getVisiblePerformanceTasks, MONTH_SCOPED_FINAL_STATUSES } from "../utils/performanceMetrics.js";
+import { getCompletionProgressMetrics, getCountablePerformanceTasks, getVisiblePerformanceTasks, MONTH_SCOPED_FINAL_STATUSES, UNCOUNTED_PERFORMANCE_STATUSES } from "../utils/performanceMetrics.js";
 
-const PERFORMANCE_TASK_STATUSES = TASK_STATUSES.filter((status) => !["Undone", "Unfinished"].includes(status));
+const PERFORMANCE_TASK_STATUSES = TASK_STATUSES.filter((status) => !UNCOUNTED_PERFORMANCE_STATUSES.has(status));
 
 export function PerformancePage({ tasks = [], calendarDays = [], configurations = [], minutesPerEffortPoint = 60, showAll = false, loading = false, error = "", success = "" } = {}) {
-  const visibleTasks = getVisiblePerformanceTasks(tasks, showAll);
+  const countableTasks = getCountablePerformanceTasks(tasks);
+  const visibleTasks = getVisiblePerformanceTasks(countableTasks, showAll);
   const doneTasks = visibleTasks.filter((task) => task.task_status === "Done");
   const completedPoints = doneTasks.reduce((sum, task) => sum + Number(task.effort_points || 0), 0);
   const completedHours = formatHoursFromEffortPoints(completedPoints, minutesPerEffortPoint);
@@ -72,11 +73,11 @@ export function PerformancePage({ tasks = [], calendarDays = [], configurations 
         </article>
         <article class="panel chart-panel span-wide">
           <h2>Puntos nuevos este mes</h2>
-          ${DailyNewPointsChart(calendarDays, tasks)}
+          ${DailyNewPointsChart(calendarDays, countableTasks)}
         </article>
         <article class="panel chart-panel span-wide">
           <h2>Diferencia entre nuevas y terminadas</h2>
-          ${DailyPointDifferenceChart(calendarDays, tasks)}
+          ${DailyPointDifferenceChart(calendarDays, countableTasks)}
         </article>
         <article class="panel chart-panel span-wide">
           <h2>Tareas terminadas por dia</h2>
@@ -84,11 +85,11 @@ export function PerformancePage({ tasks = [], calendarDays = [], configurations 
         </article>
         <article class="panel chart-panel span-wide">
           <h2>Tareas creadas por dia</h2>
-          ${DailyCreatedTasksChart(calendarDays, tasks)}
+          ${DailyCreatedTasksChart(calendarDays, countableTasks)}
         </article>
         <article class="panel chart-panel span-wide">
           <h2>Diferencia entre nuevas y terminadas</h2>
-          ${DailyTaskDifferenceChart(calendarDays, tasks)}
+          ${DailyTaskDifferenceChart(calendarDays, countableTasks)}
         </article>
         <article class="panel chart-panel span-wide">
           <h2>Ritmo acumulado del mes</h2>
@@ -96,7 +97,7 @@ export function PerformancePage({ tasks = [], calendarDays = [], configurations 
         </article>
         <article class="panel chart-panel span-wide">
           <h2>Ritmo acumulado terminado - creado</h2>
-          ${CumulativeCreatedCompletedChart(calendarDays, tasks)}
+          ${CumulativeCreatedCompletedChart(calendarDays, countableTasks)}
         </article>
         <article class="panel chart-panel">
           <h2>Trabajo por dia de la semana</h2>

@@ -1,6 +1,12 @@
 import { getDailyScheduleSettings } from "./dailySchedule.js";
 
 export const MONTH_SCOPED_FINAL_STATUSES = new Set(["Done", "Undone", "Unfinished"]);
+export const UNCOUNTED_PERFORMANCE_STATUSES = new Set(["Undone", "Unfinished"]);
+
+// Tasks that are Undone or Unfinished never count in any performance chart or metric.
+export function getCountablePerformanceTasks(tasks = []) {
+  return tasks.filter((task) => !UNCOUNTED_PERFORMANCE_STATUSES.has(task.task_status));
+}
 
 export function getVisiblePerformanceTasks(tasks = [], showAll = false, now = new Date()) {
   return showAll ? tasks : tasks.filter((task) => !MONTH_SCOPED_FINAL_STATUSES.has(task.task_status) || isFinishedInCurrentMonth(task, now));

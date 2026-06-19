@@ -66,6 +66,13 @@ Reglas:
 - Los usuarios pueden personalizar multiplicadores si el parámetro no está marcado como fijo.
 - Los parámetros fijos permiten bloquear multiplicadores globales.
 
+## Parámetros de horario diario
+La vista `Horario diario` (ver `docs/09-daily-schedule.md`) usa parámetros de jornada del catálogo:
+- `hora_inicio`, `hora_fin`, `hora_descanso`, `duracion_descanso`.
+- `PE_diario`, `Minute_PE`.
+- Variantes intensivas: `hora_inicio_intensivo`, `hora_fin_intensivo`, `PE_diario_intensivo`, `dias_semana_intensivo`, `meses_intensivo`.
+- `PE_diario_extra` (`number`, defecto `3`): puntos de esfuerzo adicionales que se planifican al activar la opción "Incluir horas". Si no es numérico o no es mayor que cero, se usa el valor por defecto.
+
 ## Recuperación de configuración de usuario
 Al recuperar la configuración de un usuario, el sistema debe partir de todos los registros de `gestask_configuration`.
 

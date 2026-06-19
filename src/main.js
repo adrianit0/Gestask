@@ -39,6 +39,7 @@ const state = {
   dailyReport: null,
   dailyTasks: [],
   dailyEditable: false,
+  dailyScheduleIncludeExtra: false,
   completionTasks: [],
   completionModalTask: null,
   orderTasks: [],
@@ -86,7 +87,7 @@ function currentPageHtml() {
     return OrderTasksPage({ tasks: state.orderTasks, loading: state.loading, error: state.error, success: state.success });
   }
   if (state.page === "dailySchedule") {
-    return DailySchedulePage({ report: state.dailyReport, date: state.dailyDate, tasks: state.dailyTasks, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
+    return DailySchedulePage({ report: state.dailyReport, date: state.dailyDate, tasks: state.dailyTasks, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), includeExtraHours: state.dailyScheduleIncludeExtra, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
   }
   if (state.page === "calendar") {
     return CalendarPage({ year: state.calendarYear, month: state.calendarMonth, days: state.calendarDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, modalDay: state.calendarModalDay });
@@ -132,6 +133,7 @@ function bindLayoutEvents() {
       state.completionModalTask = null;
       state.configurationModalOpen = false;
       state.calendarModalDay = null;
+      state.dailyScheduleIncludeExtra = false;
       clearMessages();
       render();
     });
@@ -507,6 +509,11 @@ function bindDailyEvents() {
 }
 
 function bindDailyScheduleEvents() {
+  document.querySelector("[data-toggle-extra-hours]")?.addEventListener("click", () => {
+    state.dailyScheduleIncludeExtra = !state.dailyScheduleIncludeExtra;
+    render();
+  });
+
   document.querySelectorAll("[data-schedule-task]").forEach((row) => {
     row.addEventListener("click", (event) => {
       if (event.target.closest("a, button, select, input, textarea, label")) return;

@@ -27,7 +27,7 @@
   - **Estado**: Hecho
   - **Área**: Documentación
   - **Descripción**: Registrar implementación.
-  - **Archivos**: `docs/10-decisions.md`
+  - **Archivos**: `docs/11-decisions.md`
   - **Criterio de aceptación**: Cambios y pendientes trazados.
   - **Dependencias**: Resto.
 
@@ -270,7 +270,7 @@
   - **Estado**: Hecho
   - **Área**: Documentación
   - **Descripción**: Documentar la funcionalidad `Completar tareas`.
-  - **Archivos**: `docs/01-requirements.md`, `docs/02-roadmap.md`, `docs/03-data-model.md`, `docs/04-api-contracts.md`, `docs/05-ui-specification.md`, `docs/10-decisions.md`
+  - **Archivos**: `docs/01-requirements.md`, `docs/02-roadmap.md`, `docs/03-data-model.md`, `docs/04-api-contracts.md`, `docs/05-ui-specification.md`, `docs/11-decisions.md`
   - **Criterio de aceptación**: Reglas de inclusión, popups, transiciones, datos futuros y contratos previstos quedan documentados sin implementación.
   - **Dependencias**: DOC-005.
 
@@ -334,7 +334,7 @@
   - **Estado**: Hecho
   - **Área**: Documentación
   - **Descripción**: Documentar la funcionalidad `Ordenar tareas` bajo SDD.
-  - **Archivos**: `docs/01-requirements.md`, `docs/02-roadmap.md`, `docs/03-data-model.md`, `docs/04-api-contracts.md`, `docs/05-ui-specification.md`, `docs/07-scoring.md`, `docs/08-order-tasks.md`, `docs/10-decisions.md`
+  - **Archivos**: `docs/01-requirements.md`, `docs/02-roadmap.md`, `docs/03-data-model.md`, `docs/04-api-contracts.md`, `docs/05-ui-specification.md`, `docs/07-scoring.md`, `docs/08-order-tasks.md`, `docs/11-decisions.md`
   - **Criterio de aceptación**: Reglas de inclusión, orden visual, algoritmo de movimiento, contrato batch, UI y QA quedan documentados sin implementación.
   - **Dependencias**: DOC-005.
 
@@ -386,3 +386,35 @@
   - **Criterio de aceptación**: Pasan los casos manuales de listado, subida, bajada, orden automático, errores y verificación de una única llamada batch.
   - **Dependencias**: FE-014.
   - **Nota**: Build frontend validado; pendiente prueba manual real contra Supabase desplegado.
+
+- **DOC-008**
+  - **Estado**: Hecho
+  - **Área**: Documentación
+  - **Descripción**: Documentar la funcionalidad `Horario diario` y la opción de incluir horas extra bajo SDD.
+  - **Archivos**: `docs/02-roadmap.md`, `docs/05-ui-specification.md`, `docs/06-configuration.md`, `docs/09-daily-schedule.md`, `docs/11-decisions.md`
+  - **Criterio de aceptación**: Quedan documentados el botón, su alternancia, el parámetro `PE_diario_extra` y el cálculo de la hora de fin efectiva.
+  - **Dependencias**: DOC-005.
+
+- **SQL-009**
+  - **Estado**: Hecho
+  - **Área**: SQL
+  - **Descripción**: Añadir el parámetro `PE_diario_extra` al catálogo de configuración con valor por defecto `3`.
+  - **Archivos**: `supabase/sql/script-009.sql`
+  - **Criterio de aceptación**: El parámetro existe como `number` no fijo con `default_value = '3'` y es idempotente con `on conflict`.
+  - **Dependencias**: DOC-008.
+
+- **FE-015**
+  - **Estado**: Hecho
+  - **Área**: Frontend
+  - **Descripción**: Añadir el botón de incluir horas extra en `Horario diario` y ampliar la hora de fin efectiva por `PE_diario_extra` PE.
+  - **Archivos**: `src/pages/DailySchedulePage.js`, `src/utils/dailySchedule.js`, `src/main.js`, `src/styles/global.css`
+  - **Criterio de aceptación**: El botón alterna entre `(+) Incluir horas` y `Mostrar menos horas`, añade/quita tareas en la franja extra y respeta el estilo definido.
+  - **Dependencias**: DOC-008, SQL-009.
+
+- **FE-016**
+  - **Estado**: Hecho
+  - **Área**: Frontend
+  - **Descripción**: Excluir tareas `Undone` y `Unfinished` de todas las gráficas de la página `Rendimiento`.
+  - **Archivos**: `docs/05-ui-specification.md`, `src/pages/PerformancePage.js`, `src/utils/performanceMetrics.js`
+  - **Criterio de aceptación**: Las tareas `Undone`/`Unfinished` no cuentan en ninguna gráfica basada en tareas (nuevas, creadas, puntos de esfuerzo, diferencias y acumulados), con independencia de `Mostrar todo`.
+  - **Dependencias**: DOC-005.

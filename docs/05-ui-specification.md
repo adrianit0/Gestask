@@ -182,8 +182,29 @@ Reglas de UX:
 - Si falla el guardado, la UI debe restaurar el último orden confirmado o mostrar un error claro sin perder la lista.
 - La acción `Ordenar automaticamente` debe mostrar confirmación si el número de tareas afectadas es alto o si se detectan empates relevantes.
 
+## Horario diario
+Agenda con franjas horarias generada a partir del parte diario. Cabecera con resumen de PE planificados frente a PE diarios y el rango horario efectivo.
+
+Al final del listado se muestra un botón a todo el ancho disponible para incluir horas extra:
+- Borde gris con transparencia y línea discontinua, fondo blanco muy transparente y texto gris.
+- Altura aproximada de 5 veces la altura del texto.
+- Texto `(+) Incluir horas` cuando está desactivado y `Mostrar menos horas` cuando está activado.
+- Al activarlo, la hora de fin efectiva se amplía `PE_diario_extra` puntos de esfuerzo y se planifican tareas adicionales por encima de la hora de fin.
+- Al desactivarlo, se vuelve a la jornada base y se eliminan las tareas de la franja extra.
+
+El detalle de comportamiento y los casos límite están en `docs/09-daily-schedule.md`.
+
 ## Calendario
 Grid mensual. Cada día muestra estado, puntos y tickets/tareas finalizadas.
+
+## Gráficas de Rendimiento
+Vista con métricas y gráficas del mes consultado.
+
+Regla de inclusión de tareas:
+- Las tareas con `task_status` igual a `Undone` o `Unfinished` no cuentan en ninguna gráfica.
+- La exclusión aplica a todas las gráficas basadas en tareas: tanto las de tareas nuevas/creadas como las de puntos de esfuerzo (nuevos, diferencias y acumulados).
+- La exclusión es independiente del selector `Mostrar todo`: una tarea `Undone` o `Unfinished` nunca se contabiliza.
+- Las gráficas basadas en datos del parte diario (puntos completados y tareas terminadas por día) no se ven afectadas, ya que provienen del calendario y no del estado actual de la tarea.
 
 ## Configuración
 Pantalla protegida para modificar parámetros de usuario y crear nuevos parámetros globales.

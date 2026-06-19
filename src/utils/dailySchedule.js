@@ -9,6 +9,7 @@ export const INTENSIVE_START_TIME_CONFIGURATION_NAME = "hora_inicio_intensivo";
 export const INTENSIVE_END_TIME_CONFIGURATION_NAME = "hora_fin_intensivo";
 export const INTENSIVE_WEEK_DAYS_CONFIGURATION_NAME = "dias_semana_intensivo";
 export const INTENSIVE_MONTHS_CONFIGURATION_NAME = "meses_intensivo";
+export const DAILY_EXTRA_EFFORT_CONFIGURATION_NAME = "PE_diario_extra";
 
 const DEFAULT_DAILY_EFFORT_POINTS = 12;
 const DEFAULT_START_TIME = "8:00";
@@ -22,9 +23,10 @@ const DEFAULT_INTENSIVE_START_TIME = "8:00";
 const DEFAULT_INTENSIVE_END_TIME = "15:00";
 const DEFAULT_INTENSIVE_WEEK_DAYS = "5";
 const DEFAULT_INTENSIVE_MONTHS = "7,8";
+const DEFAULT_DAILY_EXTRA_EFFORT_POINTS = 3;
 
-export function buildDailySchedule(tasks = [], configurations = [], minutesPerEffortPoint = 60, date = null) {
-  const settings = getDailyScheduleSettings(configurations, minutesPerEffortPoint, date);
+export function buildDailySchedule(tasks = [], configurations = [], minutesPerEffortPoint = 60, date = null, { includeExtraHours = false } = {}) {
+  const settings = getDailyScheduleSettings(configurations, minutesPerEffortPoint, date, { includeExtraHours });
   const sortedTasks = [...tasks].sort(compareByOrderDesc);
   const items = createScheduleItems(sortedTasks, settings);
   const selectedTasks = getScheduledTasks(items);
@@ -37,7 +39,7 @@ export function buildDailySchedule(tasks = [], configurations = [], minutesPerEf
   };
 }
 
-export function getDailyScheduleSettings(configurations = [], minutesPerEffortPoint = 60, date = null) {
+export function getDailyScheduleSettings(configurations = [], minutesPerEffortPoint = 60, date = null, { includeExtraHours = false } = {}) {
   const intensive = isIntensiveDate(date, configurations);
   const startMinutes = intensive
     ? getTimeConfiguration(configurations, INTENSIVE_START_TIME_CONFIGURATION_NAME, DEFAULT_INTENSIVE_START_TIME)
@@ -45,27 +47,37 @@ export function getDailyScheduleSettings(configurations = [], minutesPerEffortPo
   const endMinutes = intensive
     ? getTimeConfiguration(configurations, INTENSIVE_END_TIME_CONFIGURATION_NAME, DEFAULT_INTENSIVE_END_TIME)
     : getTimeConfiguration(configurations, END_TIME_CONFIGURATION_NAME, DEFAULT_END_TIME);
-  const safeEndMinutes = endMinutes > startMinutes ? endMinutes : startMinutes;
-  // Intensive days have no break: aligning the break start with the end of the day keeps it out of the schedule.
-  const breakStartMinutes = intensive
-    ? safeEndMinutes
-    : getTimeConfiguration(configurations, BREAK_TIME_CONFIGURATION_NAME, DEFAULT_BREAK_TIME);
+  const baseEndMinutes = endMinutes > startMinutes ? endMinutes : startMinutes;
   const breakDurationMinutes = getNumberConfiguration(configurations, BREAK_DURATION_CONFIGURATION_NAME, DEFAULT_BREAK_DURATION_MINUTES);
   const scheduleTimeOffsetHours = getNumberConfiguration(configurations, SCHEDULE_TIME_OFFSET_CONFIGURATION_NAME, DEFAULT_SCHEDULE_TIME_OFFSET_HOURS);
   const dailyEffortPoints = intensive
     ? getNumberConfiguration(configurations, INTENSIVE_DAILY_EFFORT_CONFIGURATION_NAME, DEFAULT_INTENSIVE_DAILY_EFFORT_POINTS)
     : getNumberConfiguration(configurations, DAILY_EFFORT_CONFIGURATION_NAME, DEFAULT_DAILY_EFFORT_POINTS);
-  const safeMinutesPerEffortPoint = Number(minutesPerEffortPoint);
+  const parsedMinutesPerEffortPoint = Number(minutesPerEffortPoint);
+  const safeMinutesPerEffortPoint = Number.isFinite(parsedMinutesPerEffortPoint) && parsedMinutesPerEffortPoint > 0 ? parsedMinutesPerEffortPoint : 60;
+  const extraEffortPointsRaw = getNumberConfiguration(configurations, DAILY_EXTRA_EFFORT_CONFIGURATION_NAME, DEFAULT_DAILY_EXTRA_EFFORT_POINTS);
+  const extraEffortPoints = extraEffortPointsRaw > 0 ? extraEffortPointsRaw : DEFAULT_DAILY_EXTRA_EFFORT_POINTS;
+  // "Incluir horas" extends the effective end time by PE_diario_extra effort points without changing the configured workday.
+  const extraMinutes = includeExtraHours ? extraEffortPoints * safeMinutesPerEffortPoint : 0;
+  const effectiveEndMinutes = baseEndMinutes + extraMinutes;
+  // Intensive days have no break: aligning the break start with the end of the day keeps it out of the schedule.
+  const breakStartMinutes = intensive
+    ? effectiveEndMinutes
+    : getTimeConfiguration(configurations, BREAK_TIME_CONFIGURATION_NAME, DEFAULT_BREAK_TIME);
 
   return {
     intensive,
     dailyEffortPoints: dailyEffortPoints > 0 ? dailyEffortPoints : intensive ? DEFAULT_INTENSIVE_DAILY_EFFORT_POINTS : DEFAULT_DAILY_EFFORT_POINTS,
     startMinutes,
-    endMinutes: safeEndMinutes,
+    endMinutes: effectiveEndMinutes,
+    baseEndMinutes,
+    extraEffortPoints,
+    extraMinutes,
+    includeExtraHours,
     breakStartMinutes,
     breakDurationMinutes: breakDurationMinutes > 0 ? breakDurationMinutes : DEFAULT_BREAK_DURATION_MINUTES,
     scheduleTimeOffsetMinutes: Number.isFinite(scheduleTimeOffsetHours) ? scheduleTimeOffsetHours * 60 : 0,
-    minutesPerEffortPoint: Number.isFinite(safeMinutesPerEffortPoint) && safeMinutesPerEffortPoint > 0 ? safeMinutesPerEffortPoint : 60,
+    minutesPerEffortPoint: safeMinutesPerEffortPoint,
   };
 }
 
