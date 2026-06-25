@@ -588,9 +588,24 @@ function bindCalendarEvents() {
   document.querySelector("[data-load-calendar]")?.addEventListener("click", async () => {
     state.calendarYear = Number(document.querySelector("[data-calendar-year]").value);
     state.calendarMonth = Number(document.querySelector("[data-calendar-month]").value);
-    state.calendarModalDay = null;
-    await loadCalendar();
-    render();
+    await reloadCalendar();
+  });
+
+  document.querySelector("[data-calendar-prev]")?.addEventListener("click", async () => {
+    shiftCalendarMonth(-1);
+    await reloadCalendar();
+  });
+
+  document.querySelector("[data-calendar-next]")?.addEventListener("click", async () => {
+    shiftCalendarMonth(1);
+    await reloadCalendar();
+  });
+
+  document.querySelector("[data-calendar-current]")?.addEventListener("click", async () => {
+    const now = new Date();
+    state.calendarYear = now.getFullYear();
+    state.calendarMonth = now.getMonth() + 1;
+    await reloadCalendar();
   });
 
   document.querySelectorAll("[data-calendar-day]").forEach((card) => {
@@ -849,6 +864,18 @@ async function loadCalendar() {
     const data = await getCalendarMonth(state.calendarYear, state.calendarMonth);
     state.calendarDays = data.days ?? [];
   });
+}
+
+function shiftCalendarMonth(delta) {
+  const reference = new Date(state.calendarYear, state.calendarMonth - 1 + delta, 1);
+  state.calendarYear = reference.getFullYear();
+  state.calendarMonth = reference.getMonth() + 1;
+}
+
+async function reloadCalendar() {
+  state.calendarModalDay = null;
+  await loadCalendar();
+  render();
 }
 
 async function withLoading(action, { preserveMessages = false } = {}) {

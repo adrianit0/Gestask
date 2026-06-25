@@ -91,8 +91,12 @@ export function isIntensiveDate(date, configurations = []) {
   return intensiveWeekDays.includes(isoWeekDay) || intensiveMonths.includes(parsed.getMonth() + 1);
 }
 
+const MINUTES_PER_DAY = 24 * 60;
+
 export function formatScheduleTime(minutes, offsetMinutes = 0) {
-  const normalized = Math.max(0, Math.round((Number(minutes) || 0) + (Number(offsetMinutes) || 0)));
+  const total = Math.max(0, Math.round((Number(minutes) || 0) + (Number(offsetMinutes) || 0)));
+  // Wrap around midnight so a block that runs past 00:00 shows 1:00 instead of 25:00.
+  const normalized = total % MINUTES_PER_DAY;
   const hours = Math.floor(normalized / 60);
   const mins = normalized % 60;
   return `${hours}:${String(mins).padStart(2, "0")}`;

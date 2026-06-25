@@ -6,6 +6,7 @@ import { formatHoursFromEffortPoints } from "../utils/effortTime.js";
 import { escapeHtml, truncate } from "../utils/format.js";
 
 const WEEK_DAYS = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"];
+const MONTHS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 const WORK_WEEK_DAYS = 5;
 
 const CALENDAR_TASK_COLORS = {
@@ -27,10 +28,19 @@ export function CalendarPage({ year, month, days = [], configurations = [], minu
     </section>
     ${ErrorMessage(error)}
     ${SuccessMessage(success)}
-    <section class="panel filters">
-      <input data-calendar-year type="number" min="2000" max="2100" value="${selectedYear}" />
-      <input data-calendar-month type="number" min="1" max="12" value="${selectedMonth}" />
-      <button class="secondary" data-load-calendar>Consultar</button>
+    <section class="panel calendar-controls">
+      <div class="calendar-period">
+        <select data-calendar-month>
+          ${MONTHS.map((name, index) => `<option value="${index + 1}" ${selectedMonth === index + 1 ? "selected" : ""}>${name}</option>`).join("")}
+        </select>
+        <input data-calendar-year type="number" min="2000" max="2100" value="${selectedYear}" />
+        <button class="secondary" data-load-calendar>Consultar</button>
+      </div>
+      <div class="calendar-nav">
+        <button class="secondary" data-calendar-prev>&lt;</button>
+        <button class="secondary" data-calendar-current>Actual</button>
+        <button class="secondary" data-calendar-next>&gt;</button>
+      </div>
     </section>
     <section class="panel">${loading ? LoadingState() : CalendarGrid(days, configurations, minutesPerEffortPoint)}</section>
     ${modalDay ? CalendarDayModal(modalDay) : ""}
