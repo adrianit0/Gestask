@@ -4,7 +4,7 @@ import { assertConfig } from "./config/env.js";
 import { AuthPage } from "./pages/AuthPage.js";
 import { BacklogPage } from "./pages/BacklogPage.js";
 import { CalendarPage } from "./pages/CalendarPage.js";
-import { CompletionTasksPage } from "./pages/CompletionTasksPage.js";
+import { CompletionTasksPage, getDeployableImputedTasks } from "./pages/CompletionTasksPage.js";
 import { DailyTasksPage } from "./pages/DailyTasksPage.js";
 import { DailySchedulePage } from "./pages/DailySchedulePage.js";
 import { ConfigurationPage } from "./pages/ConfigurationPage.js";
@@ -309,6 +309,24 @@ function bindCompletionEvents() {
       state.completionModalTask = null;
       render();
     });
+  });
+
+  document.querySelector("[data-close-all-imputed]")?.addEventListener("click", async () => {
+    const imputedTasks = getDeployableImputedTasks(state.completionTasks);
+    if (!imputedTasks.length) return;
+    if (!window.confirm(`¿Cerrar ${imputedTasks.length} tarea(s) en estado Imputed y pasarlas a Deployed?`)) return;
+    clearMessages();
+    try {
+      for (const task of imputedTasks) {
+        await resolveCompletionTask({ id: task.id });
+      }
+      state.completionModalTask = null;
+      state.success = `${imputedTasks.length} tarea(s) cerradas correctamente.`;
+      await loadAllData({ preserveMessages: true });
+    } catch (error) {
+      state.error = error.message;
+    }
+    render();
   });
 
   document.querySelector("#completion-resolve-form")?.addEventListener("submit", async (event) => {

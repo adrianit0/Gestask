@@ -5,14 +5,22 @@ import { escapeHtml, todayIso } from "../utils/format.js";
 import { effortPointsToHours, formatHoursFromEffortPoints } from "../utils/effortTime.js";
 import { getCompletionProgressMetrics, getVisiblePerformanceTasks } from "../utils/performanceMetrics.js";
 
+export function getDeployableImputedTasks(tasks = []) {
+  return tasks.filter((task) => task.pr_status === "Imputed" && task.ticket_type !== "Task");
+}
+
 export function CompletionTasksPage({ tasks = [], performanceTasks = [], calendarDays = [], configurations = [], minutesPerEffortPoint = 60, referenceDate = new Date(), loading = false, error = "", success = "", modalTask = null, detailTask = null } = {}) {
   const completionProgress = getCompletionProgressMetrics(getVisiblePerformanceTasks(performanceTasks, false, referenceDate), calendarDays, configurations, minutesPerEffortPoint, referenceDate);
+  const deployableImputedCount = getDeployableImputedTasks(tasks).length;
   return `
     <section class="page-header">
       <div>
         <p class="eyebrow">Completar tareas</p>
         <h1>Cierre de workflow</h1>
       </div>
+      ${deployableImputedCount ? `
+        <button class="primary" type="button" data-close-all-imputed>Cerrar imputadas (${deployableImputedCount})</button>
+      ` : ""}
     </section>
     ${ErrorMessage(error)}
     ${SuccessMessage(success)}
