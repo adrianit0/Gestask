@@ -21,6 +21,7 @@ import { listOrderTasks, updateOrderTasks } from "./services/taskOrderService.js
 import { listCompletionTasks, resolveCompletionTask } from "./services/taskCompletionService.js";
 import { deleteTimeEntry, listTimeEntries, saveTimeEntry } from "./services/timeEntryService.js";
 import { getMinutesPerEffortPoint } from "./utils/effortTime.js";
+import { getMonthReferenceDate } from "./utils/performanceMetrics.js";
 import { todayIso } from "./utils/format.js";
 
 const root = document.querySelector("#app");
@@ -53,6 +54,9 @@ const state = {
   configurationModalOpen: false,
   performanceShowAll: false,
   performanceChartGroup: "points",
+  performanceYear: new Date().getFullYear(),
+  performanceMonth: new Date().getMonth() + 1,
+  performanceDays: [],
 };
 
 async function boot() {
@@ -82,7 +86,7 @@ function currentPageHtml() {
     return DailyTasksPage({ date: state.dailyDate, report: state.dailyReport, tasks: state.dailyTasks, editable: state.dailyEditable, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask, sort: state.dailySort });
   }
   if (state.page === "completion") {
-    return CompletionTasksPage({ tasks: state.completionTasks, performanceTasks: state.tasks, calendarDays: state.calendarDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, modalTask: state.completionModalTask, detailTask: state.detailTask });
+    return CompletionTasksPage({ tasks: state.completionTasks, performanceTasks: state.tasks, calendarDays: state.performanceDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), referenceDate: getMonthReferenceDate(state.performanceYear, state.performanceMonth), loading: state.loading, error: state.error, success: state.success, modalTask: state.completionModalTask, detailTask: state.detailTask });
   }
   if (state.page === "order") {
     return OrderTasksPage({ tasks: state.orderTasks, loading: state.loading, error: state.error, success: state.success });
@@ -99,7 +103,7 @@ function currentPageHtml() {
   if (state.page === "configuration") {
     return ConfigurationPage({ configurations: state.configurations, loading: state.loading, error: state.error, success: state.success, showCreateModal: state.configurationModalOpen });
   }
-  return PerformancePage({ tasks: state.tasks, calendarDays: state.calendarDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), showAll: state.performanceShowAll, chartGroup: state.performanceChartGroup, loading: state.loading, error: state.error, success: state.success });
+  return PerformancePage({ tasks: state.tasks, calendarDays: state.performanceDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), showAll: state.performanceShowAll, chartGroup: state.performanceChartGroup, year: state.performanceYear, month: state.performanceMonth, referenceDate: getMonthReferenceDate(state.performanceYear, state.performanceMonth), loading: state.loading, error: state.error, success: state.success });
 }
 
 function bindAuthEvents() {
@@ -264,6 +268,29 @@ function bindPerformanceEvents() {
       state.performanceChartGroup = button.dataset.performanceGroup;
       render();
     });
+  });
+
+  document.querySelector("[data-load-performance]")?.addEventListener("click", async () => {
+    state.performanceYear = Number(document.querySelector("[data-performance-year]").value);
+    state.performanceMonth = Number(document.querySelector("[data-performance-month]").value);
+    await reloadPerformance();
+  });
+
+  document.querySelector("[data-performance-prev]")?.addEventListener("click", async () => {
+    shiftPerformanceMonth(-1);
+    await reloadPerformance();
+  });
+
+  document.querySelector("[data-performance-next]")?.addEventListener("click", async () => {
+    shiftPerformanceMonth(1);
+    await reloadPerformance();
+  });
+
+  document.querySelector("[data-performance-current]")?.addEventListener("click", async () => {
+    const now = new Date();
+    state.performanceYear = now.getFullYear();
+    state.performanceMonth = now.getMonth() + 1;
+    await reloadPerformance();
   });
 }
 
@@ -778,13 +805,14 @@ function refreshSelectedTask(taskId) {
 
 async function loadAllData({ preserveMessages = false } = {}) {
   await withLoading(async () => {
-    const [tasksResult, dailyResult, calendarResult, configurationsResult, completionResult, orderResult] = await Promise.allSettled([
+    const [tasksResult, dailyResult, calendarResult, configurationsResult, completionResult, orderResult, performanceResult] = await Promise.allSettled([
       listTasks(state.filters),
       getDailyReport(state.dailyDate, state.dailySort),
       getCalendarMonth(state.calendarYear, state.calendarMonth),
       listConfigurations(),
       listCompletionTasks(),
       listOrderTasks(),
+      getCalendarMonth(state.performanceYear, state.performanceMonth),
     ]);
 
     state.timeEntries = listTimeEntries();
@@ -827,6 +855,12 @@ async function loadAllData({ preserveMessages = false } = {}) {
       state.orderTasks = orderResult.value.tasks ?? [];
     } else {
       errors.push(orderResult.reason.message);
+    }
+
+    if (performanceResult.status === "fulfilled") {
+      state.performanceDays = performanceResult.value.days ?? [];
+    } else {
+      errors.push(performanceResult.reason.message);
     }
 
     if (errors.length) {
@@ -875,6 +909,24 @@ function shiftCalendarMonth(delta) {
 async function reloadCalendar() {
   state.calendarModalDay = null;
   await loadCalendar();
+  render();
+}
+
+async function loadPerformance() {
+  await withLoading(async () => {
+    const data = await getCalendarMonth(state.performanceYear, state.performanceMonth);
+    state.performanceDays = data.days ?? [];
+  });
+}
+
+function shiftPerformanceMonth(delta) {
+  const reference = new Date(state.performanceYear, state.performanceMonth - 1 + delta, 1);
+  state.performanceYear = reference.getFullYear();
+  state.performanceMonth = reference.getMonth() + 1;
+}
+
+async function reloadPerformance() {
+  await loadPerformance();
   render();
 }
 

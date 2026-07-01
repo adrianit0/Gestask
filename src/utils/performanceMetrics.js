@@ -12,6 +12,16 @@ export function getVisiblePerformanceTasks(tasks = [], showAll = false, now = ne
   return showAll ? tasks : tasks.filter((task) => !MONTH_SCOPED_FINAL_STATUSES.has(task.task_status) || isFinishedInCurrentMonth(task, now));
 }
 
+// Reference date used to scope month metrics. For the ongoing month we use the real
+// "now" (metrics accumulate up to today); for any other month we use its last day so
+// the whole month counts as elapsed and comparisons reflect the full period.
+export function getMonthReferenceDate(year, month, now = new Date()) {
+  const numericYear = Number(year);
+  const numericMonth = Number(month);
+  if (now.getFullYear() === numericYear && now.getMonth() === numericMonth - 1) return now;
+  return new Date(numericYear, numericMonth, 0);
+}
+
 export function getCompletionProgressMetrics(tasks = [], calendarDays = [], configurations = [], minutesPerEffortPoint = 60, now = new Date()) {
   const doneTasks = tasks.filter((task) => task.task_status === "Done");
   const workableDays = calendarDays.filter((day) => day.status === "Laboral");

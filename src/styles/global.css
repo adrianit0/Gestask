@@ -86,9 +86,9 @@ h1 { font-size: clamp(2rem, 5vw, 3.8rem); line-height: 0.95; letter-spacing: -0.
 .filters label { display: grid; gap: 0.3rem; }
 .calendar-controls { display: grid; gap: 0.75rem; margin-bottom: 1rem; }
 .calendar-period { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
-.calendar-period [data-calendar-month] { flex: 1 1 auto; }
-.calendar-period [data-calendar-year] { width: 6rem; }
-.calendar-period [data-load-calendar] { margin-left: auto; }
+.calendar-period [data-calendar-month], .calendar-period [data-performance-month] { flex: 1 1 auto; }
+.calendar-period [data-calendar-year], .calendar-period [data-performance-year] { width: 6rem; }
+.calendar-period [data-load-calendar], .calendar-period [data-load-performance] { margin-left: auto; }
 .calendar-nav { display: flex; gap: 0.75rem; }
 .calendar-nav button { flex: 1 1 0; }
 .backlog-filters > label:not(.checkbox-label) { min-width: 210px; flex: 1 1 210px; font-weight: 800; }

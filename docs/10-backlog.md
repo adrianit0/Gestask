@@ -264,7 +264,7 @@
   - **Archivos**: Navegador + Supabase.
   - **Criterio de aceptación**: Todos los casos manuales de `docs/07-scoring.md` pasan correctamente.
   - **Dependencias**: FE-010.
-  - **Nota**: Verificación parcial completada por inspección de código y `npm run build`; pendiente ejecución real en navegador contra Supabase con `script-003.sql` aplicado.
+  - **Nota**: Verificación completada en navegador contra Supabase con `script-003.sql` aplicado (2026-06-26).
 
 - **DOC-006**
   - **Estado**: Hecho
@@ -379,13 +379,13 @@
   - **Dependencias**: FE-013.
 
 - **QA-004**
-  - **Estado**: Pendiente
+  - **Estado**: Hecho
   - **Área**: Testing manual
   - **Descripción**: Verificar flujo completo de `Ordenar tareas`.
   - **Archivos**: Navegador + Supabase, `docs/08-order-tasks.md`
   - **Criterio de aceptación**: Pasan los casos manuales de listado, subida, bajada, orden automático, errores y verificación de una única llamada batch.
   - **Dependencias**: FE-014.
-  - **Nota**: Build frontend validado; pendiente prueba manual real contra Supabase desplegado.
+  - **Nota**: Prueba manual real contra Supabase desplegado completada (2026-06-26).
 
 - **DOC-008**
   - **Estado**: Hecho

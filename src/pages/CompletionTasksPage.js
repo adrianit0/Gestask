@@ -5,8 +5,8 @@ import { escapeHtml, todayIso } from "../utils/format.js";
 import { effortPointsToHours, formatHoursFromEffortPoints } from "../utils/effortTime.js";
 import { getCompletionProgressMetrics, getVisiblePerformanceTasks } from "../utils/performanceMetrics.js";
 
-export function CompletionTasksPage({ tasks = [], performanceTasks = [], calendarDays = [], configurations = [], minutesPerEffortPoint = 60, loading = false, error = "", success = "", modalTask = null, detailTask = null } = {}) {
-  const completionProgress = getCompletionProgressMetrics(getVisiblePerformanceTasks(performanceTasks), calendarDays, configurations, minutesPerEffortPoint);
+export function CompletionTasksPage({ tasks = [], performanceTasks = [], calendarDays = [], configurations = [], minutesPerEffortPoint = 60, referenceDate = new Date(), loading = false, error = "", success = "", modalTask = null, detailTask = null } = {}) {
+  const completionProgress = getCompletionProgressMetrics(getVisiblePerformanceTasks(performanceTasks, false, referenceDate), calendarDays, configurations, minutesPerEffortPoint, referenceDate);
   return `
     <section class="page-header">
       <div>

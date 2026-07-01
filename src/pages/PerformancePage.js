@@ -7,6 +7,8 @@ import { getCompletionProgressMetrics, getCountablePerformanceTasks, getVisibleP
 
 const PERFORMANCE_TASK_STATUSES = TASK_STATUSES.filter((status) => !UNCOUNTED_PERFORMANCE_STATUSES.has(status));
 
+const MONTHS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
 const CHART_GROUPS = [
   { id: "points", label: "Rendimiento de puntos" },
   { id: "tasks", label: "Rendimiento de tareas" },
@@ -14,9 +16,12 @@ const CHART_GROUPS = [
   { id: "distribution", label: "Distribución y resumen" },
 ];
 
-export function PerformancePage({ tasks = [], calendarDays = [], configurations = [], minutesPerEffortPoint = 60, showAll = false, chartGroup = "points", loading = false, error = "", success = "" } = {}) {
+export function PerformancePage({ tasks = [], calendarDays = [], configurations = [], minutesPerEffortPoint = 60, showAll = false, chartGroup = "points", year, month, referenceDate = new Date(), loading = false, error = "", success = "" } = {}) {
+  const now = new Date();
+  const selectedYear = year ?? now.getFullYear();
+  const selectedMonth = month ?? now.getMonth() + 1;
   const countableTasks = getCountablePerformanceTasks(tasks);
-  const visibleTasks = getVisiblePerformanceTasks(countableTasks, showAll);
+  const visibleTasks = getVisiblePerformanceTasks(countableTasks, showAll, referenceDate);
   const doneTasks = visibleTasks.filter((task) => task.task_status === "Done");
   const completedPoints = doneTasks.reduce((sum, task) => sum + Number(task.effort_points || 0), 0);
   const completedHours = formatHoursFromEffortPoints(completedPoints, minutesPerEffortPoint);
@@ -25,10 +30,10 @@ export function PerformancePage({ tasks = [], calendarDays = [], configurations 
   const workableDays = calendarDays.filter((day) => day.status === "Laboral");
   const intensiveDays = workableDays.filter((day) => isIntensiveDate(day.date, configurations)).length;
   const monthlyTargetPoints = workableDays.reduce((sum, day) => sum + getDailyScheduleSettings(configurations, minutesPerEffortPoint, day.date).dailyEffortPoints, 0);
-  const currentTargetPoints = workableDays.filter((day) => isDateUntilToday(day.date)).reduce((sum, day) => sum + getDailyScheduleSettings(configurations, minutesPerEffortPoint, day.date).dailyEffortPoints, 0);
+  const currentTargetPoints = workableDays.filter((day) => isDateUntil(day.date, referenceDate)).reduce((sum, day) => sum + getDailyScheduleSettings(configurations, minutesPerEffortPoint, day.date).dailyEffortPoints, 0);
   const monthlyCompletionPercentage = monthlyTargetPoints > 0 ? Number(((completedPoints / monthlyTargetPoints) * 100).toFixed(1)) : 0;
   const currentMonthPercentage = monthlyTargetPoints > 0 ? Number(((currentTargetPoints / monthlyTargetPoints) * 100).toFixed(1)) : 0;
-  const completionProgress = getCompletionProgressMetrics(visibleTasks, calendarDays, configurations, minutesPerEffortPoint);
+  const completionProgress = getCompletionProgressMetrics(visibleTasks, calendarDays, configurations, minutesPerEffortPoint, referenceDate);
   const activeGroup = CHART_GROUPS.some((group) => group.id === chartGroup) ? chartGroup : CHART_GROUPS[0].id;
 
   return `
@@ -41,6 +46,21 @@ export function PerformancePage({ tasks = [], calendarDays = [], configurations 
     ${ErrorMessage(error)}
     ${SuccessMessage(success)}
     ${loading ? LoadingState() : `
+      <section class="panel calendar-controls">
+        <div class="calendar-period">
+          <select data-performance-month>
+            ${MONTHS.map((name, index) => `<option value="${index + 1}" ${selectedMonth === index + 1 ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}
+          </select>
+          <input data-performance-year type="number" min="2000" max="2100" value="${selectedYear}" />
+          <button class="secondary" data-load-performance>Consultar</button>
+        </div>
+        <div class="calendar-nav">
+          <button class="secondary" data-performance-prev>&lt;</button>
+          <button class="secondary" data-performance-current>Actual</button>
+          <button class="secondary" data-performance-next>&gt;</button>
+        </div>
+      </section>`}
+    ${loading ? "" : `
       <section class="panel filters performance-filters">
         <label class="checkbox-label"><input data-performance-show-all type="checkbox" ${showAll ? "checked" : ""} /> Mostrar todo</label>
       </section>
@@ -141,12 +161,11 @@ function DailyCompletedTasksChart(days) {
   `;
 }
 
-function isDateUntilToday(dateValue) {
+function isDateUntil(dateValue, referenceDate) {
   const [year, month, day] = String(dateValue).split("-").map(Number);
   if (!year || !month || !day) return false;
   const date = new Date(year, month - 1, day);
-  const today = new Date();
-  return date <= new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return date <= new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
 }
 
 function Metric(label, value) {
