@@ -10,6 +10,7 @@ export function AppLayout(activePage, content) {
       </div>
       <nav aria-label="Navegación principal">
         ${navButton("backlog", "Backlog", activePage, "backlog")}
+        ${navButton("kanban", "Kanban", activePage, "kanban")}
         ${navButton("daily", "Tareas diarias", activePage, "daily")}
         ${navButton("dailySchedule", "Horario diario", activePage, "dailySchedule")}
         ${navButton("completion", "Completar tareas", activePage, "completion")}        
@@ -46,6 +47,13 @@ function navButton(page, label, activePage, icon) {
 
 function navIcon(icon) {
   const icons = {
+    kanban: `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M4 4h4v12H4z" />
+        <path d="M10 4h4v8h-4z" />
+        <path d="M16 4h4v15h-4z" />
+      </svg>
+    `,
     backlog: `
       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <path d="M4 6.5h16" />

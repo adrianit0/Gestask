@@ -8,6 +8,7 @@ import { CompletionTasksPage, getDeployableImputedTasks } from "./pages/Completi
 import { DailyTasksPage } from "./pages/DailyTasksPage.js";
 import { DailySchedulePage } from "./pages/DailySchedulePage.js";
 import { ConfigurationPage } from "./pages/ConfigurationPage.js";
+import { KanbanPage } from "./pages/KanbanPage.js";
 import { OrderTasksPage } from "./pages/OrderTasksPage.js";
 import { PerformancePage } from "./pages/PerformancePage.js";
 import { TimeManagerPage } from "./pages/TimeManagerPage.js";
@@ -146,8 +147,11 @@ function buildPendingTaskDraft(payload, baseTask) {
   };
 }
 
+const FINAL_TASK_STATUSES = ["Done", "Undone", "Unfinished"];
+
 function nextOrderPoints() {
-  const values = [...state.tasks, ...state.dailyTasks, ...state.completionTasks, ...state.orderTasks]
+  const values = [...state.orderTasks, ...state.tasks, ...state.dailyTasks]
+    .filter((task) => !FINAL_TASK_STATUSES.includes(task.task_status))
     .map((task) => Number(task.order_points))
     .filter((value) => Number.isFinite(value));
   return values.length ? Math.max(...values) + 1 : 1;
@@ -182,6 +186,9 @@ function renderUnlessEditingTask() {
 function currentPageHtml() {
   if (state.page === "backlog") {
     return BacklogPage({ tasks: withPendingTasks(getFilteredTasks(), { includeCreated: true }), filters: state.filters, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
+  }
+  if (state.page === "kanban") {
+    return KanbanPage({ tasks: withPendingTasks(state.tasks, { includeCreated: true }), loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
   }
   if (state.page === "daily") {
     return DailyTasksPage({ date: state.dailyDate, report: state.dailyReport, tasks: withPendingTasks(state.dailyTasks), editable: state.dailyEditable, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask, sort: state.dailySort });
@@ -262,6 +269,7 @@ function bindLayoutEvents() {
 
 function bindPageEvents() {
   if (state.page === "backlog") bindBacklogEvents();
+  if (state.page === "kanban") bindKanbanEvents();
   if (state.page === "daily") bindDailyEvents();
   if (state.page === "completion") bindCompletionEvents();
   if (state.page === "order") bindOrderEvents();
@@ -355,6 +363,11 @@ function bindBacklogEvents() {
     render();
   });
 
+  bindTaskModalEvents();
+}
+
+function bindKanbanEvents() {
+  bindTaskTableEvents(state.tasks);
   bindTaskModalEvents();
 }
 
