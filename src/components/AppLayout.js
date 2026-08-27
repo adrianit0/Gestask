@@ -1,7 +1,13 @@
-﻿export function AppLayout(activePage, content) {
+﻿import { AsyncActivityIndicator } from "./AsyncActivity.js";
+import { getAsyncOperations } from "../services/asyncTracker.js";
+
+export function AppLayout(activePage, content) {
   return `
     <header class="top-nav">
-      <div class="brand">Gestask</div>
+      <div class="brand-area">
+        <div class="brand">Gestask</div>
+        <div class="async-activity-slot" data-async-indicator>${AsyncActivityIndicator(getAsyncOperations())}</div>
+      </div>
       <nav aria-label="Navegación principal">
         ${navButton("backlog", "Backlog", activePage, "backlog")}
         ${navButton("daily", "Tareas diarias", activePage, "daily")}

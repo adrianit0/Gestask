@@ -23,6 +23,8 @@ import { deleteTimeEntry, listTimeEntries, saveTimeEntry } from "./services/time
 import { getMinutesPerEffortPoint } from "./utils/effortTime.js";
 import { getMonthReferenceDate } from "./utils/performanceMetrics.js";
 import { todayIso } from "./utils/format.js";
+import { AsyncActivityIndicator, asyncActivityTitle, formatElapsed } from "./components/AsyncActivity.js";
+import { getAsyncOperations, subscribeAsyncOperations } from "./services/asyncTracker.js";
 
 const root = document.querySelector("#app");
 const state = {
@@ -59,11 +61,96 @@ const state = {
   performanceDays: [],
 };
 
+const pendingTasks = new Map();
+let pendingSequence = 0;
+
 async function boot() {
+  startAsyncIndicator();
   if (isAuthenticated()) {
     await loadAllData();
   }
   render();
+}
+
+let renderedAsyncSignature = "";
+
+function startAsyncIndicator() {
+  subscribeAsyncOperations(updateAsyncIndicator);
+  window.setInterval(updateAsyncIndicator, 1000);
+}
+
+function asyncSignature(operations) {
+  return operations.map((operation) => operation.id).join("|");
+}
+
+function updateAsyncIndicator() {
+  const slot = document.querySelector("[data-async-indicator]");
+  if (!slot) return;
+
+  const operations = getAsyncOperations();
+  const signature = asyncSignature(operations);
+  if (signature === renderedAsyncSignature) {
+    refreshAsyncElapsedTimes(slot, operations);
+    return;
+  }
+
+  renderedAsyncSignature = signature;
+  slot.innerHTML = AsyncActivityIndicator(operations);
+}
+
+function refreshAsyncElapsedTimes(slot, operations) {
+  const container = slot.querySelector(".async-activity");
+  if (container) container.title = asyncActivityTitle(operations);
+  const elapsedNodes = slot.querySelectorAll(".async-activity-tooltip li strong");
+  operations.forEach((operation, index) => {
+    if (elapsedNodes[index]) elapsedNodes[index].textContent = formatElapsed(operation.startedAt);
+  });
+}
+
+function addPendingTask(task, { isCreate = false, label = "Guardando..." } = {}) {
+  const key = isCreate ? `pending-${++pendingSequence}` : task.id;
+  pendingTasks.set(key, { key, isCreate, label, task: { ...task, id: task.id ?? key } });
+  return key;
+}
+
+function removePendingTask(key) {
+  pendingTasks.delete(key);
+}
+
+function decoratePendingTask(entry) {
+  return { ...entry.task, __pending: true, __pendingLabel: entry.label };
+}
+
+function withPendingTasks(tasks, { includeCreated = false } = {}) {
+  if (!pendingTasks.size) return tasks;
+  const merged = tasks.map((task) => {
+    const entry = pendingTasks.get(task.id);
+    return entry ? decoratePendingTask({ ...entry, task: { ...task, ...entry.task } }) : task;
+  });
+  if (!includeCreated) return merged;
+  const created = [...pendingTasks.values()].filter((entry) => entry.isCreate).map(decoratePendingTask);
+  return [...created, ...merged];
+}
+
+function buildPendingTaskDraft(payload, baseTask) {
+  const base = baseTask ?? {};
+  return {
+    task_status: "To do",
+    pr_status: "Not Finished",
+    ticket_type: "Bug",
+    priority: "Menor",
+    effort_points: 0,
+    scoring: null,
+    ...base,
+    ...payload,
+  };
+}
+
+function nextOrderPoints() {
+  const values = [...state.tasks, ...state.dailyTasks, ...state.completionTasks, ...state.orderTasks]
+    .map((task) => Number(task.order_points))
+    .filter((value) => Number.isFinite(value));
+  return values.length ? Math.max(...values) + 1 : 1;
 }
 
 function render() {
@@ -73,26 +160,40 @@ function render() {
     return;
   }
 
+  const draftComment = document.querySelector("[data-task-comment-form] textarea")?.value ?? "";
   root.innerHTML = AppLayout(state.page, currentPageHtml());
+  renderedAsyncSignature = asyncSignature(getAsyncOperations());
+  restoreDraftComment(draftComment);
   bindLayoutEvents();
   bindPageEvents();
 }
 
+function restoreDraftComment(draftComment) {
+  if (!draftComment) return;
+  const textarea = document.querySelector("[data-task-comment-form] textarea");
+  if (textarea && !textarea.value) textarea.value = draftComment;
+}
+
+function renderUnlessEditingTask() {
+  if (state.modalTask !== undefined) return;
+  render();
+}
+
 function currentPageHtml() {
   if (state.page === "backlog") {
-    return BacklogPage({ tasks: getFilteredTasks(), filters: state.filters, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
+    return BacklogPage({ tasks: withPendingTasks(getFilteredTasks(), { includeCreated: true }), filters: state.filters, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
   }
   if (state.page === "daily") {
-    return DailyTasksPage({ date: state.dailyDate, report: state.dailyReport, tasks: state.dailyTasks, editable: state.dailyEditable, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask, sort: state.dailySort });
+    return DailyTasksPage({ date: state.dailyDate, report: state.dailyReport, tasks: withPendingTasks(state.dailyTasks), editable: state.dailyEditable, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask, sort: state.dailySort });
   }
   if (state.page === "completion") {
-    return CompletionTasksPage({ tasks: state.completionTasks, performanceTasks: state.tasks, calendarDays: state.performanceDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), referenceDate: getMonthReferenceDate(state.performanceYear, state.performanceMonth), loading: state.loading, error: state.error, success: state.success, modalTask: state.completionModalTask, detailTask: state.detailTask });
+    return CompletionTasksPage({ tasks: withPendingTasks(state.completionTasks), performanceTasks: state.tasks, calendarDays: state.performanceDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), referenceDate: getMonthReferenceDate(state.performanceYear, state.performanceMonth), loading: state.loading, error: state.error, success: state.success, modalTask: state.completionModalTask, detailTask: state.detailTask });
   }
   if (state.page === "order") {
     return OrderTasksPage({ tasks: state.orderTasks, loading: state.loading, error: state.error, success: state.success });
   }
   if (state.page === "dailySchedule") {
-    return DailySchedulePage({ report: state.dailyReport, date: state.dailyDate, tasks: state.dailyTasks, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), includeExtraHours: state.dailyScheduleIncludeExtra, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
+    return DailySchedulePage({ report: state.dailyReport, date: state.dailyDate, tasks: withPendingTasks(state.dailyTasks), configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), includeExtraHours: state.dailyScheduleIncludeExtra, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
   }
   if (state.page === "calendar") {
     return CalendarPage({ year: state.calendarYear, month: state.calendarMonth, days: state.calendarDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, modalDay: state.calendarModalDay });
@@ -195,7 +296,7 @@ function findKnownTask(taskId) {
 
 function bindBacklogEvents() {
   document.querySelector("[data-open-task-modal]")?.addEventListener("click", () => {
-    state.modalTask = null;
+    state.modalTask = { order_points: nextOrderPoints() };
     render();
   });
 
@@ -461,7 +562,7 @@ function applyOrderPointsToLoadedTasks(updates) {
 
 function cloneTaskDraft(task) {
   const { id, created_at, updated_at, scoring, comments, ...draft } = task;
-  return { ...draft, finished_date: "" };
+  return { ...draft, finished_date: "", order_points: nextOrderPoints() };
 }
 
 function bindTaskModalEvents() {
@@ -474,39 +575,60 @@ function bindTaskModalEvents() {
 
   const taskForm = document.querySelector("#task-form");
   taskForm?.elements.ticket_type?.addEventListener("change", () => syncTaskPrStatusOptions(taskForm));
+  taskForm?.elements.task_status?.addEventListener("change", () => syncTaskFinishedDate(taskForm));
 
   document.querySelector("[data-delete-task]")?.addEventListener("click", async (event) => {
     const taskId = event.currentTarget.dataset.deleteTask;
     if (!window.confirm("¿Seguro que quieres eliminar esta tarea? Esta acción no se puede deshacer.")) return;
     clearMessages();
-    try {
-      await deleteTask(taskId);
-      state.modalTask = undefined;
-      state.detailTask = null;
-      state.success = "Tarea eliminada correctamente.";
-      await loadAllData({ preserveMessages: true });
-    } catch (error) {
-      state.error = error.message;
-    }
+    const baseTask = findKnownTask(taskId);
+    const pendingKey = addPendingTask({ ...(baseTask ?? {}), id: taskId }, { label: "Eliminando..." });
+    state.modalTask = undefined;
+    state.detailTask = null;
+    state.success = "Eliminación en curso: la tarea se retirará al responder el servidor.";
     render();
+
+    runTaskMutation({
+      pendingKey,
+      action: () => deleteTask(taskId),
+      successMessage: "Tarea eliminada correctamente.",
+    });
   });
 
-  document.querySelector("#task-form")?.addEventListener("submit", async (event) => {
+  document.querySelector("#task-form")?.addEventListener("submit", (event) => {
     event.preventDefault();
     const payload = normalizeTaskPayload(formToObject(event.target));
-    try {
-      const isCreate = !payload.id;
-      if (payload.id) await updateTask(payload);
-      else await createTask(payload);
-      state.modalTask = undefined;
-      state.success = "Tarea guardada correctamente.";
-      await loadAllData({ preserveMessages: true });
-      if (isCreate && !state.error) state.success = "Tarea creada y datos actualizados.";
-    } catch (error) {
-      state.error = error.message;
-    }
+    const isCreate = !payload.id;
+    const baseTask = isCreate ? null : findKnownTask(payload.id);
+    const pendingKey = addPendingTask(buildPendingTaskDraft(payload, baseTask), {
+      isCreate,
+      label: isCreate ? "Creando..." : "Guardando...",
+    });
+
+    clearMessages();
+    state.modalTask = undefined;
+    state.detailTask = null;
+    state.success = isCreate
+      ? "Tarea creada de forma provisional: se actualizará al responder el servidor."
+      : "Cambios aplicados de forma provisional: se actualizarán al responder el servidor.";
     render();
+
+    runTaskMutation({
+      pendingKey,
+      action: () => (isCreate ? createTask(payload) : updateTask(payload)),
+      successMessage: isCreate ? "Tarea creada y datos actualizados." : "Tarea guardada correctamente.",
+    });
   });
+}
+
+function syncTaskFinishedDate(form) {
+  const finishedDate = form?.elements.finished_date;
+  const taskStatus = form?.elements.task_status;
+  if (!finishedDate || !taskStatus) return;
+
+  const isDone = taskStatus.value === "Done";
+  finishedDate.disabled = !isDone;
+  if (isDone && !finishedDate.value) finishedDate.value = todayIso();
 }
 
 function syncTaskPrStatusOptions(form) {
@@ -803,25 +925,54 @@ function bindConfigurationEvents() {
   });
 }
 
-async function mutateTask(payload) {
+function mutateTask(payload) {
   clearMessages();
+  const baseTask = findKnownTask(payload.id);
+  const draft = buildPendingTaskDraft(withOptimisticComment(payload, baseTask), baseTask);
+  const pendingKey = addPendingTask(draft, { label: "Guardando..." });
+  if (state.detailTask?.id === payload.id) {
+    state.detailTask = { ...draft, __pending: true, __pendingLabel: "Guardando..." };
+  }
+  state.success = "Cambios aplicados de forma provisional: se actualizarán al responder el servidor.";
+  render();
+
+  return runTaskMutation({
+    pendingKey,
+    action: () => updateTask(payload),
+    successMessage: "Tarea actualizada.",
+    selectedTaskId: payload.id,
+  });
+}
+
+function withOptimisticComment(payload, baseTask) {
+  if (!payload.comment) return payload;
+  const { comment, ...rest } = payload;
+  const comments = Array.isArray(baseTask?.comments) ? baseTask.comments : [];
+  return { ...rest, comments: [...comments, { text: comment, created_at: new Date().toISOString() }] };
+}
+
+async function runTaskMutation({ pendingKey, action, successMessage, selectedTaskId = null }) {
   try {
-    await updateTask(payload);
-    state.success = "Tarea actualizada.";
-    await loadAllData({ preserveMessages: true });
-    refreshSelectedTask(payload.id);
+    await action();
+    await loadAllData({ preserveMessages: true, silent: true });
+    removePendingTask(pendingKey);
+    if (selectedTaskId) refreshSelectedTask(selectedTaskId);
+    if (!state.error) state.success = successMessage;
   } catch (error) {
+    removePendingTask(pendingKey);
+    if (selectedTaskId) refreshSelectedTask(selectedTaskId);
+    state.success = "";
     state.error = error.message;
   }
-  render();
+  renderUnlessEditingTask();
 }
 
 function refreshSelectedTask(taskId) {
   if (!state.detailTask || state.detailTask.id !== taskId) return;
-  state.detailTask = state.tasks.find((task) => task.id === taskId) ?? state.dailyTasks.find((task) => task.id === taskId) ?? null;
+  state.detailTask = findKnownTask(taskId);
 }
 
-async function loadAllData({ preserveMessages = false } = {}) {
+async function loadAllData({ preserveMessages = false, silent = false } = {}) {
   await withLoading(async () => {
     const [tasksResult, dailyResult, calendarResult, configurationsResult, completionResult, orderResult, performanceResult] = await Promise.allSettled([
       listTasks(state.filters),
@@ -885,7 +1036,7 @@ async function loadAllData({ preserveMessages = false } = {}) {
       state.success = "";
       state.error = errors.join(" ");
     }
-  }, { preserveMessages });
+  }, { preserveMessages, silent });
 }
 
 async function loadConfigurations({ preserveMessages = false } = {}) {
@@ -948,10 +1099,10 @@ async function reloadPerformance() {
   render();
 }
 
-async function withLoading(action, { preserveMessages = false } = {}) {
-  state.loading = true;
+async function withLoading(action, { preserveMessages = false, silent = false } = {}) {
+  if (!silent) state.loading = true;
   if (!preserveMessages) clearMessages();
-  render();
+  if (!silent) render();
   try {
     await action();
   } catch (error) {

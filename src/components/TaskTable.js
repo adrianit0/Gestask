@@ -31,13 +31,17 @@ function header(mode) {
 }
 
 function row(task, { readonly, mode, compact }) {
+  const pending = Boolean(task.__pending);
+  const rowReadonly = readonly || pending;
   const background = task.task_status === "To do" ? TASK_COLORS["To do"][task.priority] : TASK_COLORS[task.task_status];
   const border = task.task_status === "Done" ? PR_BORDER_COLORS[task.pr_status] : null;
   const visualStyle = `--task-bg:${background}; --task-border:${border || "transparent"};`;
   const colspan = mode === "backlog" ? 8 : mode === "daily" ? 9 : 11;
-  const clickableAttrs = compact ? `data-view-task="${task.id}"` : "";
+  const interactive = compact && !pending;
+  const clickableAttrs = interactive ? `data-view-task="${task.id}"` : "";
+  const rowClasses = `${interactive ? "clickable-row" : ""} ${pending ? "task-pending-row" : ""}`;
   return `
-    <tr class="task-main-row ${compact ? "clickable-row" : ""}" ${clickableAttrs} style="${visualStyle}">
+    <tr class="task-main-row ${rowClasses}" ${clickableAttrs} style="${visualStyle}">
       <td>${ticketCell(task.ticket)}</td>
       <td>${escapeHtml(task.ticket_type || "Bug")}</td>
       <td>${escapeHtml(task.assigned_date)}</td>
@@ -49,17 +53,18 @@ function row(task, { readonly, mode, compact }) {
         <td>${escapeHtml(task.effort_points)}</td>
         <td>${escapeHtml(task.order_points ?? "-")}</td>
         <td>${escapeHtml(task.priority)}</td>
-        <td class="status-cell">${statusSelect(task, readonly)}</td>
-        <td class="pr-cell">${prSelect(task, readonly)}</td>
+        <td class="status-cell">${statusSelect(task, rowReadonly)}</td>
+        <td class="pr-cell">${prSelect(task, rowReadonly)}</td>
       ` : ""}
-      ${mode === "daily" ? `<td class="status-cell">${statusSelect(task, readonly)}</td><td class="pr-cell">${prSelect(task, readonly)}</td><td class="backlog-link-cell">${BacklogTaskButton(task.id)}</td>` : ""}
-      ${mode === "backlog" ? `<td class="actions-cell">${taskActions(task, readonly)}</td>` : ""}
+      ${mode === "daily" ? `<td class="status-cell">${statusSelect(task, rowReadonly)}</td><td class="pr-cell">${prSelect(task, rowReadonly)}</td><td class="backlog-link-cell">${pending ? "" : BacklogTaskButton(task.id)}</td>` : ""}
+      ${mode === "backlog" ? `<td class="actions-cell">${taskActions(task, rowReadonly)}</td>` : ""}
     </tr>
-    <tr class="task-title-row ${compact ? "clickable-row" : ""}" ${clickableAttrs} style="${visualStyle}">
+    <tr class="task-title-row ${rowClasses}" ${clickableAttrs} style="${visualStyle}">
       <td class="task-title-cell" colspan="${colspan}">
         <div class="task-title-line">
           <span>${escapeHtml(task.title)}</span>
           ${commentCountBadge(task)}
+          ${pendingBadge(task)}
         </div>
         ${task.more_info ? `<div class="task-more-info">${escapeHtml(task.more_info)}</div>` : ""}
       </td>
@@ -74,6 +79,12 @@ function taskActions(task, readonly) {
       <button class="icon-button edit-icon-button" data-clone-task="${task.id}" ${readonly ? "disabled" : ""} aria-label="Clonar tarea">${cloneIcon()}</button>
     </div>
   `;
+}
+
+function pendingBadge(task) {
+  if (!task.__pending) return "";
+  const label = task.__pendingLabel || "Guardando...";
+  return `<span class="task-pending-badge" title="Valores provisionales en solo lectura hasta recibir la respuesta del servidor.">${escapeHtml(label)}</span>`;
 }
 
 function getCommentCount(task) {
@@ -160,6 +171,8 @@ function arrowRightIcon() {
 }
 export function TaskDetailModal(task, { readonly = false } = {}) {
   if (!task) return "";
+  const pending = Boolean(task.__pending);
+  const isReadonly = readonly || pending;
   return `
     <div class="modal-backdrop" role="presentation">
       <section class="modal task-detail-modal" role="dialog" aria-modal="true" aria-labelledby="task-detail-title">
@@ -169,7 +182,7 @@ export function TaskDetailModal(task, { readonly = false } = {}) {
             <h2 id="task-detail-title">${escapeHtml(task.title)}</h2>
           </div>
           <div class="modal-header-actions">
-            ${readonly ? "" : `<button class="icon-button edit-icon-button detail-edit-button" data-edit-detail-task="${escapeHtml(task.id)}" aria-label="Editar tarea">${editIcon()}</button>`}
+            ${isReadonly ? "" : `<button class="icon-button edit-icon-button detail-edit-button" data-edit-detail-task="${escapeHtml(task.id)}" aria-label="Editar tarea">${editIcon()}</button>`}
             <button class="icon-button close-icon-button" data-close-detail-modal aria-label="Cerrar">${closeIcon()}</button>
           </div>
         </div>
@@ -187,11 +200,12 @@ export function TaskDetailModal(task, { readonly = false } = {}) {
           ${detailItem("Esfuerzo", escapeHtml(task.effort_points))}
           ${detailItem("Orden", escapeHtml(task.order_points ?? "-"))}
           ${detailItem("Prioridad", escapeHtml(task.priority))}
-          ${detailItem("Estado", statusSelect(task, readonly))}
-          ${detailItem("PR", prSelect(task, readonly))}
+          ${pending ? `<article class="detail-item span-3 detail-pending">Cambios provisionales en solo lectura hasta que el servidor confirme.</article>` : ""}
+          ${detailItem("Estado", statusSelect(task, isReadonly))}
+          ${detailItem("PR", prSelect(task, isReadonly))}
           ${detailItem("Más info", escapeHtml(task.more_info || "-"), "span-3 detail-info")}
         </div>
-        ${TaskComments(task, { readonly })}
+        ${TaskComments(task, { readonly: isReadonly })}
       </section>
     </div>
   `;
