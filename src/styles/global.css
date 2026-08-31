@@ -487,7 +487,7 @@ textarea { min-height: 90px; resize: vertical; }
 .bulk-impute-panel { margin-bottom: 1rem; display: grid; gap: 0.85rem; }
 .bulk-impute-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; }
 .bulk-impute-header h2 { margin-bottom: 0; }
-.bulk-impute-date { display: grid; gap: 0.35rem; font-weight: 800; min-width: 200px; }
+.bulk-impute-date { display: grid; gap: 0.35rem; font-weight: 800; max-width: 220px; }
 
 .table-wrap { width: 100%; overflow-x: auto; }
 .task-table { width: 100%; min-width: 1120px; border-collapse: separate; border-spacing: 0; }
@@ -501,14 +501,28 @@ textarea { min-height: 90px; resize: vertical; }
 .task-table-completion th:nth-child(5), .task-table-completion .task-main-row td:nth-child(5) { width: 150px; }
 .task-table-completion th:nth-child(6), .task-table-completion .task-main-row td:nth-child(6) { width: 110px; text-align: right; }
 .task-table-completion th:nth-child(7), .task-table-completion .task-main-row td:nth-child(7) { width: 52px; text-align: right; }
-.task-table-impute { min-width: 640px; table-layout: fixed; --task-bg: #fffaf4; --task-border: #ffbf00; }
+.task-table-impute { min-width: 680px; table-layout: fixed; --task-bg: #fffaf4; --task-border: #ffbf00; }
 .task-table-impute tbody td { border-bottom: 1px solid var(--line); }
-.task-table-impute tbody td:first-child { box-shadow: inset 4px 0 0 var(--task-border); }
-.task-table-impute th:nth-child(1), .task-table-impute td:nth-child(1) { width: 160px; }
+.task-table-impute tbody td:nth-child(2) { box-shadow: inset 4px 0 0 var(--task-border); }
+.task-table-impute th:nth-child(1), .task-table-impute td:nth-child(1) { width: 44px; }
 .task-table-impute th:nth-child(2), .task-table-impute td:nth-child(2) { width: 160px; }
-.task-table-impute th:nth-child(3), .task-table-impute td:nth-child(3),
-.task-table-impute th:nth-child(4), .task-table-impute td:nth-child(4) { width: 160px; text-align: right; }
+.task-table-impute th:nth-child(3), .task-table-impute td:nth-child(3) { width: 150px; }
+.task-table-impute th:nth-child(4), .task-table-impute td:nth-child(4),
+.task-table-impute th:nth-child(5), .task-table-impute td:nth-child(5) { width: 150px; text-align: right; }
+.task-table-impute th:nth-child(6), .task-table-impute td:nth-child(6) { width: 44px; text-align: center; }
 .task-table-impute tfoot td { font-weight: 900; }
+.task-table-impute tbody tr.bulk-impute-row-selected { --task-bg: #ccffcc; --task-border: #5eb91e; }
+.bulk-impute-check-cell, .bulk-impute-check-column { text-align: center; }
+.bulk-impute-check-cell input, .bulk-impute-check-column input { width: auto; margin: 0; accent-color: var(--success); cursor: pointer; }
+.bulk-impute-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  cursor: help;
+}
+.bulk-impute-info svg { width: 1.05rem; height: 1.05rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bulk-impute-info:hover, .bulk-impute-info:focus-visible { color: var(--primary-dark); }
 .task-table-backlog th:nth-child(1), .task-table-backlog .task-main-row td:nth-child(1) { width: 130px; }
 .task-table-backlog th:nth-child(2), .task-table-backlog .task-main-row td:nth-child(2),
 .task-table-backlog th:nth-child(3), .task-table-backlog .task-main-row td:nth-child(3) { width: 140px; }

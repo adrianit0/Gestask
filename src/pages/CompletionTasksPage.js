@@ -21,7 +21,7 @@ export function getDefaultImputedDate(task) {
   return toIsoDate(task.imputed_date) || toIsoDate(task.finished_date) || todayIso();
 }
 
-export function CompletionTasksPage({ tasks = [], performanceTasks = [], calendarDays = [], configurations = [], minutesPerEffortPoint = 60, referenceDate = new Date(), loading = false, error = "", success = "", modalTask = null, detailTask = null } = {}) {
+export function CompletionTasksPage({ tasks = [], performanceTasks = [], calendarDays = [], configurations = [], minutesPerEffortPoint = 60, referenceDate = new Date(), loading = false, error = "", success = "", modalTask = null, detailTask = null, bulkImputeOpen = false, bulkImputeSelection = new Set() } = {}) {
   const completionProgress = getCompletionProgressMetrics(getVisiblePerformanceTasks(performanceTasks, false, referenceDate), calendarDays, configurations, minutesPerEffortPoint, referenceDate);
   const deployableImputedCount = getDeployableImputedTasks(tasks).length;
   const advanceableNeedPrCount = getAdvanceableNeedPrTasks(tasks).length;
@@ -43,7 +43,7 @@ export function CompletionTasksPage({ tasks = [], performanceTasks = [], calenda
     </section>
     ${ErrorMessage(error)}
     ${SuccessMessage(success)}
-    ${loading ? "" : BulkImputationPanel(pendingImputationTasks, minutesPerEffortPoint, completionProgress.differenceRatio)}
+    ${loading ? "" : BulkImputationPanel(pendingImputationTasks, minutesPerEffortPoint, completionProgress.differenceRatio, { open: bulkImputeOpen, selectedIds: bulkImputeSelection })}
     <section class="panel">
       ${loading ? LoadingState() : CompletionTasksTable(tasks, minutesPerEffortPoint)}
     </section>
@@ -52,14 +52,17 @@ export function CompletionTasksPage({ tasks = [], performanceTasks = [], calenda
   `;
 }
 
-function BulkImputationPanel(tasks, minutesPerEffortPoint, differenceRatio) {
+function BulkImputationPanel(tasks, minutesPerEffortPoint, differenceRatio, { open = false, selectedIds = new Set() } = {}) {
   if (!tasks.length) return "";
   const rows = tasks.map((task) => {
     const hoursToImpute = effortPointsToHours(task.effort_points, minutesPerEffortPoint);
-    return { task, hoursToImpute, reviewedHoursToImpute: differenceRatio > 0 ? hoursToImpute * differenceRatio : 0 };
+    return {
+      task,
+      hoursToImpute,
+      reviewedHoursToImpute: differenceRatio > 0 ? hoursToImpute * differenceRatio : 0,
+      selected: selectedIds.has(task.id),
+    };
   });
-  const totalHours = rows.reduce((sum, row) => sum + row.hoursToImpute, 0);
-  const totalReviewedHours = rows.reduce((sum, row) => sum + row.reviewedHoursToImpute, 0);
 
   return `
     <section class="panel bulk-impute-panel">
@@ -68,43 +71,93 @@ function BulkImputationPanel(tasks, minutesPerEffortPoint, differenceRatio) {
           <p class="eyebrow">Imputación masiva</p>
           <h2>Pendientes de imputar (${rows.length})</h2>
         </div>
-        <label class="bulk-impute-date">Fecha de imputación
-          <input id="bulk-impute-date" type="date" value="${escapeHtml(todayIso())}" />
-        </label>
+        <button class="secondary" type="button" data-toggle-bulk-impute>${open ? "Ocultar tabla" : "Ver tabla"}</button>
       </div>
-      <div class="table-wrap">
-        <table class="task-table task-table-impute">
-          <thead>
-            <tr>
-              <th>Ticket</th>
-              <th>Fecha de resolución</th>
-              <th>Horas a imputar</th>
-              <th>Horas a imputar revisado</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map(({ task, hoursToImpute, reviewedHoursToImpute }) => `
-              <tr>
-                <td>${ticketCell(task.ticket)}</td>
-                <td>${escapeHtml(task.finished_date || "-")}</td>
-                <td>${escapeHtml(formatHoursAndMinutes(hoursToImpute))}</td>
-                <td>${escapeHtml(formatHoursAndMinutes(reviewedHoursToImpute, { roundMinutesToNearest: 10 }))}</td>
-              </tr>
-            `).join("")}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="2">Total</td>
-              <td>${escapeHtml(formatHoursAndMinutes(totalHours))}</td>
-              <td>${escapeHtml(formatHoursAndMinutes(totalReviewedHours, { roundMinutesToNearest: 10 }))}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-      <div class="modal-actions">
-        <button class="primary" type="button" data-impute-all>Imputar todas (${rows.length})</button>
-      </div>
+      ${open ? BulkImputationBody(rows) : ""}
     </section>
+  `;
+}
+
+function BulkImputationBody(rows) {
+  const selectedRows = rows.filter((row) => row.selected);
+  const totalHours = sumHours(rows, "hoursToImpute");
+  const totalReviewedHours = sumHours(rows, "reviewedHoursToImpute");
+  const selectedHours = sumHours(selectedRows, "hoursToImpute");
+  const selectedReviewedHours = sumHours(selectedRows, "reviewedHoursToImpute");
+  const allSelected = rows.length > 0 && selectedRows.length === rows.length;
+
+  return `
+    <label class="bulk-impute-date">Fecha de imputación
+      <input id="bulk-impute-date" type="date" value="${escapeHtml(todayIso())}" />
+    </label>
+    <div class="table-wrap">
+      <table class="task-table task-table-impute">
+        <thead>
+          <tr>
+            <th class="bulk-impute-check-column">
+              <input type="checkbox" data-impute-select-all ${allSelected ? "checked" : ""} aria-label="Seleccionar todas" />
+            </th>
+            <th>Ticket</th>
+            <th>Fecha de resolución</th>
+            <th>Horas a imputar</th>
+            <th>Horas a imputar revisado</th>
+            <th class="bulk-impute-info-column" aria-label="Título"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(BulkImputationRow).join("")}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">Total</td>
+            <td>${escapeHtml(formatHoursAndMinutes(totalHours))}</td>
+            <td>${escapeHtml(formatHoursAndMinutes(totalReviewedHours, { roundMinutesToNearest: 10 }))}</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td colspan="3">Total seleccionado (${selectedRows.length})</td>
+            <td>${escapeHtml(formatHoursAndMinutes(selectedHours))}</td>
+            <td>${escapeHtml(formatHoursAndMinutes(selectedReviewedHours, { roundMinutesToNearest: 10 }))}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <button class="primary" type="button" data-impute-all ${selectedRows.length ? "" : "disabled"}>Imputar seleccionadas (${selectedRows.length})</button>
+    </div>
+  `;
+}
+
+function BulkImputationRow({ task, hoursToImpute, reviewedHoursToImpute, selected }) {
+  const title = task.title || "Sin título";
+  return `
+    <tr class="${selected ? "bulk-impute-row-selected" : ""}">
+      <td class="bulk-impute-check-cell">
+        <input type="checkbox" data-impute-select="${escapeHtml(task.id)}" ${selected ? "checked" : ""} aria-label="Marcar ${escapeHtml(task.ticket || title)} como imputada" />
+      </td>
+      <td>${ticketCell(task.ticket)}</td>
+      <td>${escapeHtml(task.finished_date || "-")}</td>
+      <td>${escapeHtml(formatHoursAndMinutes(hoursToImpute))}</td>
+      <td>${escapeHtml(formatHoursAndMinutes(reviewedHoursToImpute, { roundMinutesToNearest: 10 }))}</td>
+      <td class="bulk-impute-info-cell">
+        <span class="bulk-impute-info" title="${escapeHtml(title)}" tabindex="0" role="img" aria-label="${escapeHtml(title)}">${infoIcon()}</span>
+      </td>
+    </tr>
+  `;
+}
+
+function sumHours(rows, key) {
+  return rows.reduce((sum, row) => sum + row[key], 0);
+}
+
+function infoIcon() {
+  return `
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 11v5"></path>
+      <path d="M12 8h0.01"></path>
+    </svg>
   `;
 }
 

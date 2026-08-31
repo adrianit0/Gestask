@@ -46,6 +46,8 @@ const state = {
   dailyScheduleIncludeExtra: false,
   completionTasks: [],
   completionModalTask: null,
+  bulkImputeOpen: false,
+  bulkImputeSelection: new Set(),
   orderTasks: [],
   calendarYear: new Date().getFullYear(),
   calendarMonth: new Date().getMonth() + 1,
@@ -194,7 +196,7 @@ function currentPageHtml() {
     return DailyTasksPage({ date: state.dailyDate, report: state.dailyReport, tasks: withPendingTasks(state.dailyTasks), editable: state.dailyEditable, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask, sort: state.dailySort });
   }
   if (state.page === "completion") {
-    return CompletionTasksPage({ tasks: withPendingTasks(state.completionTasks), performanceTasks: state.tasks, calendarDays: state.performanceDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), referenceDate: getMonthReferenceDate(state.performanceYear, state.performanceMonth), loading: state.loading, error: state.error, success: state.success, modalTask: state.completionModalTask, detailTask: state.detailTask });
+    return CompletionTasksPage({ tasks: withPendingTasks(state.completionTasks), performanceTasks: state.tasks, calendarDays: state.performanceDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), referenceDate: getMonthReferenceDate(state.performanceYear, state.performanceMonth), loading: state.loading, error: state.error, success: state.success, modalTask: state.completionModalTask, detailTask: state.detailTask, bulkImputeOpen: state.bulkImputeOpen, bulkImputeSelection: state.bulkImputeSelection });
   }
   if (state.page === "order") {
     return OrderTasksPage({ tasks: state.orderTasks, loading: state.loading, error: state.error, success: state.success });
@@ -261,7 +263,7 @@ function bindLayoutEvents() {
 
   document.querySelector("[data-action='logout']")?.addEventListener("click", () => {
     logout();
-    Object.assign(state, { page: "backlog", tasks: [], dailyReport: null, dailyTasks: [], completionTasks: [], completionModalTask: null, orderTasks: [], calendarDays: [] });
+    Object.assign(state, { page: "backlog", tasks: [], dailyReport: null, dailyTasks: [], completionTasks: [], completionModalTask: null, bulkImputeOpen: false, bulkImputeSelection: new Set(), orderTasks: [], calendarDays: [] });
     clearMessages();
     render();
   });
@@ -425,6 +427,24 @@ function bindCompletionEvents() {
     });
   });
 
+  document.querySelector("[data-toggle-bulk-impute]")?.addEventListener("click", () => {
+    state.bulkImputeOpen = !state.bulkImputeOpen;
+    render();
+  });
+
+  document.querySelectorAll("[data-impute-select]").forEach((checkbox) => {
+    checkbox.addEventListener("change", () => {
+      toggleBulkImputeSelection(checkbox.dataset.imputeSelect, checkbox.checked);
+      render();
+    });
+  });
+
+  document.querySelector("[data-impute-select-all]")?.addEventListener("change", (event) => {
+    const pendingIds = getPendingImputationTasks(state.completionTasks).map((task) => task.id);
+    pendingIds.forEach((id) => toggleBulkImputeSelection(id, event.target.checked));
+    render();
+  });
+
   document.querySelector("[data-advance-all-need-pr]")?.addEventListener("click", async () => {
     const needPrTasks = getAdvanceableNeedPrTasks(state.completionTasks);
     if (!needPrTasks.length) return;
@@ -433,12 +453,14 @@ function bindCompletionEvents() {
   });
 
   document.querySelector("[data-impute-all]")?.addEventListener("click", async () => {
-    const imputableTasks = getPendingImputationTasks(state.completionTasks);
-    if (!imputableTasks.length) return;
+    const selectedTasks = getPendingImputationTasks(state.completionTasks).filter((task) => state.bulkImputeSelection.has(task.id));
+    if (!selectedTasks.length) return;
     const sharedDate = document.querySelector("#bulk-impute-date")?.value || "";
-    if (!window.confirm(`¿Imputar ${imputableTasks.length} tarea(s) y pasarlas a Imputed?`)) return;
-    const payloads = imputableTasks.map((task) => ({ id: task.id, imputed_date: sharedDate || getDefaultImputedDate(task) }));
-    await runCompletionBulkAction(payloads, `${imputableTasks.length} tarea(s) imputadas correctamente.`);
+    if (!window.confirm(`¿Imputar ${selectedTasks.length} tarea(s) seleccionada(s) y pasarlas a Imputed?`)) return;
+    const payloads = selectedTasks.map((task) => ({ id: task.id, imputed_date: sharedDate || getDefaultImputedDate(task) }));
+    const succeeded = await runCompletionBulkAction(payloads, `${selectedTasks.length} tarea(s) imputadas correctamente.`);
+    if (succeeded) selectedTasks.forEach((task) => state.bulkImputeSelection.delete(task.id));
+    render();
   });
 
   document.querySelector("[data-close-all-imputed]")?.addEventListener("click", async () => {
@@ -468,17 +490,26 @@ function bindCompletionEvents() {
 
 async function runCompletionBulkAction(payloads, successMessage) {
   clearMessages();
+  let succeeded = false;
   try {
     for (const payload of payloads) {
       await resolveCompletionTask(payload);
     }
     state.completionModalTask = null;
     state.success = successMessage;
+    succeeded = true;
     await loadAllData({ preserveMessages: true });
   } catch (error) {
     state.error = error.message;
   }
   render();
+  return succeeded;
+}
+
+function toggleBulkImputeSelection(taskId, selected) {
+  if (!taskId) return;
+  if (selected) state.bulkImputeSelection.add(taskId);
+  else state.bulkImputeSelection.delete(taskId);
 }
 
 function bindOrderEvents() {
