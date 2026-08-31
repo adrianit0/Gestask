@@ -9,26 +9,102 @@ export function getDeployableImputedTasks(tasks = []) {
   return tasks.filter((task) => task.pr_status === "Imputed" && task.ticket_type !== "Task");
 }
 
+export function getAdvanceableNeedPrTasks(tasks = []) {
+  return tasks.filter((task) => task.pr_status === "Need PR" && task.ticket_type !== "Task");
+}
+
+export function getPendingImputationTasks(tasks = []) {
+  return sortCompletionTasks(tasks.filter((task) => task.pr_status === "Need to Impute"));
+}
+
+export function getDefaultImputedDate(task) {
+  return toIsoDate(task.imputed_date) || toIsoDate(task.finished_date) || todayIso();
+}
+
 export function CompletionTasksPage({ tasks = [], performanceTasks = [], calendarDays = [], configurations = [], minutesPerEffortPoint = 60, referenceDate = new Date(), loading = false, error = "", success = "", modalTask = null, detailTask = null } = {}) {
   const completionProgress = getCompletionProgressMetrics(getVisiblePerformanceTasks(performanceTasks, false, referenceDate), calendarDays, configurations, minutesPerEffortPoint, referenceDate);
   const deployableImputedCount = getDeployableImputedTasks(tasks).length;
+  const advanceableNeedPrCount = getAdvanceableNeedPrTasks(tasks).length;
+  const pendingImputationTasks = getPendingImputationTasks(tasks);
   return `
     <section class="page-header">
       <div>
         <p class="eyebrow">Completar tareas</p>
         <h1>Cierre de workflow</h1>
       </div>
-      ${deployableImputedCount ? `
-        <button class="primary" type="button" data-close-all-imputed>Cerrar imputadas (${deployableImputedCount})</button>
-      ` : ""}
+      <div class="page-header-actions">
+        ${advanceableNeedPrCount ? `
+          <button class="secondary" type="button" data-advance-all-need-pr>Informar PR de todas (${advanceableNeedPrCount})</button>
+        ` : ""}
+        ${deployableImputedCount ? `
+          <button class="primary" type="button" data-close-all-imputed>Cerrar imputadas (${deployableImputedCount})</button>
+        ` : ""}
+      </div>
     </section>
     ${ErrorMessage(error)}
     ${SuccessMessage(success)}
+    ${loading ? "" : BulkImputationPanel(pendingImputationTasks, minutesPerEffortPoint, completionProgress.differenceRatio)}
     <section class="panel">
       ${loading ? LoadingState() : CompletionTasksTable(tasks, minutesPerEffortPoint)}
     </section>
     ${modalTask ? CompletionResolveModal(modalTask, minutesPerEffortPoint, completionProgress.differenceRatio) : ""}
     ${detailTask ? TaskDetailModal(detailTask, { readonly: true }) : ""}
+  `;
+}
+
+function BulkImputationPanel(tasks, minutesPerEffortPoint, differenceRatio) {
+  if (!tasks.length) return "";
+  const rows = tasks.map((task) => {
+    const hoursToImpute = effortPointsToHours(task.effort_points, minutesPerEffortPoint);
+    return { task, hoursToImpute, reviewedHoursToImpute: differenceRatio > 0 ? hoursToImpute * differenceRatio : 0 };
+  });
+  const totalHours = rows.reduce((sum, row) => sum + row.hoursToImpute, 0);
+  const totalReviewedHours = rows.reduce((sum, row) => sum + row.reviewedHoursToImpute, 0);
+
+  return `
+    <section class="panel bulk-impute-panel">
+      <div class="bulk-impute-header">
+        <div>
+          <p class="eyebrow">Imputación masiva</p>
+          <h2>Pendientes de imputar (${rows.length})</h2>
+        </div>
+        <label class="bulk-impute-date">Fecha de imputación
+          <input id="bulk-impute-date" type="date" value="${escapeHtml(todayIso())}" />
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table class="task-table task-table-impute">
+          <thead>
+            <tr>
+              <th>Ticket</th>
+              <th>Fecha de resolución</th>
+              <th>Horas a imputar</th>
+              <th>Horas a imputar revisado</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(({ task, hoursToImpute, reviewedHoursToImpute }) => `
+              <tr>
+                <td>${ticketCell(task.ticket)}</td>
+                <td>${escapeHtml(task.finished_date || "-")}</td>
+                <td>${escapeHtml(formatHoursAndMinutes(hoursToImpute))}</td>
+                <td>${escapeHtml(formatHoursAndMinutes(reviewedHoursToImpute, { roundMinutesToNearest: 10 }))}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2">Total</td>
+              <td>${escapeHtml(formatHoursAndMinutes(totalHours))}</td>
+              <td>${escapeHtml(formatHoursAndMinutes(totalReviewedHours, { roundMinutesToNearest: 10 }))}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="modal-actions">
+        <button class="primary" type="button" data-impute-all>Imputar todas (${rows.length})</button>
+      </div>
+    </section>
   `;
 }
 
@@ -222,6 +298,13 @@ function ticketCell(ticket) {
     return `<a href="${escapeHtml(value)}" target="_blank" rel="noreferrer">${escapeHtml(value)}</a>`;
   }
   return `<a href="https://jira.knowmadmood.com/browse/${encodeURIComponent(value)}" target="_blank" rel="noreferrer">${escapeHtml(value)}</a>`;
+}
+
+function toIsoDate(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return "";
+  const match = text.match(/^(d{4}-d{2}-d{2})/);
+  return match ? match[1] : "";
 }
 
 function formatHoursAndMinutes(hours, { roundMinutesToNearest = 1 } = {}) {

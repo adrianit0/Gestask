@@ -4,7 +4,7 @@ import { assertConfig } from "./config/env.js";
 import { AuthPage } from "./pages/AuthPage.js";
 import { BacklogPage } from "./pages/BacklogPage.js";
 import { CalendarPage } from "./pages/CalendarPage.js";
-import { CompletionTasksPage, getDeployableImputedTasks } from "./pages/CompletionTasksPage.js";
+import { CompletionTasksPage, getAdvanceableNeedPrTasks, getDefaultImputedDate, getDeployableImputedTasks, getPendingImputationTasks } from "./pages/CompletionTasksPage.js";
 import { DailyTasksPage } from "./pages/DailyTasksPage.js";
 import { DailySchedulePage } from "./pages/DailySchedulePage.js";
 import { ConfigurationPage } from "./pages/ConfigurationPage.js";
@@ -425,22 +425,27 @@ function bindCompletionEvents() {
     });
   });
 
+  document.querySelector("[data-advance-all-need-pr]")?.addEventListener("click", async () => {
+    const needPrTasks = getAdvanceableNeedPrTasks(state.completionTasks);
+    if (!needPrTasks.length) return;
+    if (!window.confirm(`¿Pasar ${needPrTasks.length} tarea(s) de Need PR a Need to Impute?`)) return;
+    await runCompletionBulkAction(needPrTasks.map((task) => ({ id: task.id })), `${needPrTasks.length} tarea(s) pasadas a Need to Impute.`);
+  });
+
+  document.querySelector("[data-impute-all]")?.addEventListener("click", async () => {
+    const imputableTasks = getPendingImputationTasks(state.completionTasks);
+    if (!imputableTasks.length) return;
+    const sharedDate = document.querySelector("#bulk-impute-date")?.value || "";
+    if (!window.confirm(`¿Imputar ${imputableTasks.length} tarea(s) y pasarlas a Imputed?`)) return;
+    const payloads = imputableTasks.map((task) => ({ id: task.id, imputed_date: sharedDate || getDefaultImputedDate(task) }));
+    await runCompletionBulkAction(payloads, `${imputableTasks.length} tarea(s) imputadas correctamente.`);
+  });
+
   document.querySelector("[data-close-all-imputed]")?.addEventListener("click", async () => {
     const imputedTasks = getDeployableImputedTasks(state.completionTasks);
     if (!imputedTasks.length) return;
     if (!window.confirm(`¿Cerrar ${imputedTasks.length} tarea(s) en estado Imputed y pasarlas a Deployed?`)) return;
-    clearMessages();
-    try {
-      for (const task of imputedTasks) {
-        await resolveCompletionTask({ id: task.id });
-      }
-      state.completionModalTask = null;
-      state.success = `${imputedTasks.length} tarea(s) cerradas correctamente.`;
-      await loadAllData({ preserveMessages: true });
-    } catch (error) {
-      state.error = error.message;
-    }
-    render();
+    await runCompletionBulkAction(imputedTasks.map((task) => ({ id: task.id })), `${imputedTasks.length} tarea(s) cerradas correctamente.`);
   });
 
   document.querySelector("#completion-resolve-form")?.addEventListener("submit", async (event) => {
@@ -459,6 +464,21 @@ function bindCompletionEvents() {
   });
 
   bindTaskTableEvents(state.completionTasks, { readonly: true });
+}
+
+async function runCompletionBulkAction(payloads, successMessage) {
+  clearMessages();
+  try {
+    for (const payload of payloads) {
+      await resolveCompletionTask(payload);
+    }
+    state.completionModalTask = null;
+    state.success = successMessage;
+    await loadAllData({ preserveMessages: true });
+  } catch (error) {
+    state.error = error.message;
+  }
+  render();
 }
 
 function bindOrderEvents() {
