@@ -1,6 +1,19 @@
 import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
 import { closeIcon } from "../components/TaskTable.js";
 import { escapeHtml } from "../utils/format.js";
+import { EXTERNAL_PAGE_CONFIGURATION_NAME, TICKET_MODEL_CONFIGURATION_NAME, TICKET_ORDER_CONFIGURATION_NAME } from "../utils/projectSettings.js";
+
+const OPTIONAL_CONFIGURATION_NAMES = new Set([
+  EXTERNAL_PAGE_CONFIGURATION_NAME,
+  TICKET_MODEL_CONFIGURATION_NAME,
+  TICKET_ORDER_CONFIGURATION_NAME,
+]);
+
+const OPTIONAL_CONFIGURATION_PLACEHOLDERS = {
+  [EXTERNAL_PAGE_CONFIGURATION_NAME]: "https://mi-jira.com/browse/ (vacío: sin enlaces)",
+  [TICKET_MODEL_CONFIGURATION_NAME]: "TEST-XXXX (vacío: ticket manual)",
+  [TICKET_ORDER_CONFIGURATION_NAME]: "0001 (vacío: ticket manual)",
+};
 
 const PARAMETER_TYPES = ["string", "number", "boolean", "date", "datetime"];
 
@@ -107,6 +120,7 @@ function ConfigurationRow(configuration) {
 function ValueControl(configuration, disabled) {
   const value = escapeHtml(inputValue(configuration.value, configuration.parameter_type));
   const name = "value";
+  const optional = OPTIONAL_CONFIGURATION_NAMES.has(configuration.name);
 
   if (configuration.parameter_type === "boolean") {
     return `
@@ -127,6 +141,11 @@ function ValueControl(configuration, disabled) {
 
   if (configuration.parameter_type === "number") {
     return `<input type="number" name="${name}" value="${value}" required step="any" ${disabled} />`;
+  }
+
+  if (optional) {
+    const placeholder = escapeHtml(OPTIONAL_CONFIGURATION_PLACEHOLDERS[configuration.name] ?? "");
+    return `<input name="${name}" value="${value}" placeholder="${placeholder}" title="Déjalo en blanco para desactivarlo." ${disabled} />`;
   }
 
   return `<input name="${name}" value="${value}" required ${disabled} />`;

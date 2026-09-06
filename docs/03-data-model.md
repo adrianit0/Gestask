@@ -12,7 +12,7 @@ Campos relevantes actuales y previstos:
 |---|---|---|
 | `id` | `uuid` | Identificador único. |
 | `user_id` | `uuid` | Propietario de la tarea. |
-| `ticket` | `text` | Referencia opcional a Jira. |
+| `ticket` | `text` | Referencia opcional al sistema externo o al modelo de ticket propio (ver `docs/06-configuration.md`). |
 | `ticket_type` | `text` | `Bug`, `Feature` o `Task`. Por defecto `Bug`. |
 | `assigned_date` | `date` | Fecha de inicio/asignación. Por defecto fecha actual. |
 | `limit_date` | `date` | Fecha límite opcional. Por defecto `null`. |

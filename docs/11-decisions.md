@@ -7,6 +7,7 @@
 - `supabase/sql/script-004.sql`: columnas opcionales `pr_link`, `test_cases` e `imputed_date`, más índices de consulta para soportar `Completar tareas`.
 - `supabase/sql/script-005.sql`: migración de estado PR `Need to Impute`, sustitución de `PR Hecho` y ajuste de `Task` para requerir confirmación de imputación.
 - `supabase/sql/script-009.sql`: parámetro `PE_diario_extra` (`number`, defecto `3`) para las horas extra del horario diario.
+- `supabase/sql/script-010.sql`: parámetros `project-external-page`, `project-ticket-model` y `project-ticket-order` para desacoplar la aplicación de Jira.
 
 ## Edge Functions creadas o modificadas
 - `tasks-list`, `tasks-create`, `tasks-update`.
@@ -25,7 +26,8 @@
 ## Frontend añadido
 - `src/pages/TimeManagerPage.js`: alta, edición, borrado e historial de registros horarios.
 - `src/pages/PerformancePage.js`: métricas de tareas y visualizaciones básicas de rendimiento.
-- `src/pages/ConfigurationPage.js`: edición y creación de parámetros de configuración.
+- `src/pages/ConfigurationPage.js`: edición y creación de parámetros de configuración. Los parámetros `project-*` admiten valor vacío para desactivarlos.
+- `src/utils/projectSettings.js`: enlace externo del ticket y numeración automática a partir de los parámetros `project-*`.
 - `src/pages/CompletionTasksPage.js`, `src/services/taskCompletionService.js`: navegación, listado y popups de `Completar tareas`.
 - `src/pages/OrderTasksPage.js`, `src/services/taskOrderService.js`: pestaña `Ordenar tareas` con acciones subir, bajar y `Ordenar automaticamente`.
 - `src/components/TaskTable.js`: formulario y detalle compacto (3 columnas), selector PR por tipo, comentarios persistidos.

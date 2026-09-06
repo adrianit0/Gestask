@@ -98,7 +98,7 @@ Orden fijo de presentación:
 - Después por fecha de finalización de menor a mayor.
 
 Campos mínimos de tabla:
-- Ticket como hipervínculo cuando exista URL o patrón de enlace configurado.
+- Ticket como hipervínculo cuando exista `project-external-page` configurado. Si está en blanco, el ticket se muestra como texto plano.
 - Tipo.
 - Título.
 - Fecha de finalización.

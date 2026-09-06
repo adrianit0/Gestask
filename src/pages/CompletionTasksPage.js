@@ -2,6 +2,7 @@ import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../compo
 import { BacklogTaskButton, TaskDetailModal, closeIcon } from "../components/TaskTable.js";
 import { PR_BORDER_COLORS } from "../utils/constants.js";
 import { escapeHtml, todayIso } from "../utils/format.js";
+import { ticketLinkHtml } from "../utils/projectSettings.js";
 import { effortPointsToHours, formatHoursFromEffortPoints } from "../utils/effortTime.js";
 import { getCompletionProgressMetrics, getVisiblePerformanceTasks } from "../utils/performanceMetrics.js";
 
@@ -350,7 +351,7 @@ function ticketCell(ticket) {
   if (/^https?:\/\//i.test(value)) {
     return `<a href="${escapeHtml(value)}" target="_blank" rel="noreferrer">${escapeHtml(value)}</a>`;
   }
-  return `<a href="https://jira.knowmadmood.com/browse/${encodeURIComponent(value)}" target="_blank" rel="noreferrer">${escapeHtml(value)}</a>`;
+  return ticketLinkHtml(value);
 }
 
 function toIsoDate(value) {

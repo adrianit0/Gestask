@@ -2,6 +2,7 @@ import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../compo
 import { TaskDetailModal, TaskModal } from "../components/TaskTable.js";
 import { PR_BORDER_COLORS, TASK_COLORS, TASK_STATUSES } from "../utils/constants.js";
 import { escapeHtml } from "../utils/format.js";
+import { ticketLinkHtml } from "../utils/projectSettings.js";
 
 const HIDDEN_STATUSES = ["Undone", "Unfinished"];
 const CLOSED_PR_STATUSES = ["Imputed", "Deployed"];
@@ -97,6 +98,5 @@ function isKanbanTask(task) {
 }
 
 function ticketLink(ticket) {
-  if (!ticket) return "-";
-  return `<a href="https://jira.knowmadmood.com/browse/${encodeURIComponent(ticket)}" target="_blank" rel="noreferrer">${escapeHtml(ticket)}</a>`;
+  return ticketLinkHtml(ticket);
 }

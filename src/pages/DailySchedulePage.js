@@ -3,6 +3,7 @@ import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../compo
 import { PR_BORDER_COLORS, TASK_COLORS } from "../utils/constants.js";
 import { buildDailySchedule, formatScheduleTime } from "../utils/dailySchedule.js";
 import { escapeHtml } from "../utils/format.js";
+import { ticketLinkHtml } from "../utils/projectSettings.js";
 
 export function DailySchedulePage({ report = null, date = null, tasks = [], configurations = [], minutesPerEffortPoint = 60, includeExtraHours = false, loading = false, error = "", success = "", modalTask = undefined, detailTask = null } = {}) {
   const schedule = buildDailySchedule(tasks, configurations, minutesPerEffortPoint, date, { includeExtraHours });
@@ -71,7 +72,7 @@ function ScheduleItem(item, timeOffset = 0) {
   }
 
   const task = item.task;
-  const ticket = task.ticket ? `<a href="https://jira.knowmadmood.com/browse/${encodeURIComponent(task.ticket)}" target="_blank" rel="noreferrer">${escapeHtml(task.ticket)}</a>` : "-";
+  const ticket = ticketLinkHtml(task.ticket);
   const background = task.task_status === "To do" ? TASK_COLORS["To do"][task.priority] : TASK_COLORS[task.task_status];
   const border = task.task_status === "Done" ? PR_BORDER_COLORS[task.pr_status] : null;
   const visualStyle = `--task-bg:${background || "#fff4e7"}; --task-border:${border || "transparent"};`;

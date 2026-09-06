@@ -4,7 +4,8 @@
 - Registro e inicio de sesión mediante Edge Functions `auth-register` y `auth-login`.
 - Dashboard protegido por sesión.
 - Backlog CRUD básico: listar, crear, editar y cambiar estados.
-- Enlace a Jira para tickets.
+- Enlace externo opcional para tickets, configurable por usuario mediante `project-external-page`. Si está en blanco no se generan enlaces.
+- Numeración automática de tickets opcional mediante `project-ticket-model` y `project-ticket-order`. Si el orden está en blanco, el ticket lo escribe el usuario.
 - Parte diario único por usuario y fecha.
 - Consulta de partes diarios por fecha con modo histórico de solo lectura.
 - Calendario mensual con puntos completados y tareas/tickets finalizados.

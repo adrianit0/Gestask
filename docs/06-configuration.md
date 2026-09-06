@@ -73,6 +73,36 @@ La vista `Horario diario` (ver `docs/09-daily-schedule.md`) usa parámetros de j
 - Variantes intensivas: `hora_inicio_intensivo`, `hora_fin_intensivo`, `PE_diario_intensivo`, `dias_semana_intensivo`, `meses_intensivo`.
 - `PE_diario_extra` (`number`, defecto `3`): puntos de esfuerzo adicionales que se planifican al activar la opción "Incluir horas". Si no es numérico o no es mayor que cero, se usa el valor por defecto.
 
+## Parámetros de proyecto
+Estos parámetros permiten usar la aplicación sin depender de Jira, de forma independiente por cuenta.
+
+### project-external-page
+- Tipo: `string`. Valor por defecto: `https://jira.knowmadmood.com/browse/`.
+- Define la URL base usada para construir el enlace del ticket.
+- Si el valor contiene `{ticket}`, se sustituye por el ticket codificado; en caso contrario el ticket se añade al final de la URL.
+- Si el valor está en blanco o el parámetro no existe, no se generan enlaces y el ticket se muestra como texto plano (la cuenta no tiene conectado ningún programa externo).
+- Afecta a `Backlog`, `Tareas diarias`, `Kanban`, `Ordenar tareas`, `Completar tareas`, `Horario diario` y al detalle de tarea.
+
+### project-ticket-model
+- Tipo: `string`. Valor por defecto: vacío.
+- Plantilla del ticket, por ejemplo `TEST-XXXX`.
+- La primera secuencia de `X` se sustituye por el número actual, rellenado con ceros hasta la longitud de la secuencia (`TEST-XXXX` + `0001` = `TEST-0001`).
+- Si el número supera la longitud de la plantilla, se usa el número completo (`TEST-XXXX` + `9999` -> siguiente `TEST-10000`).
+- Si la plantilla no contiene ninguna `X`, el número se añade al final.
+
+### project-ticket-order
+- Tipo: `string`. Valor por defecto: vacío.
+- Guarda el orden actual, por ejemplo `0001`, conservando los ceros a la izquierda.
+- Si tiene un valor numérico y `project-ticket-model` está informado, el ticket se autorrellena al abrir el formulario de creación o de clonado de tarea.
+- Al crear la tarea, si el ticket enviado coincide con el generado, el valor se incrementa en 1 y se guarda con la misma longitud (`0001` -> `0002`, `0099` -> `0100`).
+- Si el usuario modifica el ticket propuesto, el contador no se incrementa.
+- Si está en blanco o no es numérico, no hay autorrelleno: el nombre y el número del ticket los escribe el usuario.
+
+### Reglas comunes
+- Los tres parámetros admiten valor vacío desde la pantalla de `Configuración`, a diferencia del resto de parámetros de tipo `string`.
+- El valor efectivo se resuelve con las mismas reglas de perfil de usuario descritas en este documento, por lo que cada cuenta puede tener su propia configuración.
+- Si el incremento de `project-ticket-order` falla, la tarea creada se mantiene y se muestra un error indicando que el contador no se ha actualizado.
+
 ## Recuperación de configuración de usuario
 Al recuperar la configuración de un usuario, el sistema debe partir de todos los registros de `gestask_configuration`.
 

@@ -22,6 +22,7 @@ import { listOrderTasks, updateOrderTasks } from "./services/taskOrderService.js
 import { listCompletionTasks, resolveCompletionTask } from "./services/taskCompletionService.js";
 import { deleteTimeEntry, listTimeEntries, saveTimeEntry } from "./services/timeEntryService.js";
 import { getMinutesPerEffortPoint } from "./utils/effortTime.js";
+import { TICKET_ORDER_CONFIGURATION_NAME, applyProjectSettings, buildNextTicket, getNextTicketOrderValue } from "./utils/projectSettings.js";
 import { getMonthReferenceDate } from "./utils/performanceMetrics.js";
 import { todayIso } from "./utils/format.js";
 import { AsyncActivityIndicator, asyncActivityTitle, formatElapsed } from "./components/AsyncActivity.js";
@@ -306,7 +307,7 @@ function findKnownTask(taskId) {
 
 function bindBacklogEvents() {
   document.querySelector("[data-open-task-modal]")?.addEventListener("click", () => {
-    state.modalTask = { order_points: nextOrderPoints() };
+    state.modalTask = { order_points: nextOrderPoints(), ticket: buildNextTicket() };
     render();
   });
 
@@ -626,7 +627,7 @@ function applyOrderPointsToLoadedTasks(updates) {
 
 function cloneTaskDraft(task) {
   const { id, created_at, updated_at, scoring, comments, ...draft } = task;
-  return { ...draft, finished_date: "", order_points: nextOrderPoints() };
+  return { ...draft, finished_date: "", order_points: nextOrderPoints(), ticket: buildNextTicket() || draft.ticket };
 }
 
 function bindTaskModalEvents() {
@@ -679,7 +680,7 @@ function bindTaskModalEvents() {
 
     runTaskMutation({
       pendingKey,
-      action: () => (isCreate ? createTask(payload) : updateTask(payload)),
+      action: () => (isCreate ? createTaskWithTicketOrder(payload) : updateTask(payload)),
       successMessage: isCreate ? "Tarea creada y datos actualizados." : "Tarea guardada correctamente.",
     });
   });
@@ -1015,6 +1016,29 @@ function withOptimisticComment(payload, baseTask) {
   return { ...rest, comments: [...comments, { text: comment, created_at: new Date().toISOString() }] };
 }
 
+async function createTaskWithTicketOrder(payload) {
+  const generatedTicket = buildNextTicket();
+  const result = await createTask(payload);
+  if (generatedTicket && String(payload.ticket ?? "").trim() === generatedTicket) {
+    await advanceTicketOrder();
+  }
+  return result;
+}
+
+async function advanceTicketOrder() {
+  const configuration = state.configurations.find((item) => item.name === TICKET_ORDER_CONFIGURATION_NAME);
+  if (!configuration || configuration.readonly) return;
+
+  const nextOrder = getNextTicketOrderValue(configuration.value);
+  if (!nextOrder) return;
+
+  try {
+    await updateConfigurationProfile({ configuration_id: configuration.id, value: nextOrder });
+  } catch (error) {
+    state.error = `La tarea se creó pero no se pudo actualizar el contador de tickets: ${error.message}`;
+  }
+}
+
 async function runTaskMutation({ pendingKey, action, successMessage, selectedTaskId = null }) {
   try {
     await action();
@@ -1073,7 +1097,7 @@ async function loadAllData({ preserveMessages = false, silent = false } = {}) {
     }
 
     if (configurationsResult.status === "fulfilled") {
-      state.configurations = configurationsResult.value.configurations ?? [];
+      setConfigurations(configurationsResult.value.configurations ?? []);
     } else {
       errors.push(configurationsResult.reason.message);
     }
@@ -1103,10 +1127,15 @@ async function loadAllData({ preserveMessages = false, silent = false } = {}) {
   }, { preserveMessages, silent });
 }
 
+function setConfigurations(configurations) {
+  state.configurations = configurations;
+  applyProjectSettings(state.configurations);
+}
+
 async function loadConfigurations({ preserveMessages = false } = {}) {
   await withLoading(async () => {
     const data = await listConfigurations();
-    state.configurations = data.configurations ?? [];
+    setConfigurations(data.configurations ?? []);
   }, { preserveMessages });
 }
 

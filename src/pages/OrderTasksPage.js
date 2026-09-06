@@ -1,5 +1,6 @@
 ﻿import { ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
 import { escapeHtml } from "../utils/format.js";
+import { ticketLinkHtml } from "../utils/projectSettings.js";
 
 export function OrderTasksPage({ tasks = [], loading = false, error = "", success = "" } = {}) {
   return `
@@ -70,9 +71,7 @@ function orderTaskRow(task, index, tasks) {
 }
 
 function ticketCell(ticket) {
-  if (!ticket) return "-";
-  const safeTicket = escapeHtml(ticket);
-  return `<a href="https://jira.knowmadmood.com/browse/${encodeURIComponent(ticket)}" target="_blank" rel="noreferrer">${safeTicket}</a>`;
+  return ticketLinkHtml(ticket);
 }
 
 function arrowUpIcon() {

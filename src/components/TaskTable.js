@@ -1,5 +1,6 @@
 import { PRIORITIES, PR_BORDER_COLORS, PR_STATUSES, TASK_COLORS, TASK_PR_STATUSES, TASK_STATUSES, TICKET_TYPES } from "../utils/constants.js";
 import { escapeHtml } from "../utils/format.js";
+import { ticketLinkHtml } from "../utils/projectSettings.js";
 
 export function TaskTable(tasks, options = {}) {
   return taskTable(tasks, options);
@@ -114,9 +115,7 @@ export function BacklogTaskButton(taskId) {
 }
 
 function ticketCell(ticket) {
-  if (!ticket) return "-";
-  const safeTicket = escapeHtml(ticket);
-  return `<a href="https://jira.knowmadmood.com/browse/${encodeURIComponent(ticket)}" target="_blank" rel="noreferrer">${safeTicket}</a>`;
+  return ticketLinkHtml(ticket);
 }
 
 function statusSelect(task, readonly) {
