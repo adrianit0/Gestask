@@ -7,6 +7,7 @@ import { CalendarPage } from "./pages/CalendarPage.js";
 import { CompletionTasksPage, getAdvanceableNeedPrTasks, getDefaultImputedDate, getDeployableImputedTasks, getPendingImputationTasks } from "./pages/CompletionTasksPage.js";
 import { DailyTasksPage } from "./pages/DailyTasksPage.js";
 import { DailySchedulePage } from "./pages/DailySchedulePage.js";
+import { DailyRoutinePage } from "./pages/DailyRoutinePage.js";
 import { ConfigurationPage } from "./pages/ConfigurationPage.js";
 import { KanbanPage } from "./pages/KanbanPage.js";
 import { OrderTasksPage } from "./pages/OrderTasksPage.js";
@@ -15,9 +16,9 @@ import { TimeManagerPage } from "./pages/TimeManagerPage.js";
 import { login, logout, register } from "./services/authService.js";
 import { getCalendarMonth, updateCalendarDayStatus } from "./services/calendarService.js";
 import { createConfiguration, listConfigurations, updateConfigurationProfile } from "./services/configurationService.js";
-import { createDailyReport, getDailyReport } from "./services/dailyReportService.js";
+import { createDailyReport, getDailyReport, listPendingDailyTasks, setDailyTaskCompletion } from "./services/dailyReportService.js";
 import { isAuthenticated } from "./services/sessionService.js";
-import { createTask, deleteTask, listTasks, updateTask } from "./services/taskService.js";
+import { createTask, deleteTask, listDailyRoutineTasks, listTasks, updateTask } from "./services/taskService.js";
 import { listOrderTasks, updateOrderTasks } from "./services/taskOrderService.js";
 import { listCompletionTasks, resolveCompletionTask } from "./services/taskCompletionService.js";
 import { deleteTimeEntry, listTimeEntries, saveTimeEntry } from "./services/timeEntryService.js";
@@ -25,6 +26,8 @@ import { getMinutesPerEffortPoint } from "./utils/effortTime.js";
 import { TICKET_ORDER_CONFIGURATION_NAME, applyProjectSettings, buildNextTicket, getNextTicketOrderValue } from "./utils/projectSettings.js";
 import { getMonthReferenceDate } from "./utils/performanceMetrics.js";
 import { todayIso } from "./utils/format.js";
+import { DAILY_TICKET_TYPE } from "./utils/constants.js";
+import { dailyCompletionKey } from "./components/DailyTasks.js";
 import { AsyncActivityIndicator, asyncActivityTitle, formatElapsed } from "./components/AsyncActivity.js";
 import { getAsyncOperations, subscribeAsyncOperations } from "./services/asyncTracker.js";
 
@@ -45,6 +48,10 @@ const state = {
   dailyTasks: [],
   dailyEditable: false,
   dailyScheduleIncludeExtra: false,
+  dailyReportRoutineTasks: [],
+  dailyRoutineTasks: [],
+  dailyPending: { today: todayIso(), items: [] },
+  dailyCompletionPending: new Set(),
   completionTasks: [],
   completionModalTask: null,
   bulkImputeOpen: false,
@@ -125,15 +132,20 @@ function decoratePendingTask(entry) {
   return { ...entry.task, __pending: true, __pendingLabel: entry.label };
 }
 
-function withPendingTasks(tasks, { includeCreated = false } = {}) {
+function withPendingTasks(tasks, { includeCreated = false, daily = false } = {}) {
   if (!pendingTasks.size) return tasks;
   const merged = tasks.map((task) => {
     const entry = pendingTasks.get(task.id);
     return entry ? decoratePendingTask({ ...entry, task: { ...task, ...entry.task } }) : task;
   });
   if (!includeCreated) return merged;
-  const created = [...pendingTasks.values()].filter((entry) => entry.isCreate).map(decoratePendingTask);
+  // Daily tasks being created only show up in their own space, never mixed with regular tasks.
+  const created = [...pendingTasks.values()].filter((entry) => entry.isCreate && isDailyTask(entry.task) === daily).map(decoratePendingTask);
   return [...created, ...merged];
+}
+
+function isDailyTask(task) {
+  return task?.ticket_type === DAILY_TICKET_TYPE;
 }
 
 function buildPendingTaskDraft(payload, baseTask) {
@@ -168,7 +180,7 @@ function render() {
   }
 
   const draftComment = document.querySelector("[data-task-comment-form] textarea")?.value ?? "";
-  root.innerHTML = AppLayout(state.page, currentPageHtml());
+  root.innerHTML = AppLayout(state.page, currentPageHtml(), { dailyPending: state.dailyPending });
   renderedAsyncSignature = asyncSignature(getAsyncOperations());
   restoreDraftComment(draftComment);
   bindLayoutEvents();
@@ -203,7 +215,10 @@ function currentPageHtml() {
     return OrderTasksPage({ tasks: state.orderTasks, loading: state.loading, error: state.error, success: state.success });
   }
   if (state.page === "dailySchedule") {
-    return DailySchedulePage({ report: state.dailyReport, date: state.dailyDate, tasks: withPendingTasks(state.dailyTasks), configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), includeExtraHours: state.dailyScheduleIncludeExtra, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
+    return DailySchedulePage({ report: state.dailyReport, date: state.dailyDate, tasks: withPendingTasks(state.dailyTasks), routineTasks: state.dailyReportRoutineTasks, dailyCompletionPending: state.dailyCompletionPending, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), includeExtraHours: state.dailyScheduleIncludeExtra, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
+  }
+  if (state.page === "dailyRoutine") {
+    return DailyRoutinePage({ tasks: withPendingTasks(state.dailyRoutineTasks, { includeCreated: true, daily: true }), pending: state.dailyPending, completionPendingKeys: state.dailyCompletionPending, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask });
   }
   if (state.page === "calendar") {
     return CalendarPage({ year: state.calendarYear, month: state.calendarMonth, days: state.calendarDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, modalDay: state.calendarModalDay });
@@ -264,7 +279,7 @@ function bindLayoutEvents() {
 
   document.querySelector("[data-action='logout']")?.addEventListener("click", () => {
     logout();
-    Object.assign(state, { page: "backlog", tasks: [], dailyReport: null, dailyTasks: [], completionTasks: [], completionModalTask: null, bulkImputeOpen: false, bulkImputeSelection: new Set(), orderTasks: [], calendarDays: [] });
+    Object.assign(state, { page: "backlog", tasks: [], dailyReport: null, dailyTasks: [], dailyReportRoutineTasks: [], dailyRoutineTasks: [], dailyPending: { today: todayIso(), items: [] }, completionTasks: [], completionModalTask: null, bulkImputeOpen: false, bulkImputeSelection: new Set(), orderTasks: [], calendarDays: [] });
     clearMessages();
     render();
   });
@@ -277,6 +292,7 @@ function bindPageEvents() {
   if (state.page === "completion") bindCompletionEvents();
   if (state.page === "order") bindOrderEvents();
   if (state.page === "dailySchedule") bindDailyScheduleEvents();
+  if (state.page === "dailyRoutine") bindDailyRoutineEvents();
   if (state.page === "calendar") bindCalendarEvents();
   if (state.page === "time") bindTimeEvents();
   if (state.page === "configuration") bindConfigurationEvents();
@@ -302,7 +318,7 @@ function bindBacklogTaskNavigation() {
 }
 
 function findKnownTask(taskId) {
-  return [...state.tasks, ...state.dailyTasks, ...state.completionTasks, ...state.orderTasks].find((task) => task.id === taskId) ?? null;
+  return [...state.tasks, ...state.dailyTasks, ...state.completionTasks, ...state.orderTasks, ...state.dailyRoutineTasks].find((task) => task.id === taskId) ?? null;
 }
 
 function bindBacklogEvents() {
@@ -710,8 +726,10 @@ function bindDailyEvents() {
   document.querySelector("[data-create-daily-report]")?.addEventListener("click", async () => {
     clearMessages();
     try {
-      await createDailyReport();
-      state.success = "Parte diario creado.";
+      const data = await createDailyReport();
+      state.success = data.added_daily_tasks
+        ? `Parte diario creado con ${data.added_daily_tasks} tarea(s) diaria(s) obligatoria(s).`
+        : "Parte diario creado.";
       state.dailyDate = todayIso();
       await loadAllData({ preserveMessages: true });
     } catch (error) {
@@ -762,8 +780,100 @@ function bindDailyScheduleEvents() {
     });
   });
 
+  bindDailyTaskCompletionEvents();
   bindTaskTableEvents(state.dailyTasks);
   bindTaskModalEvents();
+}
+
+function bindDailyRoutineEvents() {
+  document.querySelector("[data-open-daily-task-modal]")?.addEventListener("click", () => {
+    state.modalTask = { ticket_type: DAILY_TICKET_TYPE };
+    render();
+  });
+
+  document.querySelectorAll("[data-edit-daily-task]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const task = state.dailyRoutineTasks.find((item) => item.id === button.dataset.editDailyTask);
+      if (!task) return;
+      state.modalTask = task;
+      render();
+    });
+  });
+
+  document.querySelectorAll("[data-finish-daily-task]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!window.confirm("¿Finalizar esta tarea diaria? Dejará de añadirse a los nuevos partes diarios.")) return;
+      mutateTask({ id: button.dataset.finishDailyTask, task_status: "Done" });
+    });
+  });
+
+  document.querySelectorAll("[data-reactivate-daily-task]").forEach((button) => {
+    button.addEventListener("click", () => mutateTask({ id: button.dataset.reactivateDailyTask, task_status: "To do" }));
+  });
+
+  bindDailyTaskCompletionEvents();
+  bindTaskModalEvents();
+}
+
+function bindDailyTaskCompletionEvents() {
+  document.querySelectorAll("[data-daily-task-check]").forEach((checkbox) => {
+    checkbox.addEventListener("change", () => toggleDailyTaskCompletion(checkbox.dataset.dailyTaskCheck, checkbox.dataset.reportDate, checkbox.checked));
+  });
+}
+
+async function toggleDailyTaskCompletion(taskId, reportDate, completed) {
+  const key = dailyCompletionKey(taskId, reportDate);
+  if (!taskId || !reportDate || state.dailyCompletionPending.has(key)) return;
+
+  clearMessages();
+  state.dailyCompletionPending.add(key);
+  applyDailyCompletion(taskId, reportDate, completed ? new Date().toISOString() : null);
+  render();
+
+  try {
+    await setDailyTaskCompletion({ task_id: taskId, report_date: reportDate, completed });
+    state.success = completed ? "Tarea diaria marcada como realizada." : "Tarea diaria marcada como pendiente.";
+  } catch (error) {
+    state.error = error.message;
+  }
+
+  state.dailyCompletionPending.delete(key);
+  // Reload from the server so the header indicator and checklists reflect the confirmed state (or revert on error).
+  await loadDailyTaskState();
+  renderUnlessEditingTask();
+}
+
+function applyDailyCompletion(taskId, reportDate, completedAt) {
+  if (state.dailyReport?.report_date === reportDate) {
+    state.dailyReportRoutineTasks = state.dailyReportRoutineTasks.map((task) => (task.id === taskId ? { ...task, completed_at: completedAt } : task));
+  }
+  if (completedAt) {
+    state.dailyPending = { ...state.dailyPending, items: state.dailyPending.items.filter((item) => !(item.task_id === taskId && item.report_date === reportDate)) };
+  }
+}
+
+async function loadDailyTaskState() {
+  const [pendingResult, dailyResult] = await Promise.allSettled([
+    listPendingDailyTasks(),
+    getDailyReport(state.dailyDate, state.dailySort),
+  ]);
+
+  if (pendingResult.status === "fulfilled") setDailyPending(pendingResult.value);
+  else state.error = pendingResult.reason.message;
+
+  if (dailyResult.status === "fulfilled") applyDailyReportData(dailyResult.value);
+  else state.error = dailyResult.reason.message;
+}
+
+function setDailyPending(data) {
+  state.dailyPending = { today: data.today || todayIso(), items: data.items ?? [] };
+}
+
+function applyDailyReportData(data) {
+  state.dailyReport = data.report;
+  state.dailyTasks = data.tasks ?? [];
+  state.dailyReportRoutineTasks = data.daily_tasks ?? [];
+  state.dailyEditable = Boolean(data.editable);
 }
 
 function bindTaskTableEvents(tasks, { readonly = false } = {}) {
@@ -1062,7 +1172,7 @@ function refreshSelectedTask(taskId) {
 
 async function loadAllData({ preserveMessages = false, silent = false } = {}) {
   await withLoading(async () => {
-    const [tasksResult, dailyResult, calendarResult, configurationsResult, completionResult, orderResult, performanceResult] = await Promise.allSettled([
+    const [tasksResult, dailyResult, calendarResult, configurationsResult, completionResult, orderResult, performanceResult, dailyRoutineResult, dailyPendingResult] = await Promise.allSettled([
       listTasks(state.filters),
       getDailyReport(state.dailyDate, state.dailySort),
       getCalendarMonth(state.calendarYear, state.calendarMonth),
@@ -1070,6 +1180,8 @@ async function loadAllData({ preserveMessages = false, silent = false } = {}) {
       listCompletionTasks(),
       listOrderTasks(),
       getCalendarMonth(state.performanceYear, state.performanceMonth),
+      listDailyRoutineTasks(),
+      listPendingDailyTasks(),
     ]);
 
     state.timeEntries = listTimeEntries();
@@ -1083,11 +1195,21 @@ async function loadAllData({ preserveMessages = false, silent = false } = {}) {
     }
 
     if (dailyResult.status === "fulfilled") {
-      state.dailyReport = dailyResult.value.report;
-      state.dailyTasks = dailyResult.value.tasks ?? [];
-      state.dailyEditable = Boolean(dailyResult.value.editable);
+      applyDailyReportData(dailyResult.value);
     } else {
       errors.push(dailyResult.reason.message);
+    }
+
+    if (dailyRoutineResult.status === "fulfilled") {
+      state.dailyRoutineTasks = dailyRoutineResult.value.tasks ?? [];
+    } else {
+      errors.push(dailyRoutineResult.reason.message);
+    }
+
+    if (dailyPendingResult.status === "fulfilled") {
+      setDailyPending(dailyPendingResult.value);
+    } else {
+      errors.push(dailyPendingResult.reason.message);
     }
 
     if (calendarResult.status === "fulfilled") {
@@ -1149,9 +1271,7 @@ async function loadBacklogTasks({ preserveMessages = false } = {}) {
 async function loadDailyReport() {
   await withLoading(async () => {
     const data = await getDailyReport(state.dailyDate, state.dailySort);
-    state.dailyReport = data.report;
-    state.dailyTasks = data.tasks ?? [];
-    state.dailyEditable = Boolean(data.editable);
+    applyDailyReportData(data);
   });
 }
 
@@ -1239,6 +1359,11 @@ function normalizeTaskPayload(payload) {
   if (!normalized.limit_date) normalized.limit_date = null;
   if (!normalized.finished_date) delete normalized.finished_date;
   if (!normalized.more_info) normalized.more_info = null;
+  if (isDailyTask(normalized)) {
+    normalized.effort_points = 0;
+    normalized.order_points = null;
+    return normalized;
+  }
   normalized.effort_points = Number(normalized.effort_points || 0);
   normalized.order_points = normalized.order_points === "" ? null : Number(normalized.order_points);
   return normalized;

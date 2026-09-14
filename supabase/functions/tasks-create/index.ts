@@ -1,8 +1,11 @@
 import { errorResponse, handleOptions, jsonResponse } from "../_shared/http.ts";
 import { requireUser } from "../_shared/supabase.ts";
 
-const allowedTicketTypes = ["Bug", "Feature", "Task"];
+const DAILY_TICKET_TYPE = "Diaria";
+const allowedTicketTypes = ["Bug", "Feature", "Task", DAILY_TICKET_TYPE];
 const allowedFields = ["ticket", "assigned_date", "effort_points", "order_points", "priority", "more_info"];
+// Daily tasks are short recurring tasks: they never carry effort or order points.
+const dailyLockedFields = ["effort_points", "order_points"];
 
 Deno.serve(async (req) => {
   const options = handleOptions(req);
@@ -25,21 +28,25 @@ Deno.serve(async (req) => {
   const comments = normalizeComments(body.comments);
   if (comments.error) return errorResponse(comments.error, 400);
 
+  const isDaily = ticketType === DAILY_TICKET_TYPE;
   const payload: Record<string, unknown> = {
     user_id: user.id,
     title: body.title.trim(),
     ticket_type: ticketType,
     limit_date: limitDate.value,
     comments: comments.value,
-    effort_points: body.effort_points ?? 3,
+    effort_points: isDaily ? 0 : body.effort_points ?? 3,
     priority: body.priority ?? "Menor",
     task_status: "To do",
     pr_status: "Not Finished",
   };
 
   for (const field of allowedFields) {
+    if (isDaily && dailyLockedFields.includes(field)) continue;
     if (body[field] !== undefined) payload[field] = body[field];
   }
+
+  if (isDaily) payload.order_points = null;
 
   const { data, error } = await supabase.from("tasks").insert(payload).select("*").single();
   if (error) return errorResponse(error.message, 400);

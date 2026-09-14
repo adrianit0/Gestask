@@ -1,17 +1,20 @@
 ﻿import { AsyncActivityIndicator } from "./AsyncActivity.js";
+import { DailyPendingIndicator } from "./DailyTasks.js";
 import { getAsyncOperations } from "../services/asyncTracker.js";
 
-export function AppLayout(activePage, content) {
+export function AppLayout(activePage, content, { dailyPending = {} } = {}) {
   return `
     <header class="top-nav">
       <div class="brand-area">
         <div class="brand">Gestask</div>
         <div class="async-activity-slot" data-async-indicator>${AsyncActivityIndicator(getAsyncOperations())}</div>
+        <div class="daily-pending-slot">${DailyPendingIndicator(dailyPending)}</div>
       </div>
       <nav aria-label="Navegación principal">
         ${navButton("backlog", "Backlog", activePage, "backlog")}
         ${navButton("kanban", "Kanban", activePage, "kanban")}
         ${navButton("daily", "Tareas diarias", activePage, "daily")}
+        ${navButton("dailyRoutine", "Diarias", activePage, "dailyRoutine")}
         ${navButton("dailySchedule", "Horario diario", activePage, "dailySchedule")}
         ${navButton("completion", "Completar tareas", activePage, "completion")}        
         ${navButton("calendar", "Calendario", activePage, "calendar")}
@@ -72,6 +75,14 @@ function navIcon(icon) {
         <path d="M3.5 6l1 1l2-2" />
         <path d="M3.5 12l1 1l2-2" />
         <path d="M3.5 18l1 1l2-2" />
+      </svg>
+    `,
+    dailyRoutine: `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M17 2l3 3-3 3" />
+        <path d="M3 11V9a4 4 0 0 1 4-4h13" />
+        <path d="M7 22l-3-3 3-3" />
+        <path d="M21 13v2a4 4 0 0 1-4 4H4" />
       </svg>
     `,
     completion: `

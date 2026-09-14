@@ -1,4 +1,4 @@
-import { PRIORITIES, PR_BORDER_COLORS, PR_STATUSES, TASK_COLORS, TASK_PR_STATUSES, TASK_STATUSES, TICKET_TYPES } from "../utils/constants.js";
+import { DAILY_TICKET_TYPE, PRIORITIES, PR_BORDER_COLORS, PR_STATUSES, TASK_COLORS, TASK_PR_STATUSES, TASK_STATUSES, TICKET_TYPES } from "../utils/constants.js";
 import { escapeHtml } from "../utils/format.js";
 import { ticketLinkHtml } from "../utils/projectSettings.js";
 
@@ -268,6 +268,7 @@ function formatCommentDate(value) {
 
 export function TaskModal(task = null) {
   const isEdit = Boolean(task?.id);
+  if (task?.ticket_type === DAILY_TICKET_TYPE) return DailyTaskModal(task, isEdit);
   return `
     <div class="modal-backdrop" role="presentation">
       <section class="modal" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
@@ -295,6 +296,49 @@ export function TaskModal(task = null) {
           ${isEdit ? `
             <div class="task-delete-zone span-3">
               <p class="task-delete-warning">Eliminar la tarea es permanente: esta acción no se puede deshacer.</p>
+              <button type="button" class="secondary danger-button" data-delete-task="${escapeHtml(task.id)}">Eliminar tarea</button>
+            </div>
+          ` : ""}
+          <div class="modal-actions span-3">
+            <button type="button" class="secondary" data-close-modal>Cancelar</button>
+            <button type="submit" class="primary">Guardar</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  `;
+}
+
+// Daily tasks share the task form handlers but hide effort points, order points, priority and PR status.
+function DailyTaskModal(task, isEdit) {
+  const status = task?.task_status === "Done" ? "Done" : "To do";
+  return `
+    <div class="modal-backdrop" role="presentation">
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow">Tareas diarias</p>
+            <h2 id="task-modal-title">${isEdit ? "Editar tarea diaria" : "Crear tarea diaria"}</h2>
+          </div>
+          <button class="icon-button close-icon-button" data-close-modal aria-label="Cerrar">${closeIcon()}</button>
+        </div>
+        <p class="daily-task-modal-hint">Se añade obligatoriamente a cada parte diario mientras no tenga fecha de finalización. No usa puntos de esfuerzo ni de orden.</p>
+        <form id="task-form" class="form-grid task-form-grid">
+          <input type="hidden" name="id" value="${escapeHtml(task?.id || "")}" />
+          <input type="hidden" name="ticket_type" value="${DAILY_TICKET_TYPE}" />
+          <label>Ticket<input name="ticket" value="${escapeHtml(task?.ticket || "")}" /></label>
+          <label>Fecha inicio<input name="assigned_date" type="date" required value="${escapeHtml(task?.assigned_date || new Date().toISOString().slice(0, 10))}" /></label>
+          ${isEdit ? `
+            <label>Estado<select name="task_status">
+              <option value="To do" ${status === "To do" ? "selected" : ""}>Activa</option>
+              <option value="Done" ${status === "Done" ? "selected" : ""}>Finalizada</option>
+            </select></label>
+          ` : ""}
+          <label class="span-3">Titulo<input name="title" required value="${escapeHtml(task?.title || "")}" /></label>
+          <label class="span-3">Más info<textarea name="more_info">${escapeHtml(task?.more_info || "")}</textarea></label>
+          ${isEdit ? `
+            <div class="task-delete-zone span-3">
+              <p class="task-delete-warning">Eliminar la tarea diaria es permanente y borra su historial de partes diarios.</p>
               <button type="button" class="secondary danger-button" data-delete-task="${escapeHtml(task.id)}">Eliminar tarea</button>
             </div>
           ` : ""}

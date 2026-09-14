@@ -5,6 +5,11 @@ La pestaña `Horario diario` transforma las tareas del parte diario en una agend
 
 Esta especificación documenta el comportamiento de la vista y, en concreto, la funcionalidad de **incluir horas extra** para planificar más allá de la hora de fin habitual.
 
+## Tareas diarias
+- Arriba del todo, antes del horario, se muestra el bloque `Tareas diarias` con las tareas de tipo `Diaria` del parte y una casilla para marcarlas como realizadas.
+- Las tareas `Diaria` no forman parte de la agenda: no tienen PE ni ocupan franjas horarias.
+- El comportamiento completo está en `docs/10-daily-tasks.md`.
+
 ## Construcción del horario
 - Las tareas se ordenan por `order_points` descendente.
 - Cada tarea ocupa un bloque de duración `effort_points * Minute_PE` minutos.

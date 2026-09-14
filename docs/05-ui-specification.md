@@ -1,7 +1,9 @@
 # Especificación UI
 
 ## Navegación
-Barra superior fija con Backlog, Tareas Diarias, Completar tareas, Ordenar tareas, Calendario, Gestor de Tiempos, Gráficas de Rendimiento, Configuración y Logout.
+Barra superior fija con Backlog, Tareas Diarias, Diarias, Completar tareas, Ordenar tareas, Calendario, Gestor de Tiempos, Gráficas de Rendimiento, Configuración y Logout.
+
+Junto a la marca se muestran el indicador de cargas asíncronas y el indicador de tareas diarias sin realizar (verde sin pendientes, ámbar como aviso si solo hay pendientes de hoy, rojo como error si hay pendientes de días anteriores). El indicador de diarias muestra el detalle al pasar el ratón y navega a `Diarias` al pulsarlo. Detalle en `docs/10-daily-tasks.md`.
 
 La pestaña Configuración debe representarse con un icono de rueda dentada.
 
@@ -36,6 +38,7 @@ Reglas visuales:
 - Si `ticket_type = Task`, el selector de PR solo muestra `Not Finished`, `Need to Impute` e `Imputed`.
 - Si `ticket_type != Task`, el selector de PR muestra el catálogo completo cuando la tarea está en estado que lo permite.
 - `limit_date` puede quedar vacío.
+- El selector de tipo no ofrece `Diaria`: las tareas diarias se crean desde su pestaña con un modal simplificado (ticket, fecha de inicio, título, más info y, en edición, estado `Activa`/`Finalizada`).
 
 ## Detalle de tarea
 El detalle debe ser ligeramente más compacto que la versión actual para incluir más información sin aumentar el tamaño del modal.
@@ -83,6 +86,17 @@ Reglas de UX:
 Selector de fecha, botón Nuevo día, aviso de modo histórico y listado ordenado por `order_points` descendente por defecto.
 
 La vista debe permitir cambiar la ordenación usando los mismos criterios principales que Backlog cuando aplique.
+
+La tabla del parte no muestra tareas `Diaria`. Al crear el parte, el mensaje de éxito indica cuántas diarias obligatorias se han añadido.
+
+## Diarias
+Pestaña propia para las tareas de tipo `Diaria`:
+- Botón `Nueva tarea diaria`.
+- Bloque `Pendientes de realizar` agrupado por fecha de parte, con etiqueta `Atrasada` o `Hoy` y casilla para marcar como realizada.
+- Tabla `Activas` con acciones `Editar` y `Finalizar`.
+- Sección plegable `Finalizadas` con acción `Reactivar`.
+
+Detalle en `docs/10-daily-tasks.md`.
 
 ## Completar tareas
 Pantalla operativa para cerrar tareas que ya están en `Done` pero cuyo workflow posterior no ha terminado.
@@ -188,6 +202,8 @@ Reglas de UX:
 
 ## Horario diario
 Agenda con franjas horarias generada a partir del parte diario. Cabecera con resumen de PE planificados frente a PE diarios y el rango horario efectivo.
+
+Arriba del todo, antes de la agenda, se muestra el bloque `Tareas diarias` con las diarias del parte, su progreso `realizadas / total` y una casilla por tarea. Las diarias no ocupan franjas horarias.
 
 Al final del listado se muestra un botón a todo el ancho disponible para incluir horas extra:
 - Borde gris con transparencia y línea discontinua, fondo blanco muy transparente y texto gris.

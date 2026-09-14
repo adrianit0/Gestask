@@ -21,7 +21,11 @@ Deno.serve(async (req) => {
   const priority = url.searchParams.get("priority");
   const date = url.searchParams.get("date");
   const search = url.searchParams.get("search");
+  const ticketType = url.searchParams.get("ticket_type");
 
+  // Daily tasks live in their own space: they are only listed when explicitly requested.
+  if (ticketType) query = query.eq("ticket_type", ticketType);
+  else query = query.neq("ticket_type", "Diaria");
   if (status) query = query.eq("task_status", status);
   if (priority) query = query.eq("priority", priority);
   if (date) query = query.eq("assigned_date", date);

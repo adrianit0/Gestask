@@ -28,6 +28,10 @@
 - `Ordenar tareas` debe presentar las tareas de mayor a menor `order_points`.
 - Desde `Ordenar tareas`, el usuario debe poder mover tareas arriba y abajo, recalculando los `order_points` afectados de forma consistente con el orden visual.
 - `Ordenar tareas` debe ofrecer una acción `Ordenar automaticamente` que normaliza los `order_points` de las tareas visibles a una secuencia escalonada desde `1` hasta el número de tareas ordenables.
+- Debe existir un tipo de tarea `Diaria` para tareas recurrentes que deben realizarse obligatoriamente cada día en que se crea un parte diario, mientras su `finished_date` no esté informado (ver `docs/10-daily-tasks.md`).
+- Las tareas `Diaria` no tienen puntos de esfuerzo ni puntos de orden, y no se mezclan con el resto de tareas: se gestionan en la pestaña propia `Diarias`.
+- `Horario diario` debe mostrar arriba del todo las tareas diarias del parte con una casilla para marcarlas como realizadas.
+- La cabecera debe mostrar el número de tareas diarias sin realizar: como aviso si solo son del día de hoy y como error si hay alguna de días anteriores.
 
 ## No funcionales
 - Responsive.
@@ -57,7 +61,9 @@
 - Estados de tarea: `To do`, `Doing`, `Draft`, `Undone`, `Unfinished`, `Need Fix`, `Waiting`, `Done`, `Warning`.
 - Estados PR generales: `Not Finished`, `Need PR`, `Need to Impute`, `Imputed`, `Deployed`.
 - Estados PR para tareas con `ticket_type = Task`: solo `Not Finished`, `Need to Impute` e `Imputed`.
-- Tipos de ticket: `Bug`, `Feature`, `Task`.
+- Tipos de ticket: `Bug`, `Feature`, `Task` y `Diaria` (este último gestionado aparte).
+- Una tarea `Diaria` solo admite `task_status` `To do` o `Done`, siempre tiene `effort_points = 0`, `order_points = null` y `pr_status = Not Finished`, y no puede cambiar de tipo.
+- Una tarea `Diaria` se añade a cada parte diario creado mientras `finished_date` sea nulo; su realización se registra por parte en `daily_report_tasks.completed_at`.
 - Tipo de ticket por defecto: `Bug`.
 - `limit_date` es opcional y por defecto debe ser `null`.
 - Prioridades: `Trivial`, `Menor`, `Prioritaria`, `Crítica`, `Bloqueante`.
@@ -70,7 +76,7 @@
 - Una tarea `Task` finaliza su workflow en `Imputed`; no debe ofrecer paso de despliegue ni cierre posterior.
 - El enlace al PR, los test cases y la fecha de imputación forman parte de la información de cierre de workflow y deben poder persistirse si se desarrolla la funcionalidad.
 - Solo existe un parte diario por usuario y fecha.
-- Tareas válidas para parte diario: `To do`, `Doing`, `Draft`, `Need Fix`, `Waiting`, `Warning`.
+- Tareas válidas para parte diario: `To do`, `Doing`, `Draft`, `Need Fix`, `Waiting`, `Warning`, más las tareas `Diaria` sin `finished_date`.
 - Tareas no cargadas: `Done`, `Undone`, `Unfinished`.
 - Tareas ordenables manualmente: cualquier tarea con `task_status` distinto de `Done`, `Undone` y `Unfinished`, y con `order_points` no nulo.
 - En `Ordenar tareas`, el listado base siempre se ordena por `order_points` descendente.

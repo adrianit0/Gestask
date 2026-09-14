@@ -1,9 +1,11 @@
 import { errorResponse, handleOptions, jsonResponse } from "../_shared/http.ts";
 import { requireUser } from "../_shared/supabase.ts";
 
-const allowedTicketTypes = ["Bug", "Feature", "Task"];
+const DAILY_TICKET_TYPE = "Diaria";
+const allowedTicketTypes = ["Bug", "Feature", "Task", DAILY_TICKET_TYPE];
 const allowedPrStatuses = ["Not Finished", "Need PR", "Need to Impute", "Imputed", "Deployed"];
 const allowedTaskPrStatuses = ["Not Finished", "Need to Impute", "Imputed"];
+const allowedDailyStatuses = ["To do", "Done"];
 const editableFields = ["ticket", "assigned_date", "finished_date", "effort_points", "order_points", "priority", "task_status", "pr_status", "more_info"];
 
 Deno.serve(async (req) => {
@@ -40,6 +42,10 @@ Deno.serve(async (req) => {
     if (typeof body.ticket_type !== "string" || !allowedTicketTypes.includes(body.ticket_type)) {
       return errorResponse("Invalid ticket type.", 400);
     }
+    // Daily tasks keep their own per-day history, so a task cannot move in or out of the Diaria type.
+    if ((body.ticket_type === DAILY_TICKET_TYPE) !== (current.ticket_type === DAILY_TICKET_TYPE)) {
+      return errorResponse("Daily ticket type cannot be changed.", 400);
+    }
     patch.ticket_type = body.ticket_type;
   }
 
@@ -74,7 +80,18 @@ Deno.serve(async (req) => {
     return errorResponse("Invalid PR status for ticket type.", 400);
   }
 
-  if (nextTicketType === "Task") {
+  if (nextTicketType === DAILY_TICKET_TYPE) {
+    if (!allowedDailyStatuses.includes(nextStatus)) return errorResponse("Invalid task status for ticket type.", 400);
+    patch.effort_points = 0;
+    patch.order_points = null;
+    patch.pr_status = "Not Finished";
+    // finished_date ends the recurrence: once set, the task is no longer added to new daily reports.
+    if (nextStatus === "Done") {
+      if (!patch.finished_date && !current.finished_date) patch.finished_date = new Date().toISOString().slice(0, 10);
+    } else {
+      patch.finished_date = null;
+    }
+  } else if (nextTicketType === "Task") {
     if (nextStatus === "Done") {
       if (!patch.finished_date && !current.finished_date) patch.finished_date = new Date().toISOString().slice(0, 10);
       if ((patch.pr_status ?? current.pr_status) === "Not Finished") patch.pr_status = "Need to Impute";

@@ -2,6 +2,8 @@ export const TASK_STATUSES = ["To do", "Doing", "Draft", "Undone", "Unfinished",
 export const PR_STATUSES = ["Not Finished", "Need PR", "Need to Impute", "Imputed", "Deployed"];
 export const TASK_PR_STATUSES = ["Not Finished", "Need to Impute", "Imputed"];
 export const TICKET_TYPES = ["Bug", "Feature", "Task"];
+// Recurring daily tasks: managed apart from TICKET_TYPES, without effort points, order points nor PR workflow.
+export const DAILY_TICKET_TYPE = "Diaria";
 export const PRIORITIES = ["Trivial", "Menor", "Prioritaria", "Crítica", "Bloqueante"];
 export const DAY_STATUSES = ["Laboral", "Vacaciones", "Festivos", "Ausencia"];
 

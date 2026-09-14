@@ -6,6 +6,10 @@ export function listTasks(filters = {}) {
   return callFunction("tasks-list", { query });
 }
 
+export function listDailyRoutineTasks() {
+  return callFunction("tasks-list", { query: { ticket_type: "Diaria", sort_by: "created_at", sort_direction: "asc" } });
+}
+
 export function createTask(payload) {
   return callFunction("tasks-create", { method: "POST", body: payload });
 }

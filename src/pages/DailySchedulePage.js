@@ -1,3 +1,4 @@
+import { DailyTaskChecklist } from "../components/DailyTasks.js";
 import { BacklogTaskButton, TaskDetailModal, TaskModal } from "../components/TaskTable.js";
 import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
 import { PR_BORDER_COLORS, TASK_COLORS } from "../utils/constants.js";
@@ -5,7 +6,7 @@ import { buildDailySchedule, formatScheduleTime } from "../utils/dailySchedule.j
 import { escapeHtml } from "../utils/format.js";
 import { ticketLinkHtml } from "../utils/projectSettings.js";
 
-export function DailySchedulePage({ report = null, date = null, tasks = [], configurations = [], minutesPerEffortPoint = 60, includeExtraHours = false, loading = false, error = "", success = "", modalTask = undefined, detailTask = null } = {}) {
+export function DailySchedulePage({ report = null, date = null, tasks = [], routineTasks = [], dailyCompletionPending = new Set(), configurations = [], minutesPerEffortPoint = 60, includeExtraHours = false, loading = false, error = "", success = "", modalTask = undefined, detailTask = null } = {}) {
   const schedule = buildDailySchedule(tasks, configurations, minutesPerEffortPoint, date, { includeExtraHours });
   const timeOffset = schedule.settings.scheduleTimeOffsetMinutes;
 
@@ -23,6 +24,7 @@ export function DailySchedulePage({ report = null, date = null, tasks = [], conf
     </section>
     ${ErrorMessage(error)}
     ${SuccessMessage(success)}
+    ${report && !loading ? DailyTaskChecklist(routineTasks, report.report_date, dailyCompletionPending) : ""}
     <section class="panel daily-schedule-panel">
       ${loading ? LoadingState() : report ? DailySchedule(schedule, includeExtraHours) : EmptyState("No existe parte diario para mostrar el horario.")}
     </section>

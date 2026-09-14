@@ -3,7 +3,10 @@ import { errorResponse, handleOptions, jsonResponse } from "../_shared/http.ts";
 import { parseTaskSort, sortTasks } from "../_shared/taskSorting.ts";
 import { requireUser } from "../_shared/supabase.ts";
 
+const DAILY_TICKET_TYPE = "Diaria";
 const today = () => new Date().toISOString().slice(0, 10);
+
+type ReportItem = { completed_at: string | null; tasks: Record<string, any> | null };
 
 Deno.serve(async (req) => {
   const options = handleOptions(req);
@@ -22,16 +25,22 @@ Deno.serve(async (req) => {
 
   const { data: report, error } = await supabase
     .from("daily_reports")
-    .select("id, user_id, report_date, created_at, daily_report_tasks(created_at, tasks(*))")
+    .select("id, user_id, report_date, created_at, daily_report_tasks(created_at, completed_at, tasks(*))")
     .eq("user_id", user.id)
     .eq("report_date", date)
     .maybeSingle();
 
   if (error) return errorResponse(error.message, 400);
 
-  const reportTasks = (report?.daily_report_tasks ?? [])
-    .map((item: { tasks: unknown }) => item.tasks)
-    .filter(Boolean);
+  const reportItems = ((report?.daily_report_tasks ?? []) as ReportItem[]).filter((item) => item.tasks);
+  const reportTasks = reportItems
+    .filter((item) => item.tasks!.ticket_type !== DAILY_TICKET_TYPE)
+    .map((item) => item.tasks);
+  // Daily tasks are returned apart from the regular ones, with the completion mark of this report.
+  const dailyTasks = reportItems
+    .filter((item) => item.tasks!.ticket_type === DAILY_TICKET_TYPE)
+    .map((item) => ({ ...item.tasks, completed_at: item.completed_at ?? null }))
+    .sort((a, b) => String(a.created_at ?? "").localeCompare(String(b.created_at ?? "")));
 
   let tasks;
   try {
@@ -40,5 +49,5 @@ Deno.serve(async (req) => {
     return errorResponse(scoringError instanceof Error ? scoringError.message : "Invalid scoring configuration.", 400);
   }
 
-  return jsonResponse({ report: report ? { ...report, daily_report_tasks: undefined } : null, tasks: sortTasks(tasks, sort.sortBy, sort.sortDirection), editable: date === today() });
+  return jsonResponse({ report: report ? { ...report, daily_report_tasks: undefined } : null, tasks: sortTasks(tasks, sort.sortBy, sort.sortDirection), daily_tasks: dailyTasks, editable: date === today() });
 });

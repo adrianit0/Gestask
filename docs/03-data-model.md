@@ -13,7 +13,7 @@ Campos relevantes actuales y previstos:
 | `id` | `uuid` | Identificador único. |
 | `user_id` | `uuid` | Propietario de la tarea. |
 | `ticket` | `text` | Referencia opcional al sistema externo o al modelo de ticket propio (ver `docs/06-configuration.md`). |
-| `ticket_type` | `text` | `Bug`, `Feature` o `Task`. Por defecto `Bug`. |
+| `ticket_type` | `text` | `Bug`, `Feature`, `Task` o `Diaria`. Por defecto `Bug`. |
 | `assigned_date` | `date` | Fecha de inicio/asignación. Por defecto fecha actual. |
 | `limit_date` | `date` | Fecha límite opcional. Por defecto `null`. |
 | `finished_date` | `date` | Fecha de finalización, gestionada por reglas de estado. |
@@ -32,11 +32,17 @@ Campos relevantes actuales y previstos:
 | `updated_at` | `timestamptz` | Fecha de última actualización. |
 
 ### Reglas de `ticket_type`
-- `ticket_type` debe tener constraint de catálogo: `Bug`, `Feature`, `Task`.
+- `ticket_type` debe tener constraint de catálogo: `Bug`, `Feature`, `Task`, `Diaria`.
 - El valor por defecto debe ser `Bug`.
 - Para `Bug` y `Feature`, se mantiene el flujo PR completo: `Not Finished`, `Need PR`, `Need to Impute`, `Imputed`, `Deployed`.
 - Para `Task`, solo se admiten `Not Finished`, `Need to Impute` e `Imputed`.
 - `Task` no requiere `Need PR` ni `Deployed`.
+
+### Reglas de `ticket_type = Diaria`
+- Constraint `tasks_daily_rules_check`: `task_status` en `To do`/`Done`, `pr_status = Not Finished`, `effort_points = 0` y `order_points = null`.
+- `normalize_task_state` fuerza esos valores y trata cualquier estado distinto de `Done` como `To do`.
+- `finished_date` es la fecha fin de la recurrencia: mientras sea nula, la tarea se añade a cada parte diario.
+- El detalle funcional está en `docs/10-daily-tasks.md`.
 
 ### Reglas de `limit_date`
 - `limit_date` es nullable.
@@ -69,6 +75,12 @@ Parte diario único por usuario y fecha.
 
 ## daily_report_tasks
 Relación histórica entre partes diarios y tareas.
+
+| Campo | Tipo esperado | Reglas |
+|---|---|---|
+| `completed_at` | `timestamptz` | Solo aplica a tareas `Diaria`: momento en que se marcó realizada en ese parte. `null` = sin realizar. |
+
+La política RLS `daily_report_tasks_update_own` permite actualizar solo filas de partes del usuario autenticado. El índice parcial `daily_report_tasks_pending_idx` cubre la consulta de diarias pendientes.
 
 ## calendar_day_statuses
 Excepciones manuales del calendario: Laboral, Vacaciones, Festivos, Ausencia.
@@ -107,5 +119,5 @@ Debe devolverse en los listados de tareas cuando la UI lo necesite para mostrar 
 
 ## Reglas automáticas
 - Trigger `normalize_task_state` mantiene coherencia entre `task_status`, `finished_date`, `pr_status` y `ticket_type`.
-- Trigger `sync_task_with_today_report` añade tareas válidas al parte de hoy si existe.
+- Trigger `sync_task_with_today_report` añade tareas válidas al parte de hoy si existe; para `Diaria`, las añade mientras `finished_date` sea nulo.
 - Trigger `touch_updated_at` actualiza `updated_at`.

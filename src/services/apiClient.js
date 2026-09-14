@@ -12,6 +12,8 @@ const OPERATION_LABELS = {
   "configuration-profile-update": "Guardando parámetro",
   "daily-report-create": "Creando parte diario",
   "daily-report-get": "Cargando parte diario",
+  "daily-tasks-pending": "Cargando tareas diarias pendientes",
+  "daily-tasks-complete": "Guardando tarea diaria",
   "tasks-completion-list": "Cargando tareas a completar",
   "tasks-completion-resolve": "Resolviendo tarea",
   "tasks-order-list": "Cargando orden de tareas",

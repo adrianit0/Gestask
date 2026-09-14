@@ -44,6 +44,7 @@ Deno.serve(async (req) => {
     .select("id, ticket, title, ticket_type, effort_points, finished_date")
     .eq("user_id", user.id)
     .eq("task_status", "Done")
+    .neq("ticket_type", "Diaria")
     .gte("finished_date", firstDay)
     .lte("finished_date", lastDay);
 

@@ -8,6 +8,7 @@
 - `supabase/sql/script-005.sql`: migración de estado PR `Need to Impute`, sustitución de `PR Hecho` y ajuste de `Task` para requerir confirmación de imputación.
 - `supabase/sql/script-009.sql`: parámetro `PE_diario_extra` (`number`, defecto `3`) para las horas extra del horario diario.
 - `supabase/sql/script-010.sql`: parámetros `project-external-page`, `project-ticket-model` y `project-ticket-order` para desacoplar la aplicación de Jira.
+- `supabase/sql/script-011.sql`: tipo de tarea `Diaria` (catálogo, constraint `tasks_daily_rules_check`, normalización y sincronización con el parte de hoy), columna `daily_report_tasks.completed_at`, política RLS de actualización e índice parcial de pendientes.
 
 ## Edge Functions creadas o modificadas
 - `tasks-list`, `tasks-create`, `tasks-update`.
@@ -22,6 +23,8 @@
 - `tasks-order-list`, `tasks-order-update`: listado y actualización batch para `Ordenar tareas`.
 - `supabase/functions/_shared/configuration.ts`: validación de configuración y cálculo de scoring.
 - `supabase/functions/_shared/taskSorting.ts`: validación y ordenación estable de tareas.
+- `tasks-create`, `tasks-update`, `tasks-list`, `tasks-completion-list`, `calendar-month-get`, `daily-report-create` y `daily-report-get` adaptados al tipo `Diaria`.
+- `daily-tasks-pending`, `daily-tasks-complete`: listado de diarias sin realizar y marcado por parte diario.
 
 ## Frontend añadido
 - `src/pages/TimeManagerPage.js`: alta, edición, borrado e historial de registros horarios.
@@ -33,6 +36,7 @@
 - `src/components/TaskTable.js`: formulario y detalle compacto (3 columnas), selector PR por tipo, comentarios persistidos.
 - `src/services/timeEntryService.js`: persistencia local de registros horarios en `localStorage`.
 - `src/pages/DailySchedulePage.js`, `src/utils/dailySchedule.js`: horario diario con botón para incluir/ocultar horas extra basado en `PE_diario_extra`.
+- `src/pages/DailyRoutinePage.js`, `src/components/DailyTasks.js`: pestaña `Diarias`, bloque de diarias del `Horario diario` e indicador de cabecera de diarias pendientes.
 
 ## Decisiones técnicas
 - SPA con Vite y JavaScript sin framework para mantener una primera versión simple.
@@ -51,9 +55,16 @@
 - Las gráficas de diferencia (`Diferencia entre nuevas y terminadas`, puntos y tareas) y las tres del grupo `Rendimiento acumulado` se representan como gráfica de línea SVG con línea base en 0; el resto de series diarias siguen como barras verticales.
 - Convenio de signo en gráficas comparativas (diferencias diarias y grupo acumulado): completado/terminado = positivo, nuevo/creado = negativo. La diferencia diaria se calcula como `terminadas − nuevas` y el acumulado creado se dibuja en negativo. No aplica a las gráficas que solo muestran creados (`Puntos nuevos este mes`, `Tareas creadas por día`).
 
+- La realización de una tarea `Diaria` se guarda por parte en `daily_report_tasks.completed_at` y no en `task_status`, porque la tarea es recurrente: su estado solo indica si está activa (`To do`) o finalizada (`Done`), y `finished_date` marca el fin de la recurrencia.
+- Una tarea no puede cambiar de tipo desde o hacia `Diaria` para no mezclar su historial por parte con el flujo PR ni con puntos de esfuerzo/orden.
+- `tasks-list` excluye las diarias salvo que se pida `ticket_type=Diaria`, de modo que Backlog, Kanban, Gestor de tiempos y Rendimiento no necesitan filtros propios.
+- Las diarias pendientes se calculan en servidor (`daily-tasks-pending`), que devuelve también su fecha de hoy; la UI clasifica como error las de partes anteriores y como aviso las de hoy.
+- Se renumeran los documentos de seguimiento (`10-backlog` → `11-backlog`, `11-decisions` → `12-decisions`) para mantener las specs antes que el seguimiento con la nueva `10-daily-tasks.md`.
+
 ## Pendiente
 - Conectar y desplegar contra un proyecto Supabase real.
 - Añadir tests automatizados.
 - Mejorar accesibilidad avanzada de tablas grandes.
 - Validar Edge Functions con `supabase functions serve` o despliegue real cuando Supabase CLI esté configurado.
-- Ejecutar QA-002 y QA-004 en navegador contra Supabase real (ver `docs/10-backlog.md`).
+- Ejecutar QA-002 y QA-004 en navegador contra Supabase real (ver `docs/11-backlog.md`).
+- Aplicar `script-011.sql`, desplegar `daily-tasks-pending`, `daily-tasks-complete` y las funciones modificadas, y ejecutar QA-005.

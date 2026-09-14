@@ -996,3 +996,104 @@ textarea { min-height: 90px; resize: vertical; }
 @media (max-width: 720px) {
   .kanban-column { flex-basis: 82vw; }
 }
+
+.daily-pending { position: relative; display: inline-flex; }
+.daily-pending-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.daily-pending-pill:hover { filter: saturate(1.2); }
+.daily-pending-dot { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--success); }
+.daily-pending-count { font-variant-numeric: tabular-nums; }
+.daily-pending-warning .daily-pending-pill { color: #9a5a00; border-color: #ffbf00; background: #fff1d6; }
+.daily-pending-warning .daily-pending-dot { background: #ffbf00; }
+.daily-pending-error .daily-pending-pill { color: var(--danger); border-color: #ffbbb3; background: #ffe5e1; }
+.daily-pending-error .daily-pending-dot { background: var(--danger); animation: async-pulse 1s ease-in-out infinite; }
+.daily-pending-tooltip {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  left: 0;
+  z-index: 40;
+  display: none;
+  min-width: 15rem;
+  max-width: 22rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--card);
+  box-shadow: 0 12px 28px rgba(39, 33, 27, 0.18);
+  color: var(--ink);
+  font-weight: 400;
+  font-size: 0.8rem;
+}
+.daily-pending:hover .daily-pending-tooltip, .daily-pending:focus-within .daily-pending-tooltip { display: block; }
+.daily-pending-tooltip-title { margin: 0 0 0.35rem; font-weight: 700; }
+.daily-pending-warning .daily-pending-tooltip-title { color: #9a5a00; }
+.daily-pending-error .daily-pending-tooltip-title { color: var(--danger); }
+.daily-pending-tooltip-section { margin: 0.45rem 0 0.2rem; color: var(--muted); font-size: 0.7rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
+.daily-pending-tooltip ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.25rem; }
+.daily-pending-tooltip li { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
+.daily-pending-tooltip li strong { font-variant-numeric: tabular-nums; color: var(--danger); }
+.daily-pending-tooltip-empty { margin: 0; color: var(--muted); }
+
+@media (max-width: 720px) {
+  .daily-pending-label { display: none; }
+  .daily-pending-tooltip { left: auto; right: 0; }
+}
+
+.daily-checklist-panel { margin-bottom: 1rem; }
+.daily-checklist-header { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.6rem; }
+.daily-checklist-header h2 { margin: 0; font-size: 1.2rem; letter-spacing: -0.04em; }
+.daily-checklist-progress { border-radius: 999px; padding: 0.2rem 0.6rem; background: #fff1d6; color: #9a5a00; font-size: 0.8rem; font-weight: 900; }
+.daily-checklist-progress.complete { background: #e7f7ed; color: var(--success); }
+.daily-checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.45rem; }
+.daily-checklist-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+.daily-checklist-item label { display: flex; align-items: flex-start; gap: 0.6rem; flex: 1; min-width: 0; cursor: pointer; }
+.daily-checklist-item input { flex-shrink: 0; width: 1.15rem; height: 1.15rem; margin: 0.1rem 0 0; accent-color: var(--success); }
+.daily-checklist-text { display: grid; gap: 0.15rem; min-width: 0; }
+.daily-checklist-title { font-weight: 800; overflow-wrap: anywhere; }
+.daily-checklist-text small { color: var(--muted); white-space: pre-wrap; }
+.daily-checklist-ticket { font-size: 0.78rem; font-weight: 700; white-space: nowrap; }
+.daily-checklist-item.done { background: #effaf2; border-color: #bfe6cc; }
+.daily-checklist-item.done .daily-checklist-title { color: var(--muted); text-decoration: line-through; }
+.daily-checklist-item.saving { opacity: 0.7; font-style: italic; }
+
+.daily-routine-panel { margin-bottom: 1rem; }
+.daily-routine-heading { display: flex; align-items: center; gap: 0.5rem; margin: 0 0 0.75rem; font-size: 1.2rem; font-weight: 800; letter-spacing: -0.04em; }
+.daily-routine-heading span {
+  min-width: 1.5rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: var(--secondary);
+  color: var(--primary-dark);
+  font-size: 0.75rem;
+  text-align: center;
+}
+summary.daily-routine-heading { margin-bottom: 0; cursor: pointer; }
+details[open] > summary.daily-routine-heading { margin-bottom: 0.75rem; }
+.daily-pending-group + .daily-pending-group { margin-top: 0.9rem; }
+.daily-pending-group h3 { display: flex; align-items: center; gap: 0.5rem; margin: 0 0 0.45rem; font-size: 0.95rem; }
+.daily-pending-tag { border-radius: 999px; padding: 0.1rem 0.5rem; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; }
+.daily-pending-group.late .daily-pending-tag { background: #ffe5e1; color: var(--danger); }
+.daily-pending-group.late .daily-checklist-item { border-color: #ffbbb3; }
+.daily-pending-group.today .daily-pending-tag { background: #fff1d6; color: #9a5a00; }
+.daily-routine-table { width: 100%; border-collapse: collapse; }
+.daily-routine-table th, .daily-routine-table td { padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.daily-task-modal-hint { margin: 0 0 0.75rem; color: var(--muted); font-size: 0.85rem; font-weight: 700; }

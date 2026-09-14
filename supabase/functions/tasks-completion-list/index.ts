@@ -15,6 +15,7 @@ Deno.serve(async (req) => {
     .select("id,ticket,ticket_type,title,assigned_date,limit_date,finished_date,effort_points,order_points,priority,task_status,pr_status,more_info,comments,pr_link,test_cases,imputed_date,created_at,updated_at")
     .eq("user_id", user.id)
     .eq("task_status", "Done")
+    .neq("ticket_type", "Diaria")
     .or("and(ticket_type.eq.Task,pr_status.neq.Imputed),and(ticket_type.neq.Task,pr_status.neq.Deployed)");
 
   if (error) return errorResponse(error.message, 400);

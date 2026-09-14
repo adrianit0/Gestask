@@ -66,3 +66,9 @@
 - Documentar la funcionalidad `Horario diario` bajo SDD (`docs/09-daily-schedule.md`).
 - Añadir el parámetro `PE_diario_extra` al catálogo de configuración (defecto `3`).
 - Implementar el botón "Incluir horas" / "Mostrar menos horas" que amplía la hora de fin efectiva por `PE_diario_extra` PE.
+
+## Iteración 12
+- Documentar el tipo de tarea `Diaria` bajo SDD (`docs/10-daily-tasks.md`).
+- Añadir `Diaria` al catálogo de `ticket_type` y `completed_at` a `daily_report_tasks` (`script-011.sql`).
+- Añadir las diarias activas a cada parte diario y exponer endpoints de pendientes y marcado.
+- Implementar la pestaña `Diarias`, el bloque de diarias en `Horario diario` y el indicador de cabecera de aviso/error.

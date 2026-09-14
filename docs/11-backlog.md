@@ -27,7 +27,7 @@
   - **Estado**: Hecho
   - **Área**: Documentación
   - **Descripción**: Registrar implementación.
-  - **Archivos**: `docs/11-decisions.md`
+  - **Archivos**: `docs/12-decisions.md`
   - **Criterio de aceptación**: Cambios y pendientes trazados.
   - **Dependencias**: Resto.
 
@@ -270,7 +270,7 @@
   - **Estado**: Hecho
   - **Área**: Documentación
   - **Descripción**: Documentar la funcionalidad `Completar tareas`.
-  - **Archivos**: `docs/01-requirements.md`, `docs/02-roadmap.md`, `docs/03-data-model.md`, `docs/04-api-contracts.md`, `docs/05-ui-specification.md`, `docs/11-decisions.md`
+  - **Archivos**: `docs/01-requirements.md`, `docs/02-roadmap.md`, `docs/03-data-model.md`, `docs/04-api-contracts.md`, `docs/05-ui-specification.md`, `docs/12-decisions.md`
   - **Criterio de aceptación**: Reglas de inclusión, popups, transiciones, datos futuros y contratos previstos quedan documentados sin implementación.
   - **Dependencias**: DOC-005.
 
@@ -334,7 +334,7 @@
   - **Estado**: Hecho
   - **Área**: Documentación
   - **Descripción**: Documentar la funcionalidad `Ordenar tareas` bajo SDD.
-  - **Archivos**: `docs/01-requirements.md`, `docs/02-roadmap.md`, `docs/03-data-model.md`, `docs/04-api-contracts.md`, `docs/05-ui-specification.md`, `docs/07-scoring.md`, `docs/08-order-tasks.md`, `docs/11-decisions.md`
+  - **Archivos**: `docs/01-requirements.md`, `docs/02-roadmap.md`, `docs/03-data-model.md`, `docs/04-api-contracts.md`, `docs/05-ui-specification.md`, `docs/07-scoring.md`, `docs/08-order-tasks.md`, `docs/12-decisions.md`
   - **Criterio de aceptación**: Reglas de inclusión, orden visual, algoritmo de movimiento, contrato batch, UI y QA quedan documentados sin implementación.
   - **Dependencias**: DOC-005.
 
@@ -391,7 +391,7 @@
   - **Estado**: Hecho
   - **Área**: Documentación
   - **Descripción**: Documentar la funcionalidad `Horario diario` y la opción de incluir horas extra bajo SDD.
-  - **Archivos**: `docs/02-roadmap.md`, `docs/05-ui-specification.md`, `docs/06-configuration.md`, `docs/09-daily-schedule.md`, `docs/11-decisions.md`
+  - **Archivos**: `docs/02-roadmap.md`, `docs/05-ui-specification.md`, `docs/06-configuration.md`, `docs/09-daily-schedule.md`, `docs/12-decisions.md`
   - **Criterio de aceptación**: Quedan documentados el botón, su alternancia, el parámetro `PE_diario_extra` y el cálculo de la hora de fin efectiva.
   - **Dependencias**: DOC-005.
 
@@ -418,3 +418,75 @@
   - **Archivos**: `docs/05-ui-specification.md`, `src/pages/PerformancePage.js`, `src/utils/performanceMetrics.js`
   - **Criterio de aceptación**: Las tareas `Undone`/`Unfinished` no cuentan en ninguna gráfica basada en tareas (nuevas, creadas, puntos de esfuerzo, diferencias y acumulados), con independencia de `Mostrar todo`.
   - **Dependencias**: DOC-005.
+
+- **DOC-009**
+  - **Estado**: Hecho
+  - **Área**: Documentación
+  - **Descripción**: Documentar el tipo de tarea `Diaria` bajo SDD y renumerar los documentos de seguimiento (`11-backlog`, `12-decisions`).
+  - **Archivos**: `docs/10-daily-tasks.md`, `docs/01-requirements.md`, `docs/02-roadmap.md`, `docs/03-data-model.md`, `docs/04-api-contracts.md`, `docs/05-ui-specification.md`, `docs/09-daily-schedule.md`, `docs/12-decisions.md`
+  - **Criterio de aceptación**: Quedan documentadas las reglas de obligatoriedad, la separación del resto de tareas, los contratos API, la UI y los casos de QA.
+  - **Dependencias**: DOC-008.
+
+- **SQL-011**
+  - **Estado**: Hecho
+  - **Área**: SQL
+  - **Descripción**: Añadir `Diaria` al catálogo de `ticket_type`, `completed_at` a `daily_report_tasks`, reglas de normalización y sincronización con el parte de hoy.
+  - **Archivos**: `supabase/sql/script-011.sql`
+  - **Criterio de aceptación**: Las diarias quedan con `effort_points = 0`, `order_points = null`, `pr_status = Not Finished` y estado `To do`/`Done`; se añaden al parte de hoy mientras `finished_date` sea nulo; existe política RLS de actualización para `daily_report_tasks`.
+  - **Dependencias**: DOC-009.
+
+- **API-013**
+  - **Estado**: Hecho
+  - **Área**: Edge Functions
+  - **Descripción**: Adaptar tareas y partes diarios al tipo `Diaria`.
+  - **Archivos**: `supabase/functions/tasks-create/index.ts`, `supabase/functions/tasks-update/index.ts`, `supabase/functions/tasks-list/index.ts`, `supabase/functions/tasks-completion-list/index.ts`, `supabase/functions/calendar-month-get/index.ts`, `supabase/functions/daily-report-create/index.ts`, `supabase/functions/daily-report-get/index.ts`
+  - **Criterio de aceptación**: Las diarias se crean sin PE/PO, no cambian de tipo, se excluyen de listados normales, completar tareas y calendario, se añaden a cada parte nuevo y `daily-report-get` las devuelve aparte en `daily_tasks`.
+  - **Dependencias**: SQL-011.
+
+- **API-014**
+  - **Estado**: Hecho
+  - **Área**: Edge Functions
+  - **Descripción**: Crear endpoint `daily-tasks-pending`.
+  - **Archivos**: `supabase/functions/daily-tasks-pending/index.ts`
+  - **Criterio de aceptación**: Devuelve la fecha de hoy y todas las diarias sin realizar de cualquier parte del usuario, ignorando las posteriores a su `finished_date`.
+  - **Dependencias**: SQL-011.
+
+- **API-015**
+  - **Estado**: Hecho
+  - **Área**: Edge Functions
+  - **Descripción**: Crear endpoint `daily-tasks-complete`.
+  - **Archivos**: `supabase/functions/daily-tasks-complete/index.ts`
+  - **Criterio de aceptación**: Marca o desmarca una diaria como realizada en un parte concreto validando usuario, tipo, parte y pertenencia.
+  - **Dependencias**: SQL-011.
+
+- **FE-017**
+  - **Estado**: Hecho
+  - **Área**: Frontend
+  - **Descripción**: Añadir la pestaña `Diarias` con pendientes, activas, finalizadas y modal simplificado.
+  - **Archivos**: `src/pages/DailyRoutinePage.js`, `src/components/DailyTasks.js`, `src/components/TaskTable.js`, `src/components/AppLayout.js`, `src/services/taskService.js`, `src/services/dailyReportService.js`, `src/main.js`, `src/styles/global.css`
+  - **Criterio de aceptación**: Se pueden crear, editar, finalizar, reactivar y borrar diarias sin PE/PO, y marcar como realizadas las pendientes de cualquier día.
+  - **Dependencias**: API-013, API-014, API-015.
+
+- **FE-018**
+  - **Estado**: Hecho
+  - **Área**: Frontend
+  - **Descripción**: Mostrar arriba del todo en `Horario diario` las diarias del parte con casilla de realizada.
+  - **Archivos**: `src/pages/DailySchedulePage.js`, `src/components/DailyTasks.js`, `src/main.js`
+  - **Criterio de aceptación**: El bloque muestra el progreso `realizadas / total` y las diarias no ocupan franjas del horario.
+  - **Dependencias**: API-013, API-015.
+
+- **FE-019**
+  - **Estado**: Hecho
+  - **Área**: Frontend
+  - **Descripción**: Indicador de cabecera de tareas diarias sin realizar.
+  - **Archivos**: `src/components/DailyTasks.js`, `src/components/AppLayout.js`, `src/styles/global.css`
+  - **Criterio de aceptación**: Verde sin pendientes, ámbar (aviso) con pendientes solo de hoy y rojo (error) con pendientes de días anteriores; muestra detalle al pasar el ratón y navega a `Diarias`.
+  - **Dependencias**: API-014.
+
+- **QA-005**
+  - **Estado**: Pendiente
+  - **Área**: Testing manual
+  - **Descripción**: Verificar el flujo completo de tareas `Diaria` contra Supabase con `script-011.sql` aplicado y las funciones desplegadas.
+  - **Archivos**: Navegador + Supabase, `docs/10-daily-tasks.md`
+  - **Criterio de aceptación**: Pasan los casos de QA manual de `docs/10-daily-tasks.md`.
+  - **Dependencias**: FE-017, FE-018, FE-019.

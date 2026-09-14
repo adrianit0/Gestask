@@ -24,7 +24,7 @@ Parámetros existentes:
 - `search`: busca en `title`, `ticket`, `more_info` y comentarios si el formato lo permite.
 
 Parámetros nuevos:
-- `ticket_type`: filtra por `Bug`, `Feature` o `Task`.
+- `ticket_type`: filtra por `Bug`, `Feature`, `Task` o `Diaria`. Si no se informa, las tareas `Diaria` se excluyen del listado.
 - `sort_by`: campo de ordenación.
 - `sort_direction`: `asc` o `desc`.
 
@@ -67,6 +67,7 @@ Validaciones:
 - `ticket_type` debe pertenecer al catálogo.
 - `limit_date` debe ser fecha válida o `null`.
 - `comments` debe respetar el formato elegido en modelo de datos.
+- Si `ticket_type = Diaria`, se ignoran `effort_points` y `order_points`: se guardan como `0` y `null`.
 
 ### `tasks-update`
 
@@ -83,6 +84,8 @@ Reglas:
 - Si una tarea cambia a `ticket_type = Task` y tenía un estado PR no permitido, debe normalizarse a `Not Finished` salvo que ya esté imputada.
 - Si `ticket_type != Task`, se mantiene la regla actual de PR al pasar a `Done`.
 - Al añadir comentarios desde el detalle, no deben perderse comentarios existentes.
+- Una tarea no puede cambiar de tipo desde o hacia `Diaria` (`Daily ticket type cannot be changed.`).
+- Si `ticket_type = Diaria`, solo se admite `task_status` `To do` o `Done` (`Invalid task status for ticket type.`); `effort_points`, `order_points` y `pr_status` se fuerzan a `0`, `null` y `Not Finished`, y `finished_date` se rellena al pasar a `Done` y se vacía al volver a `To do`.
 
 ### `tasks-completion-list`
 
@@ -91,6 +94,7 @@ Lista tareas disponibles para la funcionalidad `Completar tareas`.
 No acepta criterios funcionales de filtrado u ordenación. La presentación debe usar un orden fijo por `pr_status` y `finished_date`.
 
 Reglas de inclusión:
+- Excluir siempre las tareas `Diaria`.
 - Incluir tareas `Bug` y `Feature` con `task_status = Done` y `pr_status != Deployed`.
 - Incluir tareas `Task` con `task_status = Done` y `pr_status != Imputed`.
 - Excluir cualquier tarea que no esté en `Done`.
@@ -260,6 +264,49 @@ Errores específicos:
 
 La consulta de parte diario puede aceptar la misma ordenación que `tasks-list` cuando devuelva tareas.
 
+### `daily-report-create`
+- Añade al parte las tareas normales válidas y todas las tareas `Diaria` con `finished_date` nulo.
+- Respuesta: `{ "report": {...}, "added_tasks": 5, "added_daily_tasks": 2 }`.
+
+### `daily-report-get`
+- `tasks` excluye las tareas `Diaria`.
+- `daily_tasks` devuelve las tareas `Diaria` del parte con su `completed_at`, ordenadas por `created_at`.
+
+## Tareas diarias (`Diaria`)
+- `GET /functions/v1/daily-tasks-pending`
+- `PATCH /functions/v1/daily-tasks-complete`
+
+### `daily-tasks-pending`
+Devuelve todas las diarias sin realizar de cualquier parte del usuario. Una diaria está pendiente si `completed_at` es nulo y la tarea no está finalizada o el parte es anterior a su `finished_date`.
+
+```json
+{
+  "today": "2026-09-14",
+  "items": [
+    { "task_id": "uuid", "ticket": null, "title": "Revisar correo", "more_info": null, "report_date": "2026-09-13" }
+  ]
+}
+```
+
+Orden: `report_date` ascendente y `title`. La UI clasifica `report_date < today` como error y el resto como aviso.
+
+### `daily-tasks-complete`
+Payload:
+
+```json
+{ "task_id": "uuid", "report_date": "2026-09-13", "completed": true }
+```
+
+Reglas:
+- Método `PATCH`.
+- `task_id` obligatorio, `report_date` fecha válida y `completed` booleano.
+- La tarea debe pertenecer al usuario y ser `Diaria`; el parte debe existir y contener la tarea.
+- `completed = true` guarda `completed_at = now()`; `false` lo limpia.
+
+Respuesta: `{ "task_id": "uuid", "report_date": "2026-09-13", "completed_at": "2026-09-14T08:00:00Z" }`.
+
+Errores: `Task not found.`, `Task is not a daily task.`, `Daily report not found.`, `Daily task not found in report.`, `Invalid completion value.`
+
 ## Calendario
 - `GET /functions/v1/calendar-month-get?year=YYYY&month=MM`
 - `PATCH /functions/v1/calendar-day-status-update`
@@ -298,3 +345,5 @@ Errores nuevos esperados:
 - `Invalid order payload.`
 - `Task is not orderable.`
 - `Duplicate task id.`
+- `Daily ticket type cannot be changed.`
+- `Invalid task status for ticket type.`
