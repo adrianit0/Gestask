@@ -444,6 +444,16 @@ function bindCompletionEvents() {
     });
   });
 
+  document.querySelector("[data-copy-jira-time]")?.addEventListener("click", async (event) => {
+    const button = event.currentTarget;
+    try {
+      await navigator.clipboard.writeText(button.dataset.copyJiraTime);
+      button.textContent = "Copiado";
+    } catch {
+      button.textContent = "No se pudo copiar";
+    }
+  });
+
   document.querySelector("[data-toggle-bulk-impute]")?.addEventListener("click", () => {
     state.bulkImputeOpen = !state.bulkImputeOpen;
     render();

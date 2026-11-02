@@ -142,6 +142,7 @@ Al pulsar `Resolver`, debe abrirse un popup con:
 - Título de la tarea.
 - Fecha de resolución, tomada de `finished_date`.
 - Cantidad de horas que se deben imputar.
+- `Hora Jira`, con botón para copiarla al portapapeles.
 - Campo de tipo `date` llamado `imputed_date`.
 - Botón de confirmar.
 - Botón de cancelar.
@@ -149,6 +150,9 @@ Al pulsar `Resolver`, debe abrirse un popup con:
 Reglas:
 - `imputed_date` aparece inicialmente con el mismo valor que `finished_date`.
 - `imputed_date` es editable antes de confirmar.
+- `Hora Jira` tiene el formato `3h 30m 08/oct/26 08:00 AM`: horas a imputar sin revisar, `finished_date` como `dd/mmm/aa` con el mes abreviado en español y hora fija `08:00 AM`.
+- `Hora Jira` no depende de `imputed_date` y no se muestra si la tarea no tiene `finished_date`.
+- Copiar no cierra el popup ni descarta los cambios del formulario.
 - Tras confirmar, la tarea pasa a `pr_status = Imputed`.
 
 ### Resolver `Imputed`

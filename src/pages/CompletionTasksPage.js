@@ -6,6 +6,9 @@ import { ticketLinkHtml } from "../utils/projectSettings.js";
 import { effortPointsToHours, formatHoursFromEffortPoints } from "../utils/effortTime.js";
 import { getCompletionProgressMetrics, getVisiblePerformanceTasks } from "../utils/performanceMetrics.js";
 
+const JIRA_MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+const JIRA_DEFAULT_TIME = "08:00 AM";
+
 export function getDeployableImputedTasks(tasks = []) {
   return tasks.filter((task) => task.pr_status === "Imputed" && task.ticket_type !== "Task");
 }
@@ -308,6 +311,7 @@ function NeedToImputeForm(task, minutesPerEffortPoint, differenceRatio) {
   const imputedDate = task.imputed_date || task.finished_date || todayIso();
   const hoursToImpute = effortPointsToHours(task.effort_points, minutesPerEffortPoint);
   const reviewedHoursToImpute = differenceRatio > 0 ? hoursToImpute * differenceRatio : 0;
+  const jiraTime = formatJiraTime(hoursToImpute, task.finished_date);
   return `
     <form id="completion-resolve-form" class="completion-resolve-form" data-completion-status="Need to Impute">
       <input type="hidden" name="id" value="${escapeHtml(task.id)}" />
@@ -317,6 +321,12 @@ function NeedToImputeForm(task, minutesPerEffortPoint, differenceRatio) {
         <p><span>Fecha de resolución</span><strong>${escapeHtml(task.finished_date || "-")}</strong></p>
         <p><span>Horas a imputar</span><strong>${escapeHtml(formatHoursAndMinutes(hoursToImpute))}</strong></p>
         <p><span>Horas a imputar revisado</span><strong>${escapeHtml(formatHoursAndMinutes(reviewedHoursToImpute, { roundMinutesToNearest: 10 }))}</strong></p>
+        ${jiraTime ? `
+          <div class="completion-jira-time">
+            <p><span>Hora Jira</span><strong>${escapeHtml(jiraTime)}</strong></p>
+            <button class="secondary" type="button" data-copy-jira-time="${escapeHtml(jiraTime)}">Copiar</button>
+          </div>
+        ` : ""}
       </div>
       <label>Fecha de imputación
         <input name="imputed_date" type="date" value="${escapeHtml(imputedDate)}" required />
@@ -359,6 +369,12 @@ function toIsoDate(value) {
   if (!text) return "";
   const match = text.match(/^(d{4}-d{2}-d{2})/);
   return match ? match[1] : "";
+}
+
+function formatJiraTime(hours, date) {
+  const [, year, month, day] = String(date ?? "").match(/^\d{2}(\d{2})-(\d{2})-(\d{2})/) ?? [];
+  if (!year) return "";
+  return `${formatHoursAndMinutes(hours)} ${day}/${JIRA_MONTHS[Number(month) - 1]}/${year} ${JIRA_DEFAULT_TIME}`;
 }
 
 function formatHoursAndMinutes(hours, { roundMinutesToNearest = 1 } = {}) {

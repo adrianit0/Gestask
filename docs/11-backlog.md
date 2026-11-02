@@ -490,3 +490,11 @@
   - **Archivos**: Navegador + Supabase, `docs/10-daily-tasks.md`
   - **Criterio de aceptación**: Pasan los casos de QA manual de `docs/10-daily-tasks.md`.
   - **Dependencias**: FE-017, FE-018, FE-019.
+
+- **FE-020**
+  - **Estado**: Hecho
+  - **Área**: Frontend
+  - **Descripción**: Mostrar `Hora Jira` en el popup `Resolver` de `Need to Impute`, con botón de copiar al portapapeles.
+  - **Archivos**: `src/pages/CompletionTasksPage.js`, `src/main.js`, `src/styles/global.css`
+  - **Criterio de aceptación**: Con `finished_date = 2026-10-08` y 3,5 horas a imputar, el popup muestra y copia `3h 30m 08/oct/26 08:00 AM` sin cerrarse ni perder la fecha de imputación editada.
+  - **Dependencias**: FE-012.

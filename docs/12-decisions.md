@@ -60,6 +60,7 @@
 - `tasks-list` excluye las diarias salvo que se pida `ticket_type=Diaria`, de modo que Backlog, Kanban, Gestor de tiempos y Rendimiento no necesitan filtros propios.
 - Las diarias pendientes se calculan en servidor (`daily-tasks-pending`), que devuelve también su fecha de hoy; la UI clasifica como error las de partes anteriores y como aviso las de hoy.
 - Se renumeran los documentos de seguimiento (`10-backlog` → `11-backlog`, `11-decisions` → `12-decisions`) para mantener las specs antes que el seguimiento con la nueva `10-daily-tasks.md`.
+- `Hora Jira` usa `finished_date` y las horas sin revisar, y fija `08:00 AM` porque las tareas solo guardan fecha. Los meses se escriben en español con una tabla propia de tres letras en lugar de `Intl.DateTimeFormat`, que abrevia septiembre como `sept`.
 
 ## Pendiente
 - Conectar y desplegar contra un proyecto Supabase real.

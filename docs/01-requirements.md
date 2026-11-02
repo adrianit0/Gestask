@@ -71,7 +71,7 @@
 - Si `task_status` pasa a `Done` y `ticket_type` no es `Task`, `finished_date` se rellena si estaba vacía y `pr_status` pasa a `Need PR` si estaba en `Not Finished`.
 - Si `ticket_type = Task`, no se requiere PR ni despliegue; al finalizar pasa a `Need to Impute` y su estado final será `Imputed` tras confirmar la imputación.
 - En `Completar tareas`, una tarea `Bug` o `Feature` con `pr_status = Need PR` debe mostrar la acción `Resolver`; al confirmar, puede guardar opcionalmente un enlace al PR y, si es `Feature`, tambien test cases opcionales; despues debe pasar a `Need to Impute`.
-- En `Completar tareas`, una tarea con `pr_status = Need to Impute` debe mostrar la acción `Resolver`; al confirmar, debe pedir fecha de imputación editable (`imputed_date`) con valor inicial igual a `finished_date`, mostrar ticket, título, fecha de resolución y horas a imputar, y despues pasar a `Imputed`.
+- En `Completar tareas`, una tarea con `pr_status = Need to Impute` debe mostrar la acción `Resolver`; al confirmar, debe pedir fecha de imputación editable (`imputed_date`) con valor inicial igual a `finished_date`, mostrar ticket, título, fecha de resolución, horas a imputar y una línea `Hora Jira` copiable al portapapeles, y despues pasar a `Imputed`.
 - En `Completar tareas`, una tarea `Bug` o `Feature` con `pr_status = Imputed` debe mostrar la acción `Resolver`; al confirmar el cierre externo de la tarea, debe pasar a `Deployed`.
 - Una tarea `Task` finaliza su workflow en `Imputed`; no debe ofrecer paso de despliegue ni cierre posterior.
 - El enlace al PR, los test cases y la fecha de imputación forman parte de la información de cierre de workflow y deben poder persistirse si se desarrolla la funcionalidad.
