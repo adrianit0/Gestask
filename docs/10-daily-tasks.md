@@ -47,6 +47,7 @@ Detalle de contratos en `docs/04-api-contracts.md`.
 
 ### Pestaña `Diarias`
 - Botón `Nueva tarea diaria`: modal simplificado con ticket, fecha de inicio, título y más info (sin tipo, prioridad, PE, PO ni PR). En edición añade estado `Activa`/`Finalizada` y borrado.
+- Botón `Marcar todas como realizadas (N)`: marca como realizadas todas las pendientes, de hoy y atrasadas, tras una confirmación que indica cuántas son y cuántas de días anteriores. Solo se muestra si hay pendientes y se deshabilita mientras se guarda.
 - Bloque `Pendientes de realizar`: diarias pendientes agrupadas por fecha de parte, marcadas como `Atrasada` (error) u `Hoy` (aviso), con casilla para marcarlas como realizadas.
 - Tabla `Activas`: ticket, título, fecha de inicio y acciones `Editar` y `Finalizar` (con confirmación).
 - Sección plegable `Finalizadas`: fecha de finalización y acción `Reactivar`.
@@ -66,6 +67,7 @@ Al pasar el ratón muestra el detalle agrupado en `Días anteriores` (con fecha)
 - Sin parte diario creado, las diarias no generan pendientes: la obligación nace al crear el parte.
 - Borrar una diaria elimina también su historial de partes (`on delete cascade`).
 - Si el marcado falla, la UI recarga el estado del servidor y muestra el error.
+- Si `Marcar todas como realizadas` falla a mitad, se detiene en ese punto, conserva las ya guardadas e indica cuántas se marcaron: las restantes siguen pendientes y se puede reintentar.
 - La fecha de "hoy" se toma del servidor (UTC), igual que en `daily-report-create`.
 
 ## QA manual
@@ -75,3 +77,4 @@ Al pasar el ratón muestra el detalle agrupado en `Días anteriores` (con fecha)
 4. Dejar una diaria sin marcar y crear el parte del día siguiente: la cabecera pasa a rojo y `Diarias` la muestra como `Atrasada`.
 5. Finalizar una diaria: deja de añadirse a nuevos partes y no aparece en Backlog, Kanban, Completar tareas ni Calendario.
 6. Comprobar que la diaria no aparece en la tabla del parte diario ni en las franjas del horario.
+7. Con pendientes de hoy y atrasadas, pulsar `Marcar todas como realizadas`: al cancelar la confirmación no cambia nada; al aceptar, el bloque queda vacío, el botón desaparece y la cabecera vuelve a verde.

@@ -27,7 +27,7 @@ import { TICKET_ORDER_CONFIGURATION_NAME, applyProjectSettings, buildNextTicket,
 import { getMonthReferenceDate } from "./utils/performanceMetrics.js";
 import { todayIso } from "./utils/format.js";
 import { DAILY_TICKET_TYPE } from "./utils/constants.js";
-import { dailyCompletionKey } from "./components/DailyTasks.js";
+import { dailyCompletionKey, getDailyPendingSummary } from "./components/DailyTasks.js";
 import { AsyncActivityIndicator, asyncActivityTitle, formatElapsed } from "./components/AsyncActivity.js";
 import { getAsyncOperations, subscribeAsyncOperations } from "./services/asyncTracker.js";
 
@@ -444,14 +444,15 @@ function bindCompletionEvents() {
     });
   });
 
-  document.querySelector("[data-copy-jira-time]")?.addEventListener("click", async (event) => {
-    const button = event.currentTarget;
-    try {
-      await navigator.clipboard.writeText(button.dataset.copyJiraTime);
-      button.textContent = "Copiado";
-    } catch {
-      button.textContent = "No se pudo copiar";
-    }
+  document.querySelectorAll("[data-copy-jira-time]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(button.dataset.copyJiraTime);
+        button.textContent = "Copiado";
+      } catch {
+        button.textContent = "No se pudo copiar";
+      }
+    });
   });
 
   document.querySelector("[data-toggle-bulk-impute]")?.addEventListener("click", () => {
@@ -801,6 +802,8 @@ function bindDailyRoutineEvents() {
     render();
   });
 
+  document.querySelector("[data-complete-all-daily]")?.addEventListener("click", completeAllDailyTasks);
+
   document.querySelectorAll("[data-edit-daily-task]").forEach((button) => {
     button.addEventListener("click", () => {
       const task = state.dailyRoutineTasks.find((item) => item.id === button.dataset.editDailyTask);
@@ -849,6 +852,35 @@ async function toggleDailyTaskCompletion(taskId, reportDate, completed) {
 
   state.dailyCompletionPending.delete(key);
   // Reload from the server so the header indicator and checklists reflect the confirmed state (or revert on error).
+  await loadDailyTaskState();
+  renderUnlessEditingTask();
+}
+
+async function completeAllDailyTasks() {
+  const items = state.dailyPending.items;
+  if (!items.length) return;
+  const overdueCount = getDailyPendingSummary(state.dailyPending).overdue.length;
+  const overdueNote = overdueCount ? ` De ellas, ${overdueCount} de días anteriores.` : "";
+  if (!window.confirm(`¿Marcar como realizadas ${items.length} tarea(s) diaria(s) pendiente(s)?${overdueNote}`)) return;
+
+  clearMessages();
+  const keys = items.map((item) => dailyCompletionKey(item.task_id, item.report_date));
+  keys.forEach((key) => state.dailyCompletionPending.add(key));
+  render();
+
+  let completed = 0;
+  try {
+    for (const item of items) {
+      await setDailyTaskCompletion({ task_id: item.task_id, report_date: item.report_date, completed: true });
+      completed += 1;
+    }
+    state.success = `${completed} tarea(s) diaria(s) marcadas como realizadas.`;
+  } catch (error) {
+    state.error = `Marcadas ${completed} de ${items.length} tarea(s) diaria(s). ${error.message}`;
+  }
+
+  keys.forEach((key) => state.dailyCompletionPending.delete(key));
+  // Reload from the server so only the tasks that could not be saved stay pending.
   await loadDailyTaskState();
   renderUnlessEditingTask();
 }

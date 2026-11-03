@@ -61,6 +61,8 @@
 - Las diarias pendientes se calculan en servidor (`daily-tasks-pending`), que devuelve también su fecha de hoy; la UI clasifica como error las de partes anteriores y como aviso las de hoy.
 - Se renumeran los documentos de seguimiento (`10-backlog` → `11-backlog`, `11-decisions` → `12-decisions`) para mantener las specs antes que el seguimiento con la nueva `10-daily-tasks.md`.
 - `Hora Jira` usa `finished_date` y las horas sin revisar, y fija `08:00 AM` porque las tareas solo guardan fecha. Los meses se escriben en español con una tabla propia de tres letras en lugar de `Intl.DateTimeFormat`, que abrevia septiembre como `sept`.
+- `Marcar todas como realizadas` en `Diarias` reutiliza `daily-tasks-complete` en un bucle secuencial, igual que las acciones masivas de `Completar tareas`, en lugar de crear un endpoint batch: no cambia contratos ni requiere despliegue y el volumen esperado es bajo. Incluye las pendientes atrasadas, por lo que la confirmación indica cuántas son de días anteriores.
+- `Copiar para Jira` reutiliza `Hora Jira` (horas sin revisar, `finished_date` y `08:00 AM`) y copia todas las pendientes de imputar, no solo las seleccionadas en la tabla. Omite las tareas sin ticket, fecha u horas, porque esas líneas no se pueden registrar, y lo avisa en el panel. Comparte manejador con el botón del popup, de modo que ambos se enlazan con `querySelectorAll` al poder coincidir en la página.
 
 ## Pendiente
 - Conectar y desplegar contra un proyecto Supabase real.

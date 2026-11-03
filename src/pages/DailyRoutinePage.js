@@ -14,7 +14,10 @@ export function DailyRoutinePage({ tasks = [], pending = {}, completionPendingKe
         <p class="eyebrow">Tareas de tipo Diaria</p>
         <h1>Diarias</h1>
       </div>
-      <button class="primary" data-open-daily-task-modal>Nueva tarea diaria</button>
+      <div class="page-header-actions">
+        ${CompleteAllButton(pending, completionPendingKeys)}
+        <button class="primary" data-open-daily-task-modal>Nueva tarea diaria</button>
+      </div>
     </section>
     ${ErrorMessage(error)}
     ${SuccessMessage(success)}
@@ -36,6 +39,13 @@ export function DailyRoutinePage({ tasks = [], pending = {}, completionPendingKe
     ` : ""}
     ${modalTask !== undefined ? TaskModal(modalTask) : ""}
   `;
+}
+
+function CompleteAllButton(pending, completionPendingKeys) {
+  const { count } = getDailyPendingSummary(pending);
+  if (!count) return "";
+  const saving = completionPendingKeys.size > 0;
+  return `<button class="secondary" type="button" data-complete-all-daily ${saving ? "disabled" : ""}>${saving ? "Guardando..." : `Marcar todas como realizadas (${count})`}</button>`;
 }
 
 function PendingGroups(pending, completionPendingKeys) {

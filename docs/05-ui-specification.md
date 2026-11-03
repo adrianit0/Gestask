@@ -92,6 +92,7 @@ La tabla del parte no muestra tareas `Diaria`. Al crear el parte, el mensaje de 
 ## Diarias
 Pestaña propia para las tareas de tipo `Diaria`:
 - Botón `Nueva tarea diaria`.
+- Botón `Marcar todas como realizadas (N)`, visible solo con pendientes y con confirmación previa.
 - Bloque `Pendientes de realizar` agrupado por fecha de parte, con etiqueta `Atrasada` o `Hoy` y casilla para marcar como realizada.
 - Tabla `Activas` con acciones `Editar` y `Finalizar`.
 - Sección plegable `Finalizadas` con acción `Reactivar`.
@@ -154,6 +155,22 @@ Reglas:
 - `Hora Jira` no depende de `imputed_date` y no se muestra si la tarea no tiene `finished_date`.
 - Copiar no cierra el popup ni descarta los cambios del formulario.
 - Tras confirmar, la tarea pasa a `pr_status = Imputed`.
+
+### Copiar para Jira
+Aplica a las tareas en `pr_status = Need to Impute`.
+
+El panel `Pendientes de imputar` muestra el botón `Copiar para Jira (N)`, que copia al portapapeles una línea por tarea para pegarlas de una vez:
+
+```text
+ATSI0943-2500 3h 30m 08/oct/26 08:00 AM
+ATSI0943-2501 4h 09/oct/26 08:00 AM
+```
+
+Reglas:
+- Cada línea es el ticket seguido de `Hora Jira`, por lo que usa las horas a imputar sin revisar.
+- Incluye todas las tareas pendientes de imputar, con independencia de la selección de la tabla, ordenadas por fecha de finalización ascendente.
+- Las tareas sin ticket, sin `finished_date` o sin horas no se copian; si hay alguna, el panel indica cuántas.
+- Copiar no cambia el estado de ninguna tarea ni requiere abrir la tabla.
 
 ### Resolver `Imputed`
 Aplica solo a tareas `Bug` y `Feature` en `pr_status = Imputed`.

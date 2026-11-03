@@ -498,3 +498,19 @@
   - **Archivos**: `src/pages/CompletionTasksPage.js`, `src/main.js`, `src/styles/global.css`
   - **Criterio de aceptación**: Con `finished_date = 2026-10-08` y 3,5 horas a imputar, el popup muestra y copia `3h 30m 08/oct/26 08:00 AM` sin cerrarse ni perder la fecha de imputación editada.
   - **Dependencias**: FE-012.
+
+- **FE-021**
+  - **Estado**: Hecho
+  - **Área**: Frontend
+  - **Descripción**: Añadir a la pestaña `Diarias` el botón `Marcar todas como realizadas` con confirmación.
+  - **Archivos**: `src/pages/DailyRoutinePage.js`, `src/main.js`, `docs/10-daily-tasks.md`
+  - **Criterio de aceptación**: Con pendientes de hoy y atrasadas, el botón muestra el total y pide confirmación; al cancelar no cambia nada y al aceptar se marcan todas. Si falla una, indica cuántas se marcaron y las restantes siguen pendientes.
+  - **Dependencias**: API-015, FE-017.
+
+- **FE-022**
+  - **Estado**: Hecho
+  - **Área**: Frontend
+  - **Descripción**: Añadir al panel `Pendientes de imputar` de `Completar tareas` el botón `Copiar para Jira`, que copia una línea `TICKET HORA_JIRA` por cada tarea `Need to Impute`.
+  - **Archivos**: `src/pages/CompletionTasksPage.js`, `src/main.js`, `docs/05-ui-specification.md`
+  - **Criterio de aceptación**: Con tareas pendientes, el botón copia `ATSI0943-2500 3h 30m 08/oct/26 08:00 AM` por línea con las horas sin revisar y sin cambiar su estado. Las tareas sin ticket, fecha u horas no se copian y el panel indica cuántas son. Sin tareas `Need to Impute`, el botón no aparece.
+  - **Dependencias**: FE-020.

@@ -31,6 +31,7 @@
 - Debe existir un tipo de tarea `Diaria` para tareas recurrentes que deben realizarse obligatoriamente cada día en que se crea un parte diario, mientras su `finished_date` no esté informado (ver `docs/10-daily-tasks.md`).
 - Las tareas `Diaria` no tienen puntos de esfuerzo ni puntos de orden, y no se mezclan con el resto de tareas: se gestionan en la pestaña propia `Diarias`.
 - `Horario diario` debe mostrar arriba del todo las tareas diarias del parte con una casilla para marcarlas como realizadas.
+- La pestaña `Diarias` debe permitir marcar de una vez todas las diarias pendientes como realizadas, previa confirmación.
 - La cabecera debe mostrar el número de tareas diarias sin realizar: como aviso si solo son del día de hoy y como error si hay alguna de días anteriores.
 
 ## No funcionales
@@ -72,6 +73,7 @@
 - Si `ticket_type = Task`, no se requiere PR ni despliegue; al finalizar pasa a `Need to Impute` y su estado final será `Imputed` tras confirmar la imputación.
 - En `Completar tareas`, una tarea `Bug` o `Feature` con `pr_status = Need PR` debe mostrar la acción `Resolver`; al confirmar, puede guardar opcionalmente un enlace al PR y, si es `Feature`, tambien test cases opcionales; despues debe pasar a `Need to Impute`.
 - En `Completar tareas`, una tarea con `pr_status = Need to Impute` debe mostrar la acción `Resolver`; al confirmar, debe pedir fecha de imputación editable (`imputed_date`) con valor inicial igual a `finished_date`, mostrar ticket, título, fecha de resolución, horas a imputar y una línea `Hora Jira` copiable al portapapeles, y despues pasar a `Imputed`.
+- En `Completar tareas`, si hay tareas con `pr_status = Need to Impute`, un botón `Copiar para Jira` debe copiar al portapapeles una línea `TICKET HORA_JIRA` por tarea (por ejemplo `ATSI0943-2500 3h 30m 08/oct/26 08:00 AM`), usando las horas a imputar sin revisar.
 - En `Completar tareas`, una tarea `Bug` o `Feature` con `pr_status = Imputed` debe mostrar la acción `Resolver`; al confirmar el cierre externo de la tarea, debe pasar a `Deployed`.
 - Una tarea `Task` finaliza su workflow en `Imputed`; no debe ofrecer paso de despliegue ni cierre posterior.
 - El enlace al PR, los test cases y la fecha de imputación forman parte de la información de cierre de workflow y deben poder persistirse si se desarrolla la funcionalidad.

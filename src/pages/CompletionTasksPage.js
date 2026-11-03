@@ -68,6 +68,9 @@ function BulkImputationPanel(tasks, minutesPerEffortPoint, differenceRatio, { op
     };
   });
 
+  const jiraLines = rows.map(jiraImputationLine).filter(Boolean);
+  const omittedCount = rows.length - jiraLines.length;
+
   return `
     <section class="panel bulk-impute-panel">
       <div class="bulk-impute-header">
@@ -75,11 +78,23 @@ function BulkImputationPanel(tasks, minutesPerEffortPoint, differenceRatio, { op
           <p class="eyebrow">Imputación masiva</p>
           <h2>Pendientes de imputar (${rows.length})</h2>
         </div>
-        <button class="secondary" type="button" data-toggle-bulk-impute>${open ? "Ocultar tabla" : "Ver tabla"}</button>
+        <div class="page-header-actions">
+          ${jiraLines.length ? `
+            <button class="secondary" type="button" data-copy-jira-time="${escapeHtml(jiraLines.join("\n"))}">Copiar para Jira (${jiraLines.length})</button>
+          ` : ""}
+          <button class="secondary" type="button" data-toggle-bulk-impute>${open ? "Ocultar tabla" : "Ver tabla"}</button>
+        </div>
       </div>
+      ${omittedCount ? `<p class="muted-text">${omittedCount} tarea(s) sin ticket, fecha de resolución u horas no se copian para Jira.</p>` : ""}
       ${open ? BulkImputationBody(rows) : ""}
     </section>
   `;
+}
+
+function jiraImputationLine({ task, hoursToImpute }) {
+  const ticket = String(task.ticket ?? "").trim();
+  const jiraTime = hoursToImpute > 0 ? formatJiraTime(hoursToImpute, task.finished_date) : "";
+  return ticket && jiraTime ? `${ticket} ${jiraTime}` : "";
 }
 
 function BulkImputationBody(rows) {
