@@ -1,11 +1,22 @@
 # Especificación UI
 
 ## Navegación
-Barra superior fija con Backlog, Tareas Diarias, Diarias, Completar tareas, Ordenar tareas, Calendario, Gestor de Tiempos, Gráficas de Rendimiento, Configuración y Logout.
+Menú lateral izquierdo fijo (ocupa todo el alto y no se desplaza con la página). De arriba abajo contiene:
+- Marca `Gestask` con su logo y el botón `Plegar menú` / `Desplegar menú`.
+- Indicador de cargas asíncronas e indicador de tareas diarias sin realizar (verde sin pendientes, ámbar como aviso si solo hay pendientes de hoy, rojo como error si hay pendientes de días anteriores). El indicador de diarias muestra el detalle al pasar el ratón y navega a `Diarias` al pulsarlo. Detalle en `docs/10-daily-tasks.md`.
+- Pestañas agrupadas en secciones, cada una con icono y nombre:
+  - `Tareas`: Backlog, Kanban, Ordenar tareas y Completar tareas.
+  - `Día a día`: Tareas diarias, Horario diario y Diarias.
+  - `Seguimiento`: Calendario, Gestor de tiempos y Gráficas de rendimiento.
+- Pie con Configuración (icono de rueda dentada), Actualizar datos y Cerrar sesión, con el email de la sesión debajo de `Cerrar sesión`.
 
-Junto a la marca se muestran el indicador de cargas asíncronas y el indicador de tareas diarias sin realizar (verde sin pendientes, ámbar como aviso si solo hay pendientes de hoy, rojo como error si hay pendientes de días anteriores). El indicador de diarias muestra el detalle al pasar el ratón y navega a `Diarias` al pulsarlo. Detalle en `docs/10-daily-tasks.md`.
+La pestaña activa se resalta con el color secundario. `Completar tareas` muestra un contador con las tareas que esperan un paso de cierre (`Need PR`, `Need to Impute` e `Imputed`); al pasar el ratón se ve el desglose por estado. Si no hay ninguna, no se muestra el contador.
 
-La pestaña Configuración debe representarse con un icono de rueda dentada.
+Estados del menú:
+- **Desplegado** (por defecto): iconos, nombres, títulos de sección, etiquetas de los indicadores y email.
+- **Plegado**: solo iconos. Los títulos de sección pasan a ser separadores, los indicadores muestran solo punto y número, el contador de `Completar tareas` se superpone al icono y el nombre de cada pestaña aparece como tooltip.
+- El estado plegado/desplegado se recuerda en el navegador (`localStorage`, clave `gestask.sidebarCollapsed`). Si el almacenamiento no está disponible, el menú arranca desplegado.
+- Si el alto de la ventana no alcanza, solo se desplaza la lista de pestañas; marca, indicadores y pie permanecen visibles.
 
 ## Backlog
 Tabla responsive con colores por estado y borde por estado PR. Crear/editar usa modal compartido.
@@ -312,4 +323,4 @@ Los parámetros `scoring_*` deben mostrarse igual que el resto, aunque se recomi
 - Estados según requisitos del backlog y calendario.
 
 ## Responsive
-En móvil, tablas se desplazan horizontalmente y la navegación permite wrap.
+En móvil, tablas se desplazan horizontalmente. Por debajo de 760 px el menú lateral se convierte en una barra superior fija con el botón de menú, la marca y los indicadores; el botón abre las pestañas en un panel lateral sobre el contenido, que se cierra al elegir una pestaña, al pulsar fuera o con `Escape`. En móvil no existe el modo plegado.

@@ -37,6 +37,7 @@
 - `src/services/timeEntryService.js`: persistencia local de registros horarios en `localStorage`.
 - `src/pages/DailySchedulePage.js`, `src/utils/dailySchedule.js`: horario diario con botón para incluir/ocultar horas extra basado en `PE_diario_extra`.
 - `src/pages/DailyRoutinePage.js`, `src/components/DailyTasks.js`: pestaña `Diarias`, bloque de diarias del `Horario diario` e indicador de cabecera de diarias pendientes.
+- `src/components/AppLayout.js`, `src/services/layoutPreferencesService.js`: menú lateral izquierdo plegable con secciones, contador de `Completar tareas` y email de sesión; la preferencia de plegado se guarda en `localStorage`.
 
 ## Decisiones técnicas
 - SPA con Vite y JavaScript sin framework para mantener una primera versión simple.
@@ -63,6 +64,7 @@
 - `Hora Jira` usa `finished_date` y las horas sin revisar, y fija `08:00 AM` porque las tareas solo guardan fecha. Los meses se escriben en español con una tabla propia de tres letras en lugar de `Intl.DateTimeFormat`, que abrevia septiembre como `sept`.
 - `Marcar todas como realizadas` en `Diarias` reutiliza `daily-tasks-complete` en un bucle secuencial, igual que las acciones masivas de `Completar tareas`, en lugar de crear un endpoint batch: no cambia contratos ni requiere despliegue y el volumen esperado es bajo. Incluye las pendientes atrasadas, por lo que la confirmación indica cuántas son de días anteriores.
 - `Copiar para Jira` reutiliza `Hora Jira` (horas sin revisar, `finished_date` y `08:00 AM`) y copia todas las pendientes de imputar, no solo las seleccionadas en la tabla. Omite las tareas sin ticket, fecha u horas, porque esas líneas no se pueden registrar, y lo avisa en el panel. Comparte manejador con el botón del popup, de modo que ambos se enlazan con `querySelectorAll` al poder coincidir en la página.
+- La navegación pasa de barra superior a menú lateral izquierdo para que cada pestaña muestre su nombre además del icono. Las pestañas se agrupan en `Tareas`, `Día a día` y `Seguimiento`, lo que cambia su orden respecto a la barra anterior. Plegar el menú solo cambia clases y atributos del DOM, sin volver a renderizar la página, y la preferencia se guarda en `localStorage` como conveniencia por navegador (no se sincroniza entre dispositivos). En móvil (≤ 760 px) no hay modo plegado: el menú es un panel que se abre desde una barra superior y su estado abierto no se guarda, por lo que cualquier render lo cierra.
 
 ## Pendiente
 - Conectar y desplegar contra un proyecto Supabase real.

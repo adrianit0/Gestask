@@ -32,7 +32,8 @@
 - Las tareas `Diaria` no tienen puntos de esfuerzo ni puntos de orden, y no se mezclan con el resto de tareas: se gestionan en la pestaña propia `Diarias`.
 - `Horario diario` debe mostrar arriba del todo las tareas diarias del parte con una casilla para marcarlas como realizadas.
 - La pestaña `Diarias` debe permitir marcar de una vez todas las diarias pendientes como realizadas, previa confirmación.
-- La cabecera debe mostrar el número de tareas diarias sin realizar: como aviso si solo son del día de hoy y como error si hay alguna de días anteriores.
+- El menú de navegación debe mostrar el número de tareas diarias sin realizar: como aviso si solo son del día de hoy y como error si hay alguna de días anteriores.
+- La navegación debe estar en un menú lateral izquierdo que muestre icono y nombre de cada pestaña y que pueda plegarse para mostrar solo los iconos, recordando la preferencia.
 
 ## No funcionales
 - Responsive.

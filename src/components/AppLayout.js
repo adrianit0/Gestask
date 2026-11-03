@@ -1,51 +1,126 @@
 ﻿import { AsyncActivityIndicator } from "./AsyncActivity.js";
 import { DailyPendingIndicator } from "./DailyTasks.js";
 import { getAsyncOperations } from "../services/asyncTracker.js";
+import { escapeHtml } from "../utils/format.js";
 
-export function AppLayout(activePage, content, { dailyPending = {} } = {}) {
+const NAV_SECTIONS = [
+  {
+    title: "Tareas",
+    items: [
+      { page: "backlog", label: "Backlog", icon: "backlog" },
+      { page: "kanban", label: "Kanban", icon: "kanban" },
+      { page: "order", label: "Ordenar tareas", icon: "order" },
+      { page: "completion", label: "Completar tareas", icon: "completion", badge: completionBadge },
+    ],
+  },
+  {
+    title: "Día a día",
+    items: [
+      { page: "daily", label: "Tareas diarias", icon: "daily" },
+      { page: "dailySchedule", label: "Horario diario", icon: "dailySchedule" },
+      { page: "dailyRoutine", label: "Diarias", icon: "dailyRoutine" },
+    ],
+  },
+  {
+    title: "Seguimiento",
+    items: [
+      { page: "calendar", label: "Calendario", icon: "calendar" },
+      { page: "time", label: "Gestor de tiempos", icon: "time" },
+      { page: "charts", label: "Gráficas de rendimiento", icon: "charts" },
+    ],
+  },
+];
+
+const COMPLETION_BADGE_STATUSES = ["Need PR", "Need to Impute", "Imputed"];
+
+export function AppLayout(activePage, content, { dailyPending = {}, completionTasks = [], collapsed = false, userEmail = "" } = {}) {
+  const context = { completionTasks };
+
   return `
-    <header class="top-nav">
-      <div class="brand-area">
-        <div class="brand">Gestask</div>
-        <div class="async-activity-slot" data-async-indicator>${AsyncActivityIndicator(getAsyncOperations())}</div>
-        <div class="daily-pending-slot">${DailyPendingIndicator(dailyPending)}</div>
-      </div>
-      <nav aria-label="Navegación principal">
-        ${navButton("backlog", "Backlog", activePage, "backlog")}
-        ${navButton("kanban", "Kanban", activePage, "kanban")}
-        ${navButton("daily", "Tareas diarias", activePage, "daily")}
-        ${navButton("dailyRoutine", "Diarias", activePage, "dailyRoutine")}
-        ${navButton("dailySchedule", "Horario diario", activePage, "dailySchedule")}
-        ${navButton("completion", "Completar tareas", activePage, "completion")}        
-        ${navButton("calendar", "Calendario", activePage, "calendar")}
-        ${navButton("time", "Gestor de tiempos", activePage, "time")}
-        ${navButton("charts", "Gráficas de rendimiento", activePage, "charts")}
-        ${navButton("order", "Ordenar tareas", activePage, "order")}
-        <button class="nav-link icon-nav ${activePage === "configuration" ? "active" : ""}" data-page="configuration" aria-label="Configuración" title="Configuración">
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M12 8.5a3.5 3.5 0 1 0 0 7a3.5 3.5 0 0 0 0-7Z" />
-            <path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.05.05a2.2 2.2 0 0 1-3.1 3.1l-.05-.05A1.8 1.8 0 0 0 14.68 19a1.8 1.8 0 0 0-1.08 1.65V21a2.2 2.2 0 0 1-4.4 0v-.08A1.8 1.8 0 0 0 7.98 19a1.8 1.8 0 0 0-1.98.36l-.05.05a2.2 2.2 0 0 1-3.1-3.1l.05-.05A1.8 1.8 0 0 0 3 14.68a1.8 1.8 0 0 0-1.65-1.08H1a2.2 2.2 0 0 1 0-4.4h.08A1.8 1.8 0 0 0 3 7.98a1.8 1.8 0 0 0-.36-1.98l-.05-.05a2.2 2.2 0 0 1 3.1-3.1l.05.05A1.8 1.8 0 0 0 7.32 3a1.8 1.8 0 0 0 1.08-1.65V1a2.2 2.2 0 0 1 4.4 0v.08A1.8 1.8 0 0 0 14.02 3a1.8 1.8 0 0 0 1.98-.36l.05-.05a2.2 2.2 0 0 1 3.1 3.1l-.05.05A1.8 1.8 0 0 0 19 7.32a1.8 1.8 0 0 0 1.65 1.08H21a2.2 2.2 0 0 1 0 4.4h-.08A1.8 1.8 0 0 0 19.4 15Z" />
-          </svg>
-        </button>
-        <button class="nav-link icon-nav" data-action="refresh" aria-label="Actualizar datos" title="Actualizar datos">
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M20.5 5.5v5h-5" />
-            <path d="M19.4 10.5A7.5 7.5 0 1 0 17 17.7" />
-          </svg>
-        </button>
-        <button class="nav-link danger" data-action="logout">Logout</button>
-      </nav>
-    </header>
-    <main class="app-shell">${content}</main>
+    <div class="app-frame ${collapsed ? "nav-collapsed" : ""}" data-app-frame>
+      <aside class="side-nav">
+        <div class="side-nav-header">
+          <button type="button" class="side-nav-icon-button side-nav-mobile-toggle" data-action="toggle-mobile-nav" aria-controls="side-nav-menu" aria-expanded="false" aria-label="Abrir menú" title="Abrir menú">
+            ${navIcon("menu")}
+          </button>
+          <div class="brand">
+            <img class="brand-logo" src="${import.meta.env.BASE_URL}icon.png" alt="" />
+            <span class="brand-name">Gestask</span>
+          </div>
+          <button type="button" class="side-nav-icon-button side-nav-collapse" data-action="toggle-sidebar" aria-expanded="${collapsed ? "false" : "true"}" aria-label="${collapseToggleLabel(collapsed)}" title="${collapseToggleLabel(collapsed)}">
+            ${navIcon("sidebar")}
+          </button>
+        </div>
+        <div class="side-nav-status">
+          <div class="async-activity-slot" data-async-indicator>${AsyncActivityIndicator(getAsyncOperations())}</div>
+          <div class="daily-pending-slot">${DailyPendingIndicator(dailyPending)}</div>
+        </div>
+        <div class="side-nav-menu" id="side-nav-menu">
+          <nav class="side-nav-sections" aria-label="Navegación principal">
+            ${NAV_SECTIONS.map((section) => navSection(section, activePage, context)).join("")}
+          </nav>
+          <div class="side-nav-footer">
+            ${navItem({ page: "configuration", label: "Configuración", icon: "configuration" }, activePage, context)}
+            ${navActionButton("refresh", "Actualizar datos", "refresh")}
+            ${navActionButton("logout", "Cerrar sesión", "logout", { danger: true, detail: userEmail, title: userEmail ? `Cerrar sesión (${userEmail})` : "Cerrar sesión" })}
+          </div>
+        </div>
+      </aside>
+      <div class="side-nav-backdrop" data-action="close-mobile-nav" aria-hidden="true"></div>
+      <main class="app-shell">${content}</main>
+    </div>
   `;
 }
 
-function navButton(page, label, activePage, icon) {
+export function collapseToggleLabel(collapsed) {
+  return collapsed ? "Desplegar menú" : "Plegar menú";
+}
+
+function navSection(section, activePage, context) {
   return `
-    <button class="nav-link icon-nav ${page === activePage ? "active" : ""}" data-page="${page}" aria-label="${label}" title="${label}">
-      ${navIcon(icon)}
+    <div class="side-nav-section">
+      <p class="side-nav-section-title">${escapeHtml(section.title)}</p>
+      ${section.items.map((item) => navItem(item, activePage, context)).join("")}
+    </div>
+  `;
+}
+
+function navItem(item, activePage, context) {
+  const active = item.page === activePage;
+  const badge = item.badge?.(context);
+  const title = badge ? `${item.label} · ${badge.title}` : item.label;
+
+  return `
+    <button type="button" class="side-nav-link ${active ? "active" : ""}" data-page="${item.page}" title="${escapeHtml(title)}" ${active ? `aria-current="page"` : ""}>
+      <span class="side-nav-link-icon">${navIcon(item.icon)}</span>
+      <span class="side-nav-label">${escapeHtml(item.label)}</span>
+      ${badge ? `<span class="side-nav-badge" aria-label="${escapeHtml(badge.title)}">${badge.count}</span>` : ""}
     </button>
   `;
+}
+
+function navActionButton(action, label, icon, { danger = false, detail = "", title = label } = {}) {
+  return `
+    <button type="button" class="side-nav-link ${danger ? "danger" : ""}" data-action="${action}" title="${escapeHtml(title)}">
+      <span class="side-nav-link-icon">${navIcon(icon)}</span>
+      ${detail ? `
+        <span class="side-nav-label side-nav-label-stack">
+          <span>${escapeHtml(label)}</span>
+          <small class="side-nav-label-detail">${escapeHtml(detail)}</small>
+        </span>
+      ` : `<span class="side-nav-label">${escapeHtml(label)}</span>`}
+    </button>
+  `;
+}
+
+// Counts the closing steps still waiting in Completar tareas (informar PR, imputar o cerrar imputadas).
+function completionBadge({ completionTasks = [] }) {
+  const counts = COMPLETION_BADGE_STATUSES
+    .map((status) => ({ status, count: completionTasks.filter((task) => task.pr_status === status).length }))
+    .filter(({ count }) => count > 0);
+  const total = counts.reduce((sum, { count }) => sum + count, 0);
+  if (!total) return null;
+  return { count: total, title: counts.map(({ status, count }) => `${count} ${status}`).join(", ") };
 }
 
 function navIcon(icon) {
@@ -139,6 +214,39 @@ function navIcon(icon) {
         <path d="M12 16V6" />
         <path d="M16 16v-4" />
         <path d="M20 16V8" />
+      </svg>
+    `,
+    configuration: `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 8.5a3.5 3.5 0 1 0 0 7a3.5 3.5 0 0 0 0-7Z" />
+        <path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.05.05a2.2 2.2 0 0 1-3.1 3.1l-.05-.05A1.8 1.8 0 0 0 14.68 19a1.8 1.8 0 0 0-1.08 1.65V21a2.2 2.2 0 0 1-4.4 0v-.08A1.8 1.8 0 0 0 7.98 19a1.8 1.8 0 0 0-1.98.36l-.05.05a2.2 2.2 0 0 1-3.1-3.1l.05-.05A1.8 1.8 0 0 0 3 14.68a1.8 1.8 0 0 0-1.65-1.08H1a2.2 2.2 0 0 1 0-4.4h.08A1.8 1.8 0 0 0 3 7.98a1.8 1.8 0 0 0-.36-1.98l-.05-.05a2.2 2.2 0 0 1 3.1-3.1l.05.05A1.8 1.8 0 0 0 7.32 3a1.8 1.8 0 0 0 1.08-1.65V1a2.2 2.2 0 0 1 4.4 0v.08A1.8 1.8 0 0 0 14.02 3a1.8 1.8 0 0 0 1.98-.36l.05-.05a2.2 2.2 0 0 1 3.1 3.1l-.05.05A1.8 1.8 0 0 0 19 7.32a1.8 1.8 0 0 0 1.65 1.08H21a2.2 2.2 0 0 1 0 4.4h-.08A1.8 1.8 0 0 0 19.4 15Z" />
+      </svg>
+    `,
+    refresh: `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M20.5 5.5v5h-5" />
+        <path d="M19.4 10.5A7.5 7.5 0 1 0 17 17.7" />
+      </svg>
+    `,
+    logout: `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+        <path d="m16 17 5-5-5-5" />
+        <path d="M21 12H9" />
+      </svg>
+    `,
+    menu: `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M4 6h16" />
+        <path d="M4 12h16" />
+        <path d="M4 18h16" />
+      </svg>
+    `,
+    sidebar: `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+        <path d="M9 4v16" />
+        <path class="side-nav-collapse-chevron" d="m16 10-2 2 2 2" />
       </svg>
     `,
   };

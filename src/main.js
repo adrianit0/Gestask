@@ -1,5 +1,5 @@
 ﻿import "./styles/global.css";
-import { AppLayout } from "./components/AppLayout.js";
+import { AppLayout, collapseToggleLabel } from "./components/AppLayout.js";
 import { assertConfig } from "./config/env.js";
 import { AuthPage } from "./pages/AuthPage.js";
 import { BacklogPage } from "./pages/BacklogPage.js";
@@ -17,7 +17,8 @@ import { login, logout, register } from "./services/authService.js";
 import { getCalendarMonth, updateCalendarDayStatus } from "./services/calendarService.js";
 import { createConfiguration, listConfigurations, updateConfigurationProfile } from "./services/configurationService.js";
 import { createDailyReport, getDailyReport, listPendingDailyTasks, setDailyTaskCompletion } from "./services/dailyReportService.js";
-import { isAuthenticated } from "./services/sessionService.js";
+import { getSidebarCollapsed, setSidebarCollapsed } from "./services/layoutPreferencesService.js";
+import { getSession, isAuthenticated } from "./services/sessionService.js";
 import { createTask, deleteTask, listDailyRoutineTasks, listTasks, updateTask } from "./services/taskService.js";
 import { listOrderTasks, updateOrderTasks } from "./services/taskOrderService.js";
 import { listCompletionTasks, resolveCompletionTask } from "./services/taskCompletionService.js";
@@ -35,6 +36,7 @@ const root = document.querySelector("#app");
 const state = {
   authMode: "login",
   page: "backlog",
+  sidebarCollapsed: getSidebarCollapsed(),
   error: "",
   success: "",
   loading: false,
@@ -77,6 +79,9 @@ let pendingSequence = 0;
 
 async function boot() {
   startAsyncIndicator();
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") setMobileNavOpen(false);
+  });
   if (isAuthenticated()) {
     await loadAllData();
   }
@@ -180,7 +185,7 @@ function render() {
   }
 
   const draftComment = document.querySelector("[data-task-comment-form] textarea")?.value ?? "";
-  root.innerHTML = AppLayout(state.page, currentPageHtml(), { dailyPending: state.dailyPending });
+  root.innerHTML = AppLayout(state.page, currentPageHtml(), { dailyPending: state.dailyPending, completionTasks: state.completionTasks, collapsed: state.sidebarCollapsed, userEmail: getSession()?.user?.email ?? "" });
   renderedAsyncSignature = asyncSignature(getAsyncOperations());
   restoreDraftComment(draftComment);
   bindLayoutEvents();
@@ -270,6 +275,12 @@ function bindLayoutEvents() {
     });
   });
 
+  document.querySelector("[data-action='toggle-sidebar']")?.addEventListener("click", toggleSidebarCollapsed);
+  document.querySelector("[data-action='toggle-mobile-nav']")?.addEventListener("click", () => {
+    setMobileNavOpen(!document.querySelector("[data-app-frame]")?.classList.contains("nav-open"));
+  });
+  document.querySelector("[data-action='close-mobile-nav']")?.addEventListener("click", () => setMobileNavOpen(false));
+
   document.querySelector("[data-action='refresh']")?.addEventListener("click", async () => {
     clearMessages();
     await loadAllData();
@@ -283,6 +294,30 @@ function bindLayoutEvents() {
     clearMessages();
     render();
   });
+}
+
+// Collapsing only toggles classes and attributes: re-rendering would rebuild the current page for no reason.
+function toggleSidebarCollapsed() {
+  state.sidebarCollapsed = !state.sidebarCollapsed;
+  setSidebarCollapsed(state.sidebarCollapsed);
+  document.querySelector("[data-app-frame]")?.classList.toggle("nav-collapsed", state.sidebarCollapsed);
+  const button = document.querySelector("[data-action='toggle-sidebar']");
+  if (!button) return;
+  const label = collapseToggleLabel(state.sidebarCollapsed);
+  button.setAttribute("aria-expanded", String(!state.sidebarCollapsed));
+  button.setAttribute("aria-label", label);
+  button.title = label;
+}
+
+// The mobile drawer is not part of state: any render (e.g. navigating) closes it.
+function setMobileNavOpen(open) {
+  document.querySelector("[data-app-frame]")?.classList.toggle("nav-open", open);
+  const button = document.querySelector("[data-action='toggle-mobile-nav']");
+  if (!button) return;
+  const label = open ? "Cerrar menú" : "Abrir menú";
+  button.setAttribute("aria-expanded", String(open));
+  button.setAttribute("aria-label", label);
+  button.title = label;
 }
 
 function bindPageEvents() {

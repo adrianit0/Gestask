@@ -514,3 +514,11 @@
   - **Archivos**: `src/pages/CompletionTasksPage.js`, `src/main.js`, `docs/05-ui-specification.md`
   - **Criterio de aceptación**: Con tareas pendientes, el botón copia `ATSI0943-2500 3h 30m 08/oct/26 08:00 AM` por línea con las horas sin revisar y sin cambiar su estado. Las tareas sin ticket, fecha u horas no se copian y el panel indica cuántas son. Sin tareas `Need to Impute`, el botón no aparece.
   - **Dependencias**: FE-020.
+
+- **FE-023**
+  - **Estado**: Hecho
+  - **Área**: Frontend
+  - **Descripción**: Sustituir la barra superior de iconos por un menú lateral izquierdo plegable con nombres, secciones, indicadores, contador de `Completar tareas` y email de sesión.
+  - **Archivos**: `src/components/AppLayout.js`, `src/services/layoutPreferencesService.js`, `src/main.js`, `src/styles/global.css`, `docs/05-ui-specification.md`
+  - **Criterio de aceptación**: En escritorio el menú muestra icono y nombre de cada pestaña; al plegarlo quedan solo los iconos (con tooltip) y la preferencia se mantiene al navegar y al recargar. Los tooltips de los indicadores y los modales se ven por encima del menú. En móvil aparece una barra superior cuyo botón abre el menú, que se cierra al elegir pestaña, al pulsar fuera o con `Escape`, sin scroll horizontal.
+  - **Dependencias**: UI-001, FE-019.

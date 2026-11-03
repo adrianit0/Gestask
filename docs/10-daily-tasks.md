@@ -56,7 +56,7 @@ Detalle de contratos en `docs/04-api-contracts.md`.
 Arriba del todo, antes de la agenda, se muestra el bloque `Tareas diarias` del parte consultado con el progreso `realizadas / total` y una casilla por diaria. Las diarias no ocupan franjas horarias.
 
 ### Indicador de cabecera
-Junto al indicador de cargas asíncronas se muestra una píldora con el número de diarias sin realizar:
+En el menú lateral, debajo del indicador de cargas asíncronas (en móvil, en la barra superior junto a él), se muestra una píldora con el número de diarias sin realizar. Con el menú plegado solo se ven el punto y el número:
 - Verde (`diarias al día`) cuando no hay pendientes.
 - Ámbar (`diarias de hoy`) cuando solo hay pendientes del día de hoy: aviso.
 - Rojo con pulso (`diarias atrasadas`) cuando hay alguna pendiente de días anteriores: error.

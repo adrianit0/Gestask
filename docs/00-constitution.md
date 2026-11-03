@@ -12,7 +12,7 @@ Gestask es una plataforma web personal de productividad laboral para gestionar b
 
 ## Principios UI/UX
 - Interfaz limpia, responsive y funcional.
-- Navegación superior fija.
+- Navegación lateral izquierda fija y plegable (solo iconos al plegarse); en móvil, barra superior con menú desplegable.
 - Color principal `#ff8000` y secundario `#ffdbb6`.
 - Estados de carga, vacío, éxito y error visibles.
 - Las secciones no implementadas deben mostrar placeholders claros.
