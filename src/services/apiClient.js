@@ -1,5 +1,5 @@
 import { config } from "../config/env.js";
-import { getSession } from "./sessionService.js";
+import { SESSION_EXPIRED_MESSAGE, expireSession, getSession } from "./sessionService.js";
 import { trackAsyncOperation } from "./asyncTracker.js";
 
 const OPERATION_LABELS = {
@@ -26,14 +26,22 @@ const OPERATION_LABELS = {
 
 export async function callFunction(name, { method = "GET", body, query, auth = true } = {}) {
   return trackAsyncOperation(OPERATION_LABELS[name] ?? name, async () => {
+    const token = auth ? getSession()?.access_token : null;
+    if (auth && !token) throw new Error(SESSION_EXPIRED_MESSAGE);
+
     const params = query ? `?${new URLSearchParams(query).toString()}` : "";
     const response = await fetch(`${config.supabaseUrl}/functions/v1/${name}${params}`, {
       method,
-      headers: buildHeaders(auth),
+      headers: buildHeaders(token),
       body: body ? JSON.stringify(body) : undefined,
     });
 
     const payload = await response.json().catch(() => ({}));
+    // Edge Functions answer 401 only when the session is missing or expired: close it instead of keeping a dead token.
+    if (token && response.status === 401) {
+      expireSession(token);
+      throw new Error(SESSION_EXPIRED_MESSAGE);
+    }
     if (!response.ok) {
       throw new Error(payload.error || `Error HTTP ${response.status}`);
     }
@@ -41,12 +49,11 @@ export async function callFunction(name, { method = "GET", body, query, auth = t
   });
 }
 
-function buildHeaders(auth) {
+function buildHeaders(token) {
   const headers = {
     "Content-Type": "application/json",
     apikey: config.publishableKey,
   };
-  const token = getSession()?.access_token;
-  if (auth && token) headers.Authorization = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
   return headers;
 }

@@ -538,3 +538,19 @@
   - **Archivos**: Navegador + Supabase, `docs/05-ui-specification.md`
   - **Criterio de aceptación**: Los flujos funcionan igual que antes del rediseño y la UI cumple `docs/05-ui-specification.md`.
   - **Dependencias**: FE-024.
+
+- **FE-025**
+  - **Estado**: Hecho
+  - **Área**: Frontend
+  - **Descripción**: Detectar la sesión caducada sin esperar a una acción: comprobarla cada 5 minutos y al volver a la pestaña, y cerrar la sesión con aviso si el servidor la rechaza o una Edge Function responde `401`.
+  - **Archivos**: `src/services/sessionService.js`, `src/services/authService.js`, `src/services/apiClient.js`, `src/main.js`, `docs/04-api-contracts.md`, `docs/05-ui-specification.md`
+  - **Criterio de aceptación**: Con la sesión caducada, a los 5 minutos como máximo (o al volver a la pestaña) la app muestra el login con `Tu sesión ha caducado. Vuelve a iniciar sesión.` sin que el usuario haga nada. Una acción con la sesión caducada lleva al mismo aviso, mostrado una sola vez. Sin red, la sesión se mantiene. Al volver a entrar no quedan modales ni errores anteriores. Los errores de login se ven sobre el formulario.
+  - **Dependencias**: FE-001, FE-024.
+
+- **QA-007**
+  - **Estado**: Pendiente
+  - **Área**: Testing manual
+  - **Descripción**: Comprobar contra Supabase real que `GET /auth/v1/user` responde `401`/`403` con un token caducado y acepta peticiones desde el origen publicado (CORS).
+  - **Archivos**: Navegador + Supabase, `docs/04-api-contracts.md`
+  - **Criterio de aceptación**: Tras dejar caducar la sesión (o tras invalidarla cerrando sesión en Supabase), la app vuelve al login con el aviso en menos de 5 minutos y la consola no muestra errores de CORS.
+  - **Dependencias**: FE-025.

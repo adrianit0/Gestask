@@ -6,6 +6,10 @@ Todas las funciones devuelven JSON y validan método HTTP.
 - `POST /functions/v1/auth-login`
 - `POST /functions/v1/auth-register`
 
+### Validez de la sesión
+- El frontal comprueba el token con `GET /auth/v1/user` de Supabase Auth (no es una Edge Function), enviando `apikey` y `Authorization: Bearer <access_token>`. `401` o `403` significa sesión caducada o inválida; un fallo de red u otro estado no cambia la sesión.
+- Las Edge Functions responden `401` (`Authentication required.` o `Invalid or expired session.`) cuando falta el token o no es válido. El cliente HTTP trata ese `401` como sesión caducada: borra la sesión local y la llamada falla con `Tu sesión ha caducado. Vuelve a iniciar sesión.` Sin sesión local, las llamadas autenticadas fallan con ese mensaje sin llegar al servidor.
+
 ## Tareas
 - `GET /functions/v1/tasks-list?status=&priority=&date=&search=&ticket_type=&sort_by=&sort_direction=`
 - `GET /functions/v1/tasks-completion-list`

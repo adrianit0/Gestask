@@ -13,12 +13,12 @@ import { KanbanPage } from "./pages/KanbanPage.js";
 import { OrderTasksPage } from "./pages/OrderTasksPage.js";
 import { PerformancePage } from "./pages/PerformancePage.js";
 import { TimeManagerPage } from "./pages/TimeManagerPage.js";
-import { login, logout, register } from "./services/authService.js";
+import { login, logout, register, verifySession } from "./services/authService.js";
 import { getCalendarMonth, updateCalendarDayStatus } from "./services/calendarService.js";
 import { createConfiguration, listConfigurations, updateConfigurationProfile } from "./services/configurationService.js";
 import { createDailyReport, getDailyReport, listPendingDailyTasks, setDailyTaskCompletion } from "./services/dailyReportService.js";
 import { applyTheme, getSidebarCollapsed, getThemePreference, setSidebarCollapsed, setThemePreference } from "./services/layoutPreferencesService.js";
-import { getSession, isAuthenticated } from "./services/sessionService.js";
+import { SESSION_EXPIRED_MESSAGE, getSession, isAuthenticated, onSessionExpired } from "./services/sessionService.js";
 import { createTask, deleteTask, listDailyRoutineTasks, listTasks, updateTask } from "./services/taskService.js";
 import { listOrderTasks, updateOrderTasks } from "./services/taskOrderService.js";
 import { listCompletionTasks, resolveCompletionTask } from "./services/taskCompletionService.js";
@@ -87,6 +87,7 @@ applyTheme(state.theme);
 
 async function boot() {
   startAsyncIndicator();
+  startSessionMonitor();
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     setMobileNavOpen(false);
@@ -95,6 +96,33 @@ async function boot() {
   if (isAuthenticated()) {
     await loadAllData();
   }
+  render();
+}
+
+const SESSION_CHECK_MS = 5 * 60 * 1000;
+const SESSION_RECHECK_ON_RETURN_MS = 60 * 1000;
+let lastSessionCheck = Date.now();
+
+// Supabase closes idle sessions on its side: checking every few minutes, and when the tab is shown again,
+// sends the user back to login before an action fails with a dead token.
+function startSessionMonitor() {
+  onSessionExpired(handleSessionExpired);
+  window.setInterval(checkSession, SESSION_CHECK_MS);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && Date.now() - lastSessionCheck >= SESSION_RECHECK_ON_RETURN_MS) checkSession();
+  });
+}
+
+function checkSession() {
+  if (!isAuthenticated()) return;
+  lastSessionCheck = Date.now();
+  verifySession();
+}
+
+function handleSessionExpired() {
+  resetUserState();
+  clearMessages();
+  state.error = SESSION_EXPIRED_MESSAGE;
   render();
 }
 
@@ -189,7 +217,8 @@ function nextOrderPoints() {
 
 function render() {
   if (!isAuthenticated()) {
-    root.innerHTML = AuthPage({ mode: state.authMode, configError: assertConfig() });
+    root.innerHTML = AuthPage({ mode: state.authMode, error: state.error, success: state.success, configError: assertConfig() });
+    document.title = "Gestask";
     bindAuthEvents();
     return;
   }
@@ -362,10 +391,14 @@ function bindLayoutEvents() {
 
   document.querySelector("[data-action='logout']")?.addEventListener("click", () => {
     logout();
-    Object.assign(state, { page: "backlog", tasks: [], dailyReport: null, dailyTasks: [], dailyReportRoutineTasks: [], dailyRoutineTasks: [], dailyPending: { today: todayIso(), items: [] }, completionTasks: [], completionModalTask: null, bulkImputeOpen: false, bulkImputeSelection: new Set(), orderTasks: [], calendarDays: [] });
+    resetUserState();
     clearMessages();
     render();
   });
+}
+
+function resetUserState() {
+  Object.assign(state, { page: "backlog", tasks: [], dailyReport: null, dailyTasks: [], dailyReportRoutineTasks: [], dailyRoutineTasks: [], dailyPending: { today: todayIso(), items: [] }, completionTasks: [], completionModalTask: null, bulkImputeOpen: false, bulkImputeSelection: new Set(), orderTasks: [], calendarDays: [], modalTask: undefined, detailTask: null, configurationModalOpen: false, calendarModalDay: null });
 }
 
 // Collapsing only toggles classes and attributes: re-rendering would rebuild the current page for no reason.
@@ -1420,7 +1453,7 @@ async function loadAllData({ preserveMessages = false, silent = false } = {}) {
 
     if (errors.length) {
       state.success = "";
-      state.error = errors.join(" ");
+      state.error = [...new Set(errors)].join(" ");
     }
   }, { preserveMessages, silent });
 }

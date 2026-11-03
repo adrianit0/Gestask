@@ -81,6 +81,10 @@
 - En `Completar tareas` el botón de cada fila muestra el nombre del paso (`Informar PR`, `Imputar`, `Cerrar`) en lugar de `Resolver`, y la tabla de imputación masiva muestra el título junto al ticket en vez de un icono con tooltip.
 - Correcciones incluidas en el rediseño: textos con codificación rota en `Completar tareas` (`Sin título`, `resolución`), tildes en `Calendario` y `Rendimiento`, la expresión regular de `toIsoDate` (no escapaba `\d`, por lo que la imputación masiva sin fecha compartida usaba siempre la fecha de hoy) y el acento de la columna `To do` del Kanban, que recibía un objeto en lugar de un color.
 
+- La sesión caducada se detecta en el frontal sin cambiar contratos: cada 5 minutos y al volver a la pestaña (con más de 1 minuto desde la última comprobación) se consulta `GET /auth/v1/user` de Supabase Auth, más ligero que una Edge Function y sin pasar por el indicador de cargas. Solo `401`/`403` cierra la sesión; un fallo de red la mantiene para no obligar a entrar de nuevo tras un corte breve. La comprobación al volver a la pestaña cubre la suspensión del equipo y la limitación de temporizadores en pestañas ocultas.
+- Un `401` de cualquier Edge Function también cierra la sesión (`apiClient`), para que una acción hecha antes de la comprobación periódica lleve al login en vez de dejar un error y un token inválido. `expireSession(token)` solo actúa si el token rechazado sigue siendo el de la sesión actual: las cargas en paralelo avisan una sola vez y una respuesta tardía no cierra una sesión iniciada después. Los errores repetidos de `loadAllData` se deduplican.
+- Se vuelve a pasar `error`/`success` a `AuthPage`, que el rediseño había dejado de mostrar (los errores de login no se veían), y el título del navegador vuelve a `Gestask` en la pantalla de acceso. No se refresca el token con `refresh_token`: al caducar se pide volver a entrar.
+
 ## Pendiente
 - Conectar y desplegar contra un proyecto Supabase real.
 - Añadir tests automatizados.
@@ -89,3 +93,4 @@
 - Ejecutar QA-002 y QA-004 en navegador contra Supabase real (ver `docs/11-backlog.md`).
 - Aplicar `script-011.sql`, desplegar `daily-tasks-pending`, `daily-tasks-complete` y las funciones modificadas, y ejecutar QA-005.
 - Ejecutar QA-006 (rediseño del frontal) en navegador contra Supabase real.
+- Ejecutar QA-007 (sesión caducada) contra Supabase real.

@@ -3,6 +3,7 @@
 ## Funcionales
 - Registro e inicio de sesión mediante Edge Functions `auth-register` y `auth-login`.
 - Dashboard protegido por sesión.
+- La sesión caducada se detecta sin esperar a una acción del usuario: se comprueba cada 5 minutos y al volver a la pestaña; si el servidor la rechaza, se cierra y se vuelve al login con el aviso `Tu sesión ha caducado. Vuelve a iniciar sesión.`
 - Backlog CRUD básico: listar, crear, editar y cambiar estados.
 - Enlace externo opcional para tickets, configurable por usuario mediante `project-external-page`. Si está en blanco no se generan enlaces.
 - Numeración automática de tickets opcional mediante `project-ticket-model` y `project-ticket-order`. Si el orden está en blanco, el ticket lo escribe el usuario.
