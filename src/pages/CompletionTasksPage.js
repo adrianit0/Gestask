@@ -1,5 +1,6 @@
-import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
-import { BacklogTaskButton, TaskDetailModal, closeIcon } from "../components/TaskTable.js";
+import { PageHeader } from "../components/PageHeader.js";
+import { EmptyState, LoadingState } from "../components/StateMessages.js";
+import { BacklogTaskButton, TaskDetailModal, TaskSummary, TypeBadge, closeIcon } from "../components/TaskTable.js";
 import { PR_BORDER_COLORS } from "../utils/constants.js";
 import { escapeHtml, todayIso } from "../utils/format.js";
 import { ticketLinkHtml } from "../utils/projectSettings.js";
@@ -25,34 +26,48 @@ export function getDefaultImputedDate(task) {
   return toIsoDate(task.imputed_date) || toIsoDate(task.finished_date) || todayIso();
 }
 
-export function CompletionTasksPage({ tasks = [], performanceTasks = [], calendarDays = [], configurations = [], minutesPerEffortPoint = 60, referenceDate = new Date(), loading = false, error = "", success = "", modalTask = null, detailTask = null, bulkImputeOpen = false, bulkImputeSelection = new Set() } = {}) {
+export function CompletionTasksPage({ tasks = [], performanceTasks = [], calendarDays = [], configurations = [], minutesPerEffortPoint = 60, referenceDate = new Date(), loading = false, modalTask = null, detailTask = null, bulkImputeOpen = false, bulkImputeSelection = new Set() } = {}) {
   const completionProgress = getCompletionProgressMetrics(getVisiblePerformanceTasks(performanceTasks, false, referenceDate), calendarDays, configurations, minutesPerEffortPoint, referenceDate);
   const deployableImputedCount = getDeployableImputedTasks(tasks).length;
   const advanceableNeedPrCount = getAdvanceableNeedPrTasks(tasks).length;
   const pendingImputationTasks = getPendingImputationTasks(tasks);
   return `
-    <section class="page-header">
-      <div>
-        <p class="eyebrow">Completar tareas</p>
-        <h1>Cierre de workflow</h1>
-      </div>
-      <div class="page-header-actions">
-        ${advanceableNeedPrCount ? `
-          <button class="secondary" type="button" data-advance-all-need-pr>Informar PR de todas (${advanceableNeedPrCount})</button>
-        ` : ""}
-        ${deployableImputedCount ? `
-          <button class="primary" type="button" data-close-all-imputed>Cerrar imputadas (${deployableImputedCount})</button>
-        ` : ""}
-      </div>
-    </section>
-    ${ErrorMessage(error)}
-    ${SuccessMessage(success)}
+    ${PageHeader({
+      eyebrow: "Tareas",
+      title: "Completar tareas",
+      description: "Cierre de workflow de las tareas terminadas: informar PR, imputar horas y cerrar.",
+      actions: `
+        ${advanceableNeedPrCount ? `<button class="secondary" type="button" data-advance-all-need-pr>Informar PR de todas (${advanceableNeedPrCount})</button>` : ""}
+        ${deployableImputedCount ? `<button class="primary" type="button" data-close-all-imputed>Cerrar imputadas (${deployableImputedCount})</button>` : ""}
+      `.trim(),
+    })}
+    ${loading ? "" : CompletionSummary(tasks)}
     ${loading ? "" : BulkImputationPanel(pendingImputationTasks, minutesPerEffortPoint, completionProgress.differenceRatio, { open: bulkImputeOpen, selectedIds: bulkImputeSelection })}
     <section class="panel">
       ${loading ? LoadingState() : CompletionTasksTable(tasks, minutesPerEffortPoint)}
     </section>
     ${modalTask ? CompletionResolveModal(modalTask, minutesPerEffortPoint, completionProgress.differenceRatio) : ""}
     ${detailTask ? TaskDetailModal(detailTask, { readonly: true }) : ""}
+  `;
+}
+
+// One tile per closing step, coloured like the PR accent of the tasks waiting on it.
+function CompletionSummary(tasks) {
+  const steps = [
+    ["Need PR", "Informar PR"],
+    ["Need to Impute", "Imputar horas"],
+    ["Imputed", "Cerrar"],
+  ];
+  return `
+    <section class="completion-steps" aria-label="Resumen por paso">
+      ${steps.map(([status, label]) => `
+        <article class="panel completion-step" style="--step-color:${PR_BORDER_COLORS[status]};">
+          <span>${escapeHtml(label)}</span>
+          <strong>${tasks.filter((task) => task.pr_status === status).length}</strong>
+          <small>${escapeHtml(status)}</small>
+        </article>
+      `).join("")}
+    </section>
   `;
 }
 
@@ -76,7 +91,7 @@ function BulkImputationPanel(tasks, minutesPerEffortPoint, differenceRatio, { op
       <div class="bulk-impute-header">
         <div>
           <p class="eyebrow">Imputación masiva</p>
-          <h2>Pendientes de imputar (${rows.length})</h2>
+          <h2>Pendientes de imputar <span class="count-badge">${rows.length}</span></h2>
         </div>
         <div class="page-header-actions">
           ${jiraLines.length ? `
@@ -110,17 +125,16 @@ function BulkImputationBody(rows) {
       <input id="bulk-impute-date" type="date" value="${escapeHtml(todayIso())}" />
     </label>
     <div class="table-wrap">
-      <table class="task-table task-table-impute">
+      <table class="data-table task-table-impute">
         <thead>
           <tr>
             <th class="bulk-impute-check-column">
               <input type="checkbox" data-impute-select-all ${allSelected ? "checked" : ""} aria-label="Seleccionar todas" />
             </th>
-            <th>Ticket</th>
-            <th>Fecha de resolución</th>
-            <th>Horas a imputar</th>
-            <th>Horas a imputar revisado</th>
-            <th class="bulk-impute-info-column" aria-label="Título"></th>
+            <th>Tarea</th>
+            <th class="cell-date">Fecha de resolución</th>
+            <th class="cell-number">Horas a imputar</th>
+            <th class="cell-number">Horas revisadas</th>
           </tr>
         </thead>
         <tbody>
@@ -129,15 +143,13 @@ function BulkImputationBody(rows) {
         <tfoot>
           <tr>
             <td colspan="3">Total</td>
-            <td>${escapeHtml(formatHoursAndMinutes(totalHours))}</td>
-            <td>${escapeHtml(formatHoursAndMinutes(totalReviewedHours, { roundMinutesToNearest: 10 }))}</td>
-            <td></td>
+            <td class="cell-number">${escapeHtml(formatHoursAndMinutes(totalHours))}</td>
+            <td class="cell-number">${escapeHtml(formatHoursAndMinutes(totalReviewedHours, { roundMinutesToNearest: 10 }))}</td>
           </tr>
           <tr>
             <td colspan="3">Total seleccionado (${selectedRows.length})</td>
-            <td>${escapeHtml(formatHoursAndMinutes(selectedHours))}</td>
-            <td>${escapeHtml(formatHoursAndMinutes(selectedReviewedHours, { roundMinutesToNearest: 10 }))}</td>
-            <td></td>
+            <td class="cell-number">${escapeHtml(formatHoursAndMinutes(selectedHours))}</td>
+            <td class="cell-number">${escapeHtml(formatHoursAndMinutes(selectedReviewedHours, { roundMinutesToNearest: 10 }))}</td>
           </tr>
         </tfoot>
       </table>
@@ -155,29 +167,19 @@ function BulkImputationRow({ task, hoursToImpute, reviewedHoursToImpute, selecte
       <td class="bulk-impute-check-cell">
         <input type="checkbox" data-impute-select="${escapeHtml(task.id)}" ${selected ? "checked" : ""} aria-label="Marcar ${escapeHtml(task.ticket || title)} como imputada" />
       </td>
-      <td>${ticketCell(task.ticket)}</td>
-      <td>${escapeHtml(task.finished_date || "-")}</td>
-      <td>${escapeHtml(formatHoursAndMinutes(hoursToImpute))}</td>
-      <td>${escapeHtml(formatHoursAndMinutes(reviewedHoursToImpute, { roundMinutesToNearest: 10 }))}</td>
-      <td class="bulk-impute-info-cell">
-        <span class="bulk-impute-info" title="${escapeHtml(title)}" tabindex="0" role="img" aria-label="${escapeHtml(title)}">${infoIcon()}</span>
+      <td class="bulk-impute-task">
+        ${task.ticket ? `<span class="task-ticket">${ticketCell(task.ticket)}</span>` : ""}
+        <span class="task-title">${escapeHtml(title)}</span>
       </td>
+      <td class="cell-date">${escapeHtml(task.finished_date || "-")}</td>
+      <td class="cell-number">${escapeHtml(formatHoursAndMinutes(hoursToImpute))}</td>
+      <td class="cell-number">${escapeHtml(formatHoursAndMinutes(reviewedHoursToImpute, { roundMinutesToNearest: 10 }))}</td>
     </tr>
   `;
 }
 
 function sumHours(rows, key) {
   return rows.reduce((sum, row) => sum + row[key], 0);
-}
-
-function infoIcon() {
-  return `
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="9"></circle>
-      <path d="M12 11v5"></path>
-      <path d="M12 8h0.01"></path>
-    </svg>
-  `;
 }
 
 function CompletionTasksTable(tasks, minutesPerEffortPoint) {
@@ -189,13 +191,13 @@ function CompletionTasksTable(tasks, minutesPerEffortPoint) {
       <table class="task-table task-table-completion">
         <thead>
           <tr>
-            <th>Ticket</th>
+            <th class="task-col-main">Tarea</th>
             <th>Tipo</th>
-            <th>Finalización</th>
-            <th>Horas</th>
+            <th class="cell-date">Finalización</th>
+            <th class="cell-number">Horas</th>
             <th>PR</th>
-            <th>Acción</th>
-            <th class="backlog-link-column" aria-label="Backlog"></th>
+            <th class="actions-cell"><span class="visually-hidden">Acción</span></th>
+            <th class="backlog-link-cell"><span class="visually-hidden">Backlog</span></th>
           </tr>
         </thead>
         <tbody>
@@ -239,30 +241,25 @@ function compareDatesAsc(a, b) {
 
 function CompletionTaskRow(task, minutesPerEffortPoint) {
   const visualStyle = `--task-bg:#ccffcc; --task-border:${PR_BORDER_COLORS[task.pr_status] || "transparent"};`;
-  const clickableAttrs = `data-view-task="${escapeHtml(task.id)}"`;
   return `
-    <tr class="task-main-row clickable-row" ${clickableAttrs} style="${visualStyle}">
-      <td>${ticketCell(task.ticket)}</td>
-      <td>${escapeHtml(task.ticket_type || "Bug")}</td>
-      <td>${escapeHtml(task.finished_date || "-")}</td>
-      <td>${escapeHtml(formatHoursFromEffortPoints(task.effort_points, minutesPerEffortPoint))}</td>
-      <td><span class="status-pill">${escapeHtml(task.pr_status || "-")}</span></td>
-      <td>${resolveButton(task)}</td>
+    <tr class="task-row clickable-row" data-view-task="${escapeHtml(task.id)}" tabindex="0" style="${visualStyle}">
+      <td class="task-cell-main">${TaskSummary(task, { showMoreInfo: false })}</td>
+      <td data-label="Tipo">${TypeBadge(task.ticket_type)}</td>
+      <td class="cell-date" data-label="Finalización">${escapeHtml(task.finished_date || "-")}</td>
+      <td class="cell-number" data-label="Horas">${escapeHtml(formatHoursFromEffortPoints(task.effort_points, minutesPerEffortPoint))}</td>
+      <td data-label="PR"><span class="status-pill" style="--pill-color:${PR_BORDER_COLORS[task.pr_status] || "var(--muted)"};">${escapeHtml(task.pr_status || "-")}</span></td>
+      <td class="actions-cell">${resolveButton(task)}</td>
       <td class="backlog-link-cell">${BacklogTaskButton(task.id)}</td>
-    </tr>
-    <tr class="task-title-row clickable-row" ${clickableAttrs} style="${visualStyle}">
-      <td class="task-title-cell" colspan="7">
-        <div>${escapeHtml(task.title || "Sin tÃ­tulo")}</div>
-      </td>
     </tr>
   `;
 }
 
 function resolveButton(task) {
+  const label = { "Need PR": "Informar PR", "Need to Impute": "Imputar", Imputed: "Cerrar" }[task.pr_status] ?? "Resolver";
   if (!canResolve(task)) {
-    return `<button class="secondary" type="button" disabled>Resolver</button>`;
+    return `<button class="secondary" type="button" disabled title="Sin paso de cierre disponible para este tipo de tarea">${escapeHtml(label)}</button>`;
   }
-  return `<button class="primary" type="button" data-open-completion-resolve="${escapeHtml(task.id)}">Resolver</button>`;
+  return `<button class="primary" type="button" data-open-completion-resolve="${escapeHtml(task.id)}">${escapeHtml(label)}</button>`;
 }
 
 function canResolve(task) {
@@ -280,14 +277,14 @@ function CompletionResolveModal(task, minutesPerEffortPoint, differenceRatio) {
   }[task.pr_status] ?? "Resolver tarea";
 
   return `
-    <div class="modal-backdrop">
-      <section class="modal completion-modal" role="dialog" aria-modal="true" aria-labelledby="completion-modal-title">
+    <div class="modal-backdrop" role="presentation">
+      <section class="modal completion-modal" role="dialog" aria-modal="true" aria-labelledby="completion-modal-title" tabindex="-1">
         <div class="modal-header">
-          <div>
-            <p class="eyebrow">Completar tareas</p>
+          <div class="modal-heading">
+            <p class="eyebrow">Completar tareas${task.ticket ? ` · ${escapeHtml(task.ticket)}` : ""}</p>
             <h2 id="completion-modal-title">${escapeHtml(title)}</h2>
           </div>
-          <button class="icon-button close-icon-button" data-close-completion-modal aria-label="Cerrar">${closeIcon()}</button>
+          <button class="icon-button close-icon-button" data-close-completion-modal aria-label="Cerrar" title="Cerrar (Esc)">${closeIcon()}</button>
         </div>
         ${CompletionResolveForm(task, minutesPerEffortPoint, differenceRatio)}
       </section>
@@ -299,7 +296,7 @@ function CompletionResolveForm(task, minutesPerEffortPoint, differenceRatio) {
   if (task.pr_status === "Need PR") return NeedPrForm(task);
   if (task.pr_status === "Need to Impute") return NeedToImputeForm(task, minutesPerEffortPoint, differenceRatio);
   if (task.pr_status === "Imputed") return ImputedForm(task);
-  return `<p class="state warning">Esta tarea no tiene una transición de resoluciÃ³n disponible.</p>`;
+  return `<p class="state warning">Esta tarea no tiene una transición de resolución disponible.</p>`;
 }
 
 function NeedPrForm(task) {
@@ -307,7 +304,7 @@ function NeedPrForm(task) {
     <form id="completion-resolve-form" class="completion-resolve-form" data-completion-status="Need PR">
       <input type="hidden" name="id" value="${escapeHtml(task.id)}" />
       <label>Link al PR
-        <input name="pr_link" type="url" placeholder="https://..." value="${escapeHtml(task.pr_link || "")}" />
+        <input name="pr_link" type="url" placeholder="https://..." value="${escapeHtml(task.pr_link || "")}" autofocus />
       </label>
       ${task.ticket_type === "Feature" ? `
         <label>Test cases
@@ -360,6 +357,7 @@ function ImputedForm(task) {
       <input type="hidden" name="id" value="${escapeHtml(task.id)}" />
       <div class="completion-summary">
         <p><span>Ticket</span>${ticketCell(task.ticket)}</p>
+        <p><span>Título</span><strong>${escapeHtml(task.title || "Sin título")}</strong></p>
       </div>
       <p class="state warning">Cierra la tarea en el sistema externo antes de confirmar este paso.</p>
       <div class="modal-actions">
@@ -382,7 +380,7 @@ function ticketCell(ticket) {
 function toIsoDate(value) {
   const text = String(value ?? "").trim();
   if (!text) return "";
-  const match = text.match(/^(d{4}-d{2}-d{2})/);
+  const match = text.match(/^(\d{4}-\d{2}-\d{2})/);
   return match ? match[1] : "";
 }
 

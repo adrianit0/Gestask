@@ -1,6 +1,7 @@
-import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
-import { TaskDetailModal, TaskModal } from "../components/TaskTable.js";
-import { PR_BORDER_COLORS, TASK_COLORS, TASK_STATUSES } from "../utils/constants.js";
+import { PageHeader } from "../components/PageHeader.js";
+import { EmptyState, LoadingState } from "../components/StateMessages.js";
+import { TaskDetailModal, TaskModal, TypeBadge, taskColorVars } from "../components/TaskTable.js";
+import { TASK_COLORS, TASK_STATUSES } from "../utils/constants.js";
 import { escapeHtml } from "../utils/format.js";
 import { ticketLinkHtml } from "../utils/projectSettings.js";
 
@@ -13,20 +14,16 @@ export function getKanbanTasks(tasks = []) {
   return tasks.filter(isKanbanTask);
 }
 
-export function KanbanPage({ tasks = [], loading = false, error = "", success = "", modalTask = undefined, detailTask = null } = {}) {
+export function KanbanPage({ tasks = [], loading = false, modalTask = undefined, detailTask = null } = {}) {
   const kanbanTasks = getKanbanTasks(tasks);
   return `
-    <section class="page-header">
-      <div>
-        <p class="eyebrow">Kanban</p>
-        <h1>Tablero de tareas</h1>
-      </div>
-      <p class="kanban-summary">${kanbanTasks.length} tarea${kanbanTasks.length === 1 ? "" : "s"} en curso</p>
-    </section>
-    ${ErrorMessage(error)}
-    ${SuccessMessage(success)}
-    <section class="panel kanban-panel">
-      ${loading ? LoadingState() : KanbanBoard(kanbanTasks)}
+    ${PageHeader({
+      eyebrow: "Tareas",
+      title: "Kanban",
+      description: `${kanbanTasks.length} tarea${kanbanTasks.length === 1 ? "" : "s"} en curso, agrupadas por estado y ordenadas por puntos de orden.`,
+    })}
+    <section class="kanban-panel">
+      ${loading ? `<div class="panel">${LoadingState()}</div>` : KanbanBoard(kanbanTasks)}
     </section>
     ${modalTask !== undefined ? TaskModal(modalTask) : ""}
     ${detailTask ? TaskDetailModal(detailTask) : ""}
@@ -34,7 +31,7 @@ export function KanbanPage({ tasks = [], loading = false, error = "", success = 
 }
 
 function KanbanBoard(tasks) {
-  if (!tasks.length) return EmptyState("No hay tareas activas en el tablero.");
+  if (!tasks.length) return `<div class="panel">${EmptyState("No hay tareas activas en el tablero.")}</div>`;
   return `
     <div class="kanban-board">
       ${KANBAN_STATUSES.map((status) => KanbanColumn(status, sortByOrderPoints(tasks.filter((task) => task.task_status === status)))).join("")}
@@ -44,13 +41,13 @@ function KanbanBoard(tasks) {
 
 function KanbanColumn(status, tasks) {
   return `
-    <section class="kanban-column" style="--column-accent:${TASK_COLORS[status] || "#e6e0d8"};">
+    <section class="kanban-column" style="--column-accent:${columnColor(status)};" aria-label="${escapeHtml(status)}">
       <header class="kanban-column-header">
-        <h2>${escapeHtml(status)}</h2>
-        <span class="kanban-column-count">${tasks.length}</span>
+        <h2><span class="chip-dot" aria-hidden="true"></span>${escapeHtml(status)}</h2>
+        <span class="count-badge">${tasks.length}</span>
       </header>
       <div class="kanban-column-body">
-        ${tasks.length ? tasks.map(KanbanCard).join("") : `<p class="kanban-column-empty">Sin tareas.</p>`}
+        ${tasks.length ? tasks.map(KanbanCard).join("") : `<p class="kanban-column-empty">Sin tareas</p>`}
       </div>
     </section>
   `;
@@ -58,25 +55,29 @@ function KanbanColumn(status, tasks) {
 
 function KanbanCard(task) {
   const pending = Boolean(task.__pending);
-  const background = task.task_status === "To do" ? TASK_COLORS["To do"][task.priority] : TASK_COLORS[task.task_status];
-  const border = task.task_status === "Done" ? PR_BORDER_COLORS[task.pr_status] : null;
   return `
-    <article class="kanban-card ${pending ? "kanban-card-pending" : "clickable-row"}" ${pending ? "" : `data-view-task="${escapeHtml(task.id)}"`} style="--task-bg:${background}; --task-border:${border || "transparent"};">
+    <article class="kanban-card ${pending ? "kanban-card-pending" : "clickable-row"}" ${pending ? "" : `data-view-task="${escapeHtml(task.id)}" tabindex="0"`} style="${taskColorVars(task)}">
       <header class="kanban-card-header">
-        <span class="kanban-card-ticket">${ticketLink(task.ticket)}</span>
-        <span class="kanban-card-order" title="Puntos de orden">${escapeHtml(task.order_points ?? "-")}</span>
+        <span class="kanban-card-ticket">${ticketLinkHtml(task.ticket, { fallback: "" })}</span>
+        <span class="kanban-card-order" title="Puntos de orden">#${escapeHtml(task.order_points ?? "-")}</span>
       </header>
       <p class="kanban-card-title">${escapeHtml(task.title)}</p>
       <footer class="kanban-card-meta">
-        <span>${escapeHtml(task.ticket_type || "Bug")}</span>
+        ${TypeBadge(task.ticket_type)}
         <span>${escapeHtml(task.priority)}</span>
-        <span title="Puntos de esfuerzo">${escapeHtml(task.effort_points ?? 0)} pts</span>
+        <span title="Puntos de esfuerzo">${escapeHtml(task.effort_points ?? 0)} PE</span>
         ${task.limit_date ? `<span title="Fecha límite">Límite ${escapeHtml(task.limit_date)}</span>` : ""}
         ${task.task_status === "Done" ? `<span title="Estado del PR">${escapeHtml(task.pr_status || "-")}</span>` : ""}
-        ${pending ? `<span class="task-pending-badge">${escapeHtml(task.__pendingLabel || "Guardando...")}</span>` : ""}
+        ${pending ? `<span class="task-pending-badge"><span class="spinner spinner-sm" aria-hidden="true"></span>${escapeHtml(task.__pendingLabel || "Guardando...")}</span>` : ""}
       </footer>
     </article>
   `;
+}
+
+// "To do" colors depend on priority, so its column uses a representative shade.
+function columnColor(status) {
+  const color = TASK_COLORS[status];
+  return typeof color === "string" ? color : color.Prioritaria;
 }
 
 function sortByOrderPoints(tasks) {
@@ -95,8 +96,4 @@ function orderValue(task) {
 function isKanbanTask(task) {
   if (!KANBAN_STATUSES.includes(task.task_status)) return false;
   return !(task.task_status === "Done" && CLOSED_PR_STATUSES.includes(task.pr_status));
-}
-
-function ticketLink(ticket) {
-  return ticketLinkHtml(ticket);
 }

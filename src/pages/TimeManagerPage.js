@@ -1,19 +1,18 @@
-import { EmptyState, ErrorMessage, SuccessMessage } from "../components/StateMessages.js";
+import { PageHeader } from "../components/PageHeader.js";
+import { EmptyState } from "../components/StateMessages.js";
 import { escapeHtml, todayIso } from "../utils/format.js";
 
-export function TimeManagerPage({ tasks = [], entries = [], editingEntry = null, error = "", success = "" } = {}) {
+export function TimeManagerPage({ tasks = [], entries = [], editingEntry = null } = {}) {
   const entry = editingEntry ?? {};
   return `
-    <section class="page-header">
-      <div>
-        <p class="eyebrow">Gestor de Tiempos</p>
-        <h1>Registro horario</h1>
-      </div>
-    </section>
-    ${ErrorMessage(error)}
-    ${SuccessMessage(success)}
+    ${PageHeader({
+      eyebrow: "Seguimiento",
+      title: "Gestor de tiempos",
+      description: "Registro horario por tarea. Se guarda solo en este navegador.",
+    })}
     <section class="time-layout">
       <form id="time-entry-form" class="panel time-form">
+        <h2 class="span-2">${editingEntry ? "Editar registro" : "Nuevo registro"}</h2>
         <input type="hidden" name="id" value="${escapeHtml(entry.id || "")}" />
         <label>Tarea
           <select name="task_id" required>
@@ -30,7 +29,8 @@ export function TimeManagerPage({ tasks = [], entries = [], editingEntry = null,
           <button type="submit" class="primary">${editingEntry ? "Actualizar registro" : "Añadir registro"}</button>
         </div>
       </form>
-      <section class="panel">
+      <section class="panel metric-group">
+        <h2>Resumen</h2>
         <div class="metric-grid">
           ${TimeMetric("Horas totales", formatHours(totalMinutes(entries)))}
           ${TimeMetric("Registros", entries.length)}
@@ -39,22 +39,22 @@ export function TimeManagerPage({ tasks = [], entries = [], editingEntry = null,
       </section>
     </section>
     <section class="panel">
-      <h2>Historial</h2>
+      <div class="panel-header"><h2>Historial <span class="count-badge">${entries.length}</span></h2></div>
       ${entries.length ? TimeEntriesTable(entries, tasks) : EmptyState("Aún no hay registros horarios.")}
     </section>
   `;
 }
 
 function TimeMetric(label, value) {
-  return `<article class="metric-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`;
+  return `<div class="metric-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
 }
 
 function TimeEntriesTable(entries, tasks) {
   const taskById = new Map(tasks.map((task) => [task.id, task]));
   return `
     <div class="table-wrap">
-      <table class="task-table time-table">
-        <thead><tr><th>Fecha</th><th>Tarea</th><th>Inicio</th><th>Fin</th><th>Duración</th><th>Notas</th><th>Acciones</th></tr></thead>
+      <table class="data-table time-table">
+        <thead><tr><th>Fecha</th><th>Tarea</th><th>Inicio</th><th>Fin</th><th>Duración</th><th>Notas</th><th class="actions-cell"><span class="visually-hidden">Acciones</span></th></tr></thead>
         <tbody>
           ${entries.map((entry) => {
             const task = taskById.get(entry.task_id);
@@ -66,9 +66,11 @@ function TimeEntriesTable(entries, tasks) {
                 <td>${escapeHtml(entry.end_time)}</td>
                 <td>${formatHours(entryMinutes(entry))}</td>
                 <td>${escapeHtml(entry.notes)}</td>
-                <td class="row-actions">
-                  <button class="icon-button" data-edit-time-entry="${entry.id}">Editar</button>
-                  <button class="icon-button danger-button" data-delete-time-entry="${entry.id}">Borrar</button>
+                <td class="actions-cell">
+                  <div class="task-actions">
+                    <button type="button" class="secondary button-sm" data-edit-time-entry="${entry.id}">Editar</button>
+                    <button type="button" class="secondary button-sm danger-button" data-delete-time-entry="${entry.id}">Borrar</button>
+                  </div>
                 </td>
               </tr>
             `;

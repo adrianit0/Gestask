@@ -31,9 +31,9 @@ Esta especificación documenta el comportamiento de la vista y, en concreto, la 
 
 ### Botón de inclusión
 - Se muestra al final del listado del horario, ocupando todo el ancho disponible.
-- Estilo: borde gris con transparencia y línea discontinua, fondo blanco con mucha transparencia, texto gris.
-- Altura aproximada de 5 veces la altura del texto.
-- Texto inicial: `(+) Incluir horas`.
+- Estilo: borde discontinuo del color de borde del tema, fondo transparente y texto atenuado; al pasar el ratón toma el tono principal.
+- Altura aproximada de 3 líneas de texto.
+- Texto inicial: `Incluir horas`, precedido de un icono `+`.
 
 ### Comportamiento de alternancia
 - Estado inicial: desactivado (no se añaden horas extra).
@@ -45,7 +45,7 @@ Esta especificación documenta el comportamiento de la vista y, en concreto, la 
 - Al pulsar el botón estando activado:
   - Se vuelve a la hora de fin base.
   - Se eliminan del horario las tareas planificadas en la franja extra.
-  - El texto del botón vuelve a `(+) Incluir horas`.
+  - El texto del botón vuelve a `Incluir horas`.
 
 ### Ejemplo
 Con `hora_fin = 17:30`, `PE_diario_extra = 3` y `Minute_PE = 40`:

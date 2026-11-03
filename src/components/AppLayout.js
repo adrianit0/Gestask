@@ -1,5 +1,6 @@
 ﻿import { AsyncActivityIndicator } from "./AsyncActivity.js";
 import { DailyPendingIndicator } from "./DailyTasks.js";
+import { Toasts } from "./StateMessages.js";
 import { getAsyncOperations } from "../services/asyncTracker.js";
 import { escapeHtml } from "../utils/format.js";
 
@@ -31,9 +32,18 @@ const NAV_SECTIONS = [
   },
 ];
 
+const CONFIGURATION_ITEM = { page: "configuration", label: "Configuración", icon: "configuration" };
+
 const COMPLETION_BADGE_STATUSES = ["Need PR", "Need to Impute", "Imputed"];
 
-export function AppLayout(activePage, content, { dailyPending = {}, completionTasks = [], collapsed = false, userEmail = "" } = {}) {
+// The toggle cycles system → light → dark; "system" follows prefers-color-scheme.
+const THEME_OPTIONS = {
+  system: { label: "Tema del sistema", icon: "themeSystem", next: "light" },
+  light: { label: "Tema claro", icon: "themeLight", next: "dark" },
+  dark: { label: "Tema oscuro", icon: "themeDark", next: "system" },
+};
+
+export function AppLayout(activePage, content, { dailyPending = {}, completionTasks = [], collapsed = false, userEmail = "", theme = "system", messages = {} } = {}) {
   const context = { completionTasks };
 
   return `
@@ -60,7 +70,8 @@ export function AppLayout(activePage, content, { dailyPending = {}, completionTa
             ${NAV_SECTIONS.map((section) => navSection(section, activePage, context)).join("")}
           </nav>
           <div class="side-nav-footer">
-            ${navItem({ page: "configuration", label: "Configuración", icon: "configuration" }, activePage, context)}
+            ${navItem(CONFIGURATION_ITEM, activePage, context)}
+            ${ThemeToggleButton(theme)}
             ${navActionButton("refresh", "Actualizar datos", "refresh")}
             ${navActionButton("logout", "Cerrar sesión", "logout", { danger: true, detail: userEmail, title: userEmail ? `Cerrar sesión (${userEmail})` : "Cerrar sesión" })}
           </div>
@@ -68,12 +79,28 @@ export function AppLayout(activePage, content, { dailyPending = {}, completionTa
       </aside>
       <div class="side-nav-backdrop" data-action="close-mobile-nav" aria-hidden="true"></div>
       <main class="app-shell">${content}</main>
+      ${Toasts(messages)}
     </div>
   `;
 }
 
 export function collapseToggleLabel(collapsed) {
   return collapsed ? "Desplegar menú" : "Plegar menú";
+}
+
+export function ThemeToggleButton(theme) {
+  const option = THEME_OPTIONS[theme] ?? THEME_OPTIONS.system;
+  const nextLabel = THEME_OPTIONS[option.next].label.toLowerCase();
+  return navActionButton("cycle-theme", option.label, option.icon, { title: `${option.label} · pulsa para cambiar a ${nextLabel}` });
+}
+
+export function nextTheme(theme) {
+  return (THEME_OPTIONS[theme] ?? THEME_OPTIONS.system).next;
+}
+
+export function pageLabel(page) {
+  const items = [...NAV_SECTIONS.flatMap((section) => section.items), CONFIGURATION_ITEM];
+  return items.find((item) => item.page === page)?.label ?? "";
 }
 
 function navSection(section, activePage, context) {
@@ -240,6 +267,31 @@ function navIcon(icon) {
         <path d="M4 6h16" />
         <path d="M4 12h16" />
         <path d="M4 18h16" />
+      </svg>
+    `,
+    themeSystem: `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+        <path d="M8 21h8" />
+        <path d="M12 17v4" />
+      </svg>
+    `,
+    themeLight: `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 16a4 4 0 1 0 0-8a4 4 0 0 0 0 8Z" />
+        <path d="M12 2v2" />
+        <path d="M12 20v2" />
+        <path d="m4.9 4.9 1.4 1.4" />
+        <path d="m17.7 17.7 1.4 1.4" />
+        <path d="M2 12h2" />
+        <path d="M20 12h2" />
+        <path d="m6.3 17.7-1.4 1.4" />
+        <path d="m19.1 4.9-1.4 1.4" />
+      </svg>
+    `,
+    themeDark: `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z" />
       </svg>
     `,
     sidebar: `

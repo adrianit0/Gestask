@@ -1,19 +1,17 @@
-﻿import { ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
+﻿import { PageHeader } from "../components/PageHeader.js";
+import { EmptyState, LoadingState } from "../components/StateMessages.js";
+import { TypeBadge } from "../components/TaskTable.js";
 import { escapeHtml } from "../utils/format.js";
 import { ticketLinkHtml } from "../utils/projectSettings.js";
 
-export function OrderTasksPage({ tasks = [], loading = false, error = "", success = "" } = {}) {
+export function OrderTasksPage({ tasks = [], loading = false } = {}) {
   return `
-    <section class="page-header order-page-header">
-      <div>
-        <p class="eyebrow">Orden manual</p>
-        <h1>Ordenar tareas</h1>
-        <p class="page-description">Solo aparecen tareas pendientes con puntos de orden. Arrastra una fila para moverla varias posiciones o usa los botones como alternativa.</p>
-      </div>
-      <button class="secondary" data-order-normalize ${tasks.length ? "" : "disabled"}>Ordenar automáticamente</button>
-    </section>
-    ${ErrorMessage(error)}
-    ${SuccessMessage(success)}
+    ${PageHeader({
+      eyebrow: "Tareas",
+      title: "Ordenar tareas",
+      description: "Solo aparecen tareas pendientes con puntos de orden. Arrastra una fila para moverla varias posiciones o usa las flechas.",
+      actions: `<button class="secondary" data-order-normalize ${tasks.length ? "" : "disabled"}>Ordenar automáticamente</button>`,
+    })}
     <section class="panel order-panel">
       ${loading ? LoadingState() : orderTaskList(tasks)}
     </section>
@@ -21,23 +19,22 @@ export function OrderTasksPage({ tasks = [], loading = false, error = "", succes
 }
 
 function orderTaskList(tasks) {
-  if (!tasks.length) return `<div class="state empty">No hay tareas ordenables.</div>`;
+  if (!tasks.length) return EmptyState("No hay tareas ordenables.");
 
   return `
     <div class="table-wrap">
-      <table class="order-task-table">
+      <table class="data-table order-task-table">
         <thead>
           <tr>
-            <th>Posición</th>
-            <th>Ticket</th>
+            <th class="position-cell">Posición</th>
             <th>Tarea</th>
             <th>Tipo</th>
             <th>Prioridad</th>
             <th>Estado</th>
             <th>Asignación</th>
             <th>Límite</th>
-            <th>Orden</th>
-            <th class="actions-column">Acciones</th>
+            <th class="cell-number">Orden</th>
+            <th class="actions-cell"><span class="visually-hidden">Mover</span></th>
           </tr>
         </thead>
         <tbody>
@@ -51,27 +48,35 @@ function orderTaskList(tasks) {
 function orderTaskRow(task, index, tasks) {
   return `
     <tr class="order-task-row" draggable="true" data-order-row data-order-index="${index}">
-      <td class="position-cell"><span class="drag-handle" aria-hidden="true">::</span>${index + 1}</td>
-      <td>${ticketCell(task.ticket)}</td>
-      <td class="order-title-cell">${escapeHtml(task.title)}</td>
-      <td>${escapeHtml(task.ticket_type || "Bug")}</td>
+      <td class="position-cell"><span class="drag-handle" aria-hidden="true">${gripIcon()}</span>${index + 1}</td>
+      <td class="order-title-cell">
+        ${task.ticket ? `<span class="task-ticket">${ticketLinkHtml(task.ticket)}</span>` : ""}
+        <span class="task-title">${escapeHtml(task.title)}</span>
+      </td>
+      <td>${TypeBadge(task.ticket_type)}</td>
       <td>${escapeHtml(task.priority)}</td>
       <td>${escapeHtml(task.task_status)}</td>
-      <td>${escapeHtml(task.assigned_date || "-")}</td>
-      <td>${escapeHtml(task.limit_date || "-")}</td>
-      <td class="points-cell">${escapeHtml(task.order_points)}</td>
+      <td class="cell-date">${escapeHtml(task.assigned_date || "-")}</td>
+      <td class="cell-date">${escapeHtml(task.limit_date || "-")}</td>
+      <td class="cell-number points-cell">${escapeHtml(task.order_points)}</td>
       <td class="actions-cell">
         <div class="task-actions">
-          <button class="icon-button order-move-button" data-order-move="up" data-order-index="${index}" ${index === 0 ? "disabled" : ""} aria-label="Mover arriba">${arrowUpIcon()}</button>
-          <button class="icon-button order-move-button" data-order-move="down" data-order-index="${index}" ${index === tasks.length - 1 ? "disabled" : ""} aria-label="Mover abajo">${arrowDownIcon()}</button>
+          <button class="icon-button order-move-button" data-order-move="up" data-order-index="${index}" ${index === 0 ? "disabled" : ""} aria-label="Mover arriba" title="Mover arriba">${arrowUpIcon()}</button>
+          <button class="icon-button order-move-button" data-order-move="down" data-order-index="${index}" ${index === tasks.length - 1 ? "disabled" : ""} aria-label="Mover abajo" title="Mover abajo">${arrowDownIcon()}</button>
         </div>
       </td>
     </tr>
   `;
 }
 
-function ticketCell(ticket) {
-  return ticketLinkHtml(ticket);
+function gripIcon() {
+  return `
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <circle cx="9" cy="6" r="1"></circle><circle cx="15" cy="6" r="1"></circle>
+      <circle cx="9" cy="12" r="1"></circle><circle cx="15" cy="12" r="1"></circle>
+      <circle cx="9" cy="18" r="1"></circle><circle cx="15" cy="18" r="1"></circle>
+    </svg>
+  `;
 }
 
 function arrowUpIcon() {

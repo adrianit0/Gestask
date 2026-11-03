@@ -1,38 +1,33 @@
 import { DailyTaskChecklistItem, formatDailyReportDate, getDailyPendingSummary } from "../components/DailyTasks.js";
-import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
+import { PageHeader, plusIcon } from "../components/PageHeader.js";
+import { EmptyState, LoadingState } from "../components/StateMessages.js";
 import { TaskModal } from "../components/TaskTable.js";
 import { escapeHtml } from "../utils/format.js";
 import { ticketLinkHtml } from "../utils/projectSettings.js";
 
-export function DailyRoutinePage({ tasks = [], pending = {}, completionPendingKeys = new Set(), loading = false, error = "", success = "", modalTask = undefined } = {}) {
+export function DailyRoutinePage({ tasks = [], pending = {}, completionPendingKeys = new Set(), loading = false, modalTask = undefined } = {}) {
   const activeTasks = tasks.filter((task) => !task.finished_date);
   const finishedTasks = tasks.filter((task) => task.finished_date);
 
   return `
-    <section class="page-header">
-      <div>
-        <p class="eyebrow">Tareas de tipo Diaria</p>
-        <h1>Diarias</h1>
-      </div>
-      <div class="page-header-actions">
-        ${CompleteAllButton(pending, completionPendingKeys)}
-        <button class="primary" data-open-daily-task-modal>Nueva tarea diaria</button>
-      </div>
-    </section>
-    ${ErrorMessage(error)}
-    ${SuccessMessage(success)}
+    ${PageHeader({
+      eyebrow: "Día a día",
+      title: "Diarias",
+      description: "Tareas recurrentes que se añaden a cada parte diario hasta que se finalizan.",
+      actions: `${CompleteAllButton(pending, completionPendingKeys)}<button class="primary" data-open-daily-task-modal>${plusIcon()}Nueva tarea diaria</button>`,
+    })}
     <section class="panel daily-routine-panel">
-      <h2 class="daily-routine-heading">Pendientes de realizar</h2>
+      <h2 class="daily-routine-heading">Pendientes de realizar <span class="count-badge">${getDailyPendingSummary(pending).count}</span></h2>
       ${PendingGroups(pending, completionPendingKeys)}
     </section>
     <section class="panel daily-routine-panel">
-      <h2 class="daily-routine-heading">Activas <span>${activeTasks.length}</span></h2>
+      <h2 class="daily-routine-heading">Activas <span class="count-badge">${activeTasks.length}</span></h2>
       ${loading ? LoadingState() : activeTasks.length ? DailyRoutineTable(activeTasks) : EmptyState("No hay tareas diarias activas.")}
     </section>
     ${finishedTasks.length ? `
       <section class="panel daily-routine-panel">
         <details>
-          <summary class="daily-routine-heading">Finalizadas <span>${finishedTasks.length}</span></summary>
+          <summary class="daily-routine-heading">Finalizadas <span class="count-badge">${finishedTasks.length}</span></summary>
           ${DailyRoutineTable(finishedTasks, { finished: true })}
         </details>
       </section>
@@ -60,7 +55,7 @@ function PendingGroups(pending, completionPendingKeys) {
     const late = date < today;
     return `
       <div class="daily-pending-group ${late ? "late" : "today"}">
-        <h3>${escapeHtml(formatDailyReportDate(date))} <span class="daily-pending-tag">${late ? "Atrasada" : "Hoy"}</span></h3>
+        <h3>${escapeHtml(capitalize(formatDailyReportDate(date)))} <span class="daily-pending-tag">${late ? "Atrasada" : "Hoy"}</span></h3>
         <ul class="daily-checklist">
           ${dateItems.map((item) => DailyTaskChecklistItem({ id: item.task_id, ticket: item.ticket, title: item.title, more_info: item.more_info, completed_at: null }, date, completionPendingKeys)).join("")}
         </ul>
@@ -69,12 +64,16 @@ function PendingGroups(pending, completionPendingKeys) {
   }).join("");
 }
 
+function capitalize(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 function DailyRoutineTable(tasks, { finished = false } = {}) {
   return `
     <div class="table-wrap">
-      <table class="daily-routine-table">
+      <table class="data-table daily-routine-table">
         <thead>
-          <tr><th>Ticket</th><th>Título</th><th>${finished ? "Finalizada" : "Desde"}</th><th class="actions-column">Acciones</th></tr>
+          <tr><th>Tarea</th><th class="cell-date">${finished ? "Finalizada" : "Desde"}</th><th class="actions-cell"><span class="visually-hidden">Acciones</span></th></tr>
         </thead>
         <tbody>${tasks.map((task) => DailyRoutineRow(task, finished)).join("")}</tbody>
       </table>
@@ -88,21 +87,25 @@ function DailyRoutineRow(task, finished) {
 
   return `
     <tr class="${pending ? "task-pending-row" : ""}">
-      <td>${task.ticket ? ticketLinkHtml(task.ticket) : "-"}</td>
       <td>
-        <div class="task-title-line">
-          <span>${escapeHtml(task.title)}</span>
-          ${pending ? `<span class="task-pending-badge">${escapeHtml(task.__pendingLabel || "Guardando...")}</span>` : ""}
+        <div class="task-summary">
+          ${task.ticket || pending ? `
+            <div class="task-summary-meta">
+              ${task.ticket ? `<span class="task-ticket">${ticketLinkHtml(task.ticket)}</span>` : ""}
+              ${pending ? `<span class="task-pending-badge"><span class="spinner spinner-sm" aria-hidden="true"></span>${escapeHtml(task.__pendingLabel || "Guardando...")}</span>` : ""}
+            </div>
+          ` : ""}
+          <p class="task-title">${escapeHtml(task.title)}</p>
+          ${task.more_info ? `<p class="task-more-info">${escapeHtml(task.more_info)}</p>` : ""}
         </div>
-        ${task.more_info ? `<div class="task-more-info">${escapeHtml(task.more_info)}</div>` : ""}
       </td>
-      <td>${escapeHtml((finished ? task.finished_date : task.assigned_date) || "-")}</td>
+      <td class="cell-date">${escapeHtml((finished ? task.finished_date : task.assigned_date) || "-")}</td>
       <td class="actions-cell">
         <div class="task-actions">
-          <button type="button" class="secondary" data-edit-daily-task="${id}" ${pending ? "disabled" : ""}>Editar</button>
+          <button type="button" class="secondary button-sm" data-edit-daily-task="${id}" ${pending ? "disabled" : ""}>Editar</button>
           ${finished
-            ? `<button type="button" class="secondary" data-reactivate-daily-task="${id}" ${pending ? "disabled" : ""}>Reactivar</button>`
-            : `<button type="button" class="secondary" data-finish-daily-task="${id}" ${pending ? "disabled" : ""}>Finalizar</button>`}
+            ? `<button type="button" class="secondary button-sm" data-reactivate-daily-task="${id}" ${pending ? "disabled" : ""}>Reactivar</button>`
+            : `<button type="button" class="secondary button-sm" data-finish-daily-task="${id}" ${pending ? "disabled" : ""}>Finalizar</button>`}
         </div>
       </td>
     </tr>

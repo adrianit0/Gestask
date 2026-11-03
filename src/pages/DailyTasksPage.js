@@ -1,6 +1,9 @@
-﻿import { TaskDetailModal, TaskModal, TaskTable } from "../components/TaskTable.js";
-import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
-import { escapeHtml, todayIso } from "../utils/format.js";
+﻿import { PageHeader, plusIcon } from "../components/PageHeader.js";
+import { DayPicker } from "../components/PeriodControls.js";
+import { TaskDetailModal, TaskModal, TaskTable } from "../components/TaskTable.js";
+import { EmptyState, LoadingState } from "../components/StateMessages.js";
+import { formatDailyReportDate } from "../components/DailyTasks.js";
+import { todayIso } from "../utils/format.js";
 
 const SORT_OPTIONS = [
   ["order_points", "Orden"],
@@ -16,33 +19,31 @@ const SORT_OPTIONS = [
   ["updated_at", "Actualización"],
 ];
 
-export function DailyTasksPage({ date = todayIso(), report = null, tasks = [], editable = false, loading = false, error = "", success = "", modalTask = undefined, detailTask = null, sort = {} } = {}) {
+export function DailyTasksPage({ date = todayIso(), report = null, tasks = [], editable = false, loading = false, modalTask = undefined, detailTask = null, sort = {} } = {}) {
   const historical = report && !editable;
   return `
-    <section class="page-header">
-      <div>
-        <p class="eyebrow">Tareas Diarias</p>
-        <h1>Parte diario</h1>
+    ${PageHeader({
+      eyebrow: "Día a día",
+      title: "Tareas diarias",
+      description: report ? `Parte del ${formatDailyReportDate(report.report_date)}.` : "Parte diario de trabajo.",
+      actions: `<button class="primary" data-create-daily-report>${plusIcon()}Nuevo día</button>`,
+    })}
+    <section class="panel toolbar-panel">
+      <div class="toolbar">
+        ${DayPicker({ date })}
+        <label class="toolbar-field">Ordenar por<select data-daily-sort="sort_by">${SORT_OPTIONS.map(([value, label]) => `<option value="${value}" ${(sort.sort_by || "order_points") === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>
+        <label class="toolbar-field">Dirección<select data-daily-sort="sort_direction">
+          <option value="desc" ${(sort.sort_direction || "desc") === "desc" ? "selected" : ""}>Descendente</option>
+          <option value="asc" ${sort.sort_direction === "asc" ? "selected" : ""}>Ascendente</option>
+        </select></label>
       </div>
-      <button class="primary" data-create-daily-report>Nuevo día</button>
     </section>
-    ${ErrorMessage(error)}
-    ${SuccessMessage(success)}
-    <section class="panel filters">
-      <label>Fecha<input type="date" data-daily-date value="${escapeHtml(date)}" /></label>
-      <select data-daily-sort="sort_by">${SORT_OPTIONS.map(([value, label]) => `<option value="${value}" ${(sort.sort_by || "order_points") === value ? "selected" : ""}>Ordenar por ${label}</option>`).join("")}</select>
-      <select data-daily-sort="sort_direction">
-        <option value="desc" ${(sort.sort_direction || "desc") === "desc" ? "selected" : ""}>Descendente</option>
-        <option value="asc" ${sort.sort_direction === "asc" ? "selected" : ""}>Ascendente</option>
-      </select>
-      <button class="secondary" data-load-daily-report>Consultar</button>
-    </section>
-    ${historical ? `<div class="state warning">Modo histórico: solo lectura.</div>` : ""}
+    ${historical ? `<div class="state warning">Modo histórico: el parte de un día anterior es de solo lectura.</div>` : ""}
     <section class="panel">
+      ${report ? `<div class="panel-header"><h2>Tareas del parte <span class="count-badge">${tasks.length}</span></h2></div>` : ""}
       ${loading ? LoadingState() : report ? TaskTable(tasks, { readonly: !editable, mode: "daily" }) : EmptyState("No existe parte diario para esta fecha.")}
     </section>
     ${modalTask !== undefined ? TaskModal(modalTask) : ""}
     ${detailTask ? TaskDetailModal(detailTask, { readonly: !editable }) : ""}
   `;
 }
-

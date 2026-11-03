@@ -1,5 +1,5 @@
 ﻿import "./styles/global.css";
-import { AppLayout, collapseToggleLabel } from "./components/AppLayout.js";
+import { AppLayout, ThemeToggleButton, collapseToggleLabel, nextTheme, pageLabel } from "./components/AppLayout.js";
 import { assertConfig } from "./config/env.js";
 import { AuthPage } from "./pages/AuthPage.js";
 import { BacklogPage } from "./pages/BacklogPage.js";
@@ -17,7 +17,7 @@ import { login, logout, register } from "./services/authService.js";
 import { getCalendarMonth, updateCalendarDayStatus } from "./services/calendarService.js";
 import { createConfiguration, listConfigurations, updateConfigurationProfile } from "./services/configurationService.js";
 import { createDailyReport, getDailyReport, listPendingDailyTasks, setDailyTaskCompletion } from "./services/dailyReportService.js";
-import { getSidebarCollapsed, setSidebarCollapsed } from "./services/layoutPreferencesService.js";
+import { applyTheme, getSidebarCollapsed, getThemePreference, setSidebarCollapsed, setThemePreference } from "./services/layoutPreferencesService.js";
 import { getSession, isAuthenticated } from "./services/sessionService.js";
 import { createTask, deleteTask, listDailyRoutineTasks, listTasks, updateTask } from "./services/taskService.js";
 import { listOrderTasks, updateOrderTasks } from "./services/taskOrderService.js";
@@ -31,12 +31,14 @@ import { DAILY_TICKET_TYPE } from "./utils/constants.js";
 import { dailyCompletionKey, getDailyPendingSummary } from "./components/DailyTasks.js";
 import { AsyncActivityIndicator, asyncActivityTitle, formatElapsed } from "./components/AsyncActivity.js";
 import { getAsyncOperations, subscribeAsyncOperations } from "./services/asyncTracker.js";
+import { shiftIsoDate } from "./components/PeriodControls.js";
 
 const root = document.querySelector("#app");
 const state = {
   authMode: "login",
   page: "backlog",
   sidebarCollapsed: getSidebarCollapsed(),
+  theme: getThemePreference(),
   error: "",
   success: "",
   loading: false,
@@ -77,10 +79,18 @@ const state = {
 const pendingTasks = new Map();
 let pendingSequence = 0;
 
+const SUCCESS_TOAST_MS = 5000;
+let successToastTimer = null;
+let scheduledSuccess = "";
+
+applyTheme(state.theme);
+
 async function boot() {
   startAsyncIndicator();
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") setMobileNavOpen(false);
+    if (event.key !== "Escape") return;
+    setMobileNavOpen(false);
+    closeTopModal();
   });
   if (isAuthenticated()) {
     await loadAllData();
@@ -179,17 +189,75 @@ function nextOrderPoints() {
 
 function render() {
   if (!isAuthenticated()) {
-    root.innerHTML = AuthPage({ mode: state.authMode, error: state.error, success: state.success, configError: assertConfig() });
+    root.innerHTML = AuthPage({ mode: state.authMode, configError: assertConfig() });
     bindAuthEvents();
     return;
   }
 
   const draftComment = document.querySelector("[data-task-comment-form] textarea")?.value ?? "";
-  root.innerHTML = AppLayout(state.page, currentPageHtml(), { dailyPending: state.dailyPending, completionTasks: state.completionTasks, collapsed: state.sidebarCollapsed, userEmail: getSession()?.user?.email ?? "" });
+  root.innerHTML = AppLayout(state.page, currentPageHtml(), {
+    dailyPending: state.dailyPending,
+    completionTasks: state.completionTasks,
+    collapsed: state.sidebarCollapsed,
+    userEmail: getSession()?.user?.email ?? "",
+    theme: state.theme,
+    messages: { error: state.error, success: state.success },
+  });
+  document.title = pageLabel(state.page) ? `${pageLabel(state.page)} · Gestask` : "Gestask";
   renderedAsyncSignature = asyncSignature(getAsyncOperations());
   restoreDraftComment(draftComment);
   bindLayoutEvents();
   bindPageEvents();
+  bindToasts();
+  focusOpenModal();
+}
+
+// Errors stay until closed; success notices close themselves unless a newer message replaced them.
+function bindToasts() {
+  document.querySelectorAll("[data-dismiss-toast]").forEach((button) => {
+    button.addEventListener("click", () => dismissMessage(button.dataset.dismissToast));
+  });
+
+  if (!state.success || state.success === scheduledSuccess) return;
+  scheduledSuccess = state.success;
+  window.clearTimeout(successToastTimer);
+  successToastTimer = window.setTimeout(() => {
+    if (state.success === scheduledSuccess) dismissMessage("success");
+    scheduledSuccess = "";
+  }, SUCCESS_TOAST_MS);
+}
+
+// Removes the notice from the DOM without re-rendering, so open forms keep their input.
+function dismissMessage(kind) {
+  if (kind !== "error" && kind !== "success") return;
+  state[kind] = "";
+  document.querySelector(`[data-toast="${kind}"]`)?.remove();
+}
+
+// Every render replaces the DOM, so an open modal gets focus back: its [autofocus] field or the dialog itself.
+function focusOpenModal() {
+  const modals = document.querySelectorAll(".modal");
+  const modal = modals[modals.length - 1];
+  if (!modal || modal.contains(document.activeElement)) return;
+  (modal.querySelector("[autofocus]") ?? modal).focus({ preventScroll: true });
+}
+
+function closeTopModal() {
+  const modals = document.querySelectorAll(".modal");
+  modals[modals.length - 1]?.querySelector(".modal-header .close-icon-button")?.click();
+}
+
+// Clickable rows and cards open on click (except on their own controls) and on Enter/Space while focused.
+function onActivate(element, handler) {
+  element.addEventListener("click", (event) => {
+    if (event.target.closest("a, button, select, input, textarea, label")) return;
+    handler();
+  });
+  element.addEventListener("keydown", (event) => {
+    if (event.target !== element || (event.key !== "Enter" && event.key !== " ")) return;
+    event.preventDefault();
+    handler();
+  });
 }
 
 function restoreDraftComment(draftComment) {
@@ -205,43 +273,46 @@ function renderUnlessEditingTask() {
 
 function currentPageHtml() {
   if (state.page === "backlog") {
-    return BacklogPage({ tasks: withPendingTasks(getFilteredTasks(), { includeCreated: true }), filters: state.filters, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
+    return BacklogPage({ tasks: withPendingTasks(getFilteredTasks(), { includeCreated: true }), filters: state.filters, loading: state.loading, modalTask: state.modalTask, detailTask: state.detailTask });
   }
   if (state.page === "kanban") {
-    return KanbanPage({ tasks: withPendingTasks(state.tasks, { includeCreated: true }), loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
+    return KanbanPage({ tasks: withPendingTasks(state.tasks, { includeCreated: true }), loading: state.loading, modalTask: state.modalTask, detailTask: state.detailTask });
   }
   if (state.page === "daily") {
-    return DailyTasksPage({ date: state.dailyDate, report: state.dailyReport, tasks: withPendingTasks(state.dailyTasks), editable: state.dailyEditable, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask, sort: state.dailySort });
+    return DailyTasksPage({ date: state.dailyDate, report: state.dailyReport, tasks: withPendingTasks(state.dailyTasks), editable: state.dailyEditable, loading: state.loading, modalTask: state.modalTask, detailTask: state.detailTask, sort: state.dailySort });
   }
   if (state.page === "completion") {
-    return CompletionTasksPage({ tasks: withPendingTasks(state.completionTasks), performanceTasks: state.tasks, calendarDays: state.performanceDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), referenceDate: getMonthReferenceDate(state.performanceYear, state.performanceMonth), loading: state.loading, error: state.error, success: state.success, modalTask: state.completionModalTask, detailTask: state.detailTask, bulkImputeOpen: state.bulkImputeOpen, bulkImputeSelection: state.bulkImputeSelection });
+    return CompletionTasksPage({ tasks: withPendingTasks(state.completionTasks), performanceTasks: state.tasks, calendarDays: state.performanceDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), referenceDate: getMonthReferenceDate(state.performanceYear, state.performanceMonth), loading: state.loading, modalTask: state.completionModalTask, detailTask: state.detailTask, bulkImputeOpen: state.bulkImputeOpen, bulkImputeSelection: state.bulkImputeSelection });
   }
   if (state.page === "order") {
-    return OrderTasksPage({ tasks: state.orderTasks, loading: state.loading, error: state.error, success: state.success });
+    return OrderTasksPage({ tasks: state.orderTasks, loading: state.loading });
   }
   if (state.page === "dailySchedule") {
-    return DailySchedulePage({ report: state.dailyReport, date: state.dailyDate, tasks: withPendingTasks(state.dailyTasks), routineTasks: state.dailyReportRoutineTasks, dailyCompletionPending: state.dailyCompletionPending, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), includeExtraHours: state.dailyScheduleIncludeExtra, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask, detailTask: state.detailTask });
+    return DailySchedulePage({ report: state.dailyReport, date: state.dailyDate, tasks: withPendingTasks(state.dailyTasks), routineTasks: state.dailyReportRoutineTasks, dailyCompletionPending: state.dailyCompletionPending, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), includeExtraHours: state.dailyScheduleIncludeExtra, loading: state.loading, modalTask: state.modalTask, detailTask: state.detailTask });
   }
   if (state.page === "dailyRoutine") {
-    return DailyRoutinePage({ tasks: withPendingTasks(state.dailyRoutineTasks, { includeCreated: true, daily: true }), pending: state.dailyPending, completionPendingKeys: state.dailyCompletionPending, loading: state.loading, error: state.error, success: state.success, modalTask: state.modalTask });
+    return DailyRoutinePage({ tasks: withPendingTasks(state.dailyRoutineTasks, { includeCreated: true, daily: true }), pending: state.dailyPending, completionPendingKeys: state.dailyCompletionPending, loading: state.loading, modalTask: state.modalTask });
   }
   if (state.page === "calendar") {
-    return CalendarPage({ year: state.calendarYear, month: state.calendarMonth, days: state.calendarDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, error: state.error, success: state.success, modalDay: state.calendarModalDay });
+    return CalendarPage({ year: state.calendarYear, month: state.calendarMonth, days: state.calendarDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), loading: state.loading, modalDay: state.calendarModalDay });
   }
   if (state.page === "time") {
-    return TimeManagerPage({ tasks: state.tasks, entries: state.timeEntries, editingEntry: state.editingTimeEntry, error: state.error, success: state.success });
+    return TimeManagerPage({ tasks: state.tasks, entries: state.timeEntries, editingEntry: state.editingTimeEntry });
   }
   if (state.page === "configuration") {
-    return ConfigurationPage({ configurations: state.configurations, loading: state.loading, error: state.error, success: state.success, showCreateModal: state.configurationModalOpen });
+    return ConfigurationPage({ configurations: state.configurations, loading: state.loading, showCreateModal: state.configurationModalOpen });
   }
-  return PerformancePage({ tasks: state.tasks, calendarDays: state.performanceDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), showAll: state.performanceShowAll, chartGroup: state.performanceChartGroup, year: state.performanceYear, month: state.performanceMonth, referenceDate: getMonthReferenceDate(state.performanceYear, state.performanceMonth), loading: state.loading, error: state.error, success: state.success });
+  return PerformancePage({ tasks: state.tasks, calendarDays: state.performanceDays, configurations: state.configurations, minutesPerEffortPoint: getMinutesPerEffortPoint(state.configurations), showAll: state.performanceShowAll, chartGroup: state.performanceChartGroup, year: state.performanceYear, month: state.performanceMonth, referenceDate: getMonthReferenceDate(state.performanceYear, state.performanceMonth), loading: state.loading });
 }
 
 function bindAuthEvents() {
-  document.querySelector("[data-auth-mode]")?.addEventListener("click", (event) => {
-    state.authMode = event.target.dataset.authMode;
-    clearMessages();
-    render();
+  document.querySelectorAll("[data-auth-mode]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (state.authMode === button.dataset.authMode) return;
+      state.authMode = button.dataset.authMode;
+      clearMessages();
+      render();
+    });
   });
 
   document.querySelector("#auth-form")?.addEventListener("submit", async (event) => {
@@ -276,6 +347,7 @@ function bindLayoutEvents() {
   });
 
   document.querySelector("[data-action='toggle-sidebar']")?.addEventListener("click", toggleSidebarCollapsed);
+  bindThemeToggle();
   document.querySelector("[data-action='toggle-mobile-nav']")?.addEventListener("click", () => {
     setMobileNavOpen(!document.querySelector("[data-app-frame]")?.classList.contains("nav-open"));
   });
@@ -307,6 +379,18 @@ function toggleSidebarCollapsed() {
   button.setAttribute("aria-expanded", String(!state.sidebarCollapsed));
   button.setAttribute("aria-label", label);
   button.title = label;
+}
+
+// Like collapsing, switching theme only swaps the button and the <html> attribute.
+function bindThemeToggle() {
+  document.querySelector("[data-action='cycle-theme']")?.addEventListener("click", (event) => {
+    state.theme = nextTheme(state.theme);
+    setThemePreference(state.theme);
+    applyTheme(state.theme);
+    event.currentTarget.outerHTML = ThemeToggleButton(state.theme);
+    bindThemeToggle();
+    document.querySelector("[data-action='cycle-theme']")?.focus();
+  });
 }
 
 // The mobile drawer is not part of state: any render (e.g. navigating) closes it.
@@ -438,10 +522,14 @@ function bindPerformanceEvents() {
     });
   });
 
-  document.querySelector("[data-load-performance]")?.addEventListener("click", async () => {
-    state.performanceYear = Number(document.querySelector("[data-performance-year]").value);
-    state.performanceMonth = Number(document.querySelector("[data-performance-month]").value);
-    await reloadPerformance();
+  document.querySelectorAll("[data-performance-month], [data-performance-year]").forEach((input) => {
+    input.addEventListener("change", async () => {
+      const year = Number(document.querySelector("[data-performance-year]").value);
+      if (!isValidPeriodYear(year)) return;
+      state.performanceYear = year;
+      state.performanceMonth = Number(document.querySelector("[data-performance-month]").value);
+      await reloadPerformance();
+    });
   });
 
   document.querySelector("[data-performance-prev]")?.addEventListener("click", async () => {
@@ -784,13 +872,15 @@ function bindDailyEvents() {
     render();
   });
 
-  document.querySelector("[data-load-daily-report]")?.addEventListener("click", async () => {
-    state.dailyDate = document.querySelector("[data-daily-date]").value;
-    state.detailTask = null;
-    state.modalTask = undefined;
-    await loadDailyReport();
-    render();
+  document.querySelector("[data-daily-date]")?.addEventListener("change", (event) => {
+    if (event.target.value) changeDailyDate(event.target.value);
   });
+
+  document.querySelectorAll("[data-daily-shift]").forEach((button) => {
+    button.addEventListener("click", () => changeDailyDate(shiftIsoDate(state.dailyDate, Number(button.dataset.dailyShift))));
+  });
+
+  document.querySelector("[data-daily-today]")?.addEventListener("click", () => changeDailyDate(todayIso()));
 
   document.querySelectorAll("[data-daily-sort]").forEach((input) => {
     input.addEventListener("change", async () => {
@@ -812,6 +902,14 @@ function bindDailyEvents() {
   bindTaskModalEvents();
 }
 
+async function changeDailyDate(date) {
+  state.dailyDate = date;
+  state.detailTask = null;
+  state.modalTask = undefined;
+  await loadDailyReport();
+  render();
+}
+
 function bindDailyScheduleEvents() {
   document.querySelector("[data-toggle-extra-hours]")?.addEventListener("click", () => {
     state.dailyScheduleIncludeExtra = !state.dailyScheduleIncludeExtra;
@@ -819,8 +917,7 @@ function bindDailyScheduleEvents() {
   });
 
   document.querySelectorAll("[data-schedule-task]").forEach((row) => {
-    row.addEventListener("click", (event) => {
-      if (event.target.closest("a, button, select, input, textarea, label")) return;
+    onActivate(row, () => {
       state.detailTask = state.dailyTasks.find((task) => task.id === row.dataset.scheduleTask) ?? null;
       render();
     });
@@ -955,8 +1052,7 @@ function applyDailyReportData(data) {
 
 function bindTaskTableEvents(tasks, { readonly = false } = {}) {
   document.querySelectorAll("[data-view-task]").forEach((row) => {
-    row.addEventListener("click", (event) => {
-      if (event.target.closest("a, button, select, input, textarea, label")) return;
+    onActivate(row, () => {
       state.detailTask = tasks.find((task) => task.id === row.dataset.viewTask) ?? null;
       render();
     });
@@ -1004,10 +1100,14 @@ function bindTaskTableEvents(tasks, { readonly = false } = {}) {
 }
 
 function bindCalendarEvents() {
-  document.querySelector("[data-load-calendar]")?.addEventListener("click", async () => {
-    state.calendarYear = Number(document.querySelector("[data-calendar-year]").value);
-    state.calendarMonth = Number(document.querySelector("[data-calendar-month]").value);
-    await reloadCalendar();
+  document.querySelectorAll("[data-calendar-month], [data-calendar-year]").forEach((input) => {
+    input.addEventListener("change", async () => {
+      const year = Number(document.querySelector("[data-calendar-year]").value);
+      if (!isValidPeriodYear(year)) return;
+      state.calendarYear = year;
+      state.calendarMonth = Number(document.querySelector("[data-calendar-month]").value);
+      await reloadCalendar();
+    });
   });
 
   document.querySelector("[data-calendar-prev]")?.addEventListener("click", async () => {
@@ -1028,8 +1128,7 @@ function bindCalendarEvents() {
   });
 
   document.querySelectorAll("[data-calendar-day]").forEach((card) => {
-    card.addEventListener("click", (event) => {
-      if (event.target.closest("button")) return;
+    onActivate(card, () => {
       state.calendarModalDay = state.calendarDays.find((day) => day.date === card.dataset.calendarDay) ?? null;
       clearMessages();
       render();
@@ -1357,6 +1456,11 @@ async function loadCalendar() {
     const data = await getCalendarMonth(state.calendarYear, state.calendarMonth);
     state.calendarDays = data.days ?? [];
   });
+}
+
+// Same range as the year inputs (min 2000, max 2100): half-typed years do not trigger a load.
+function isValidPeriodYear(year) {
+  return Number.isInteger(year) && year >= 2000 && year <= 2100;
 }
 
 function shiftCalendarMonth(delta) {

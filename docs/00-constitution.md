@@ -14,6 +14,7 @@ Gestask es una plataforma web personal de productividad laboral para gestionar b
 - Interfaz limpia, responsive y funcional.
 - Navegación lateral izquierda fija y plegable (solo iconos al plegarse); en móvil, barra superior con menú desplegable.
 - Color principal `#ff8000` y secundario `#ffdbb6`.
+- Estilos basados en variables CSS (tokens) con tema claro y oscuro.
 - Estados de carga, vacío, éxito y error visibles.
 - Las secciones no implementadas deben mostrar placeholders claros.
 

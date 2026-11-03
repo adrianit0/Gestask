@@ -38,6 +38,10 @@
 - `src/pages/DailySchedulePage.js`, `src/utils/dailySchedule.js`: horario diario con botón para incluir/ocultar horas extra basado en `PE_diario_extra`.
 - `src/pages/DailyRoutinePage.js`, `src/components/DailyTasks.js`: pestaña `Diarias`, bloque de diarias del `Horario diario` e indicador de cabecera de diarias pendientes.
 - `src/components/AppLayout.js`, `src/services/layoutPreferencesService.js`: menú lateral izquierdo plegable con secciones, contador de `Completar tareas` y email de sesión; la preferencia de plegado se guarda en `localStorage`.
+- `src/styles/global.css`: hoja reescrita sobre variables CSS (tokens) con tema claro y oscuro.
+- `src/components/PageHeader.js`: cabecera común de página (sección, título, descripción y acciones).
+- `src/components/PeriodControls.js`: selectores de mes (`Calendario`, `Rendimiento`) y de día (`Tareas diarias`) con navegación anterior/siguiente.
+- `src/components/StateMessages.js`: avisos flotantes (`Toasts`) e indicadores de carga y vacío.
 
 ## Decisiones técnicas
 - SPA con Vite y JavaScript sin framework para mantener una primera versión simple.
@@ -66,6 +70,17 @@
 - `Copiar para Jira` reutiliza `Hora Jira` (horas sin revisar, `finished_date` y `08:00 AM`) y copia todas las pendientes de imputar, no solo las seleccionadas en la tabla. Omite las tareas sin ticket, fecha u horas, porque esas líneas no se pueden registrar, y lo avisa en el panel. Comparte manejador con el botón del popup, de modo que ambos se enlazan con `querySelectorAll` al poder coincidir en la página.
 - La navegación pasa de barra superior a menú lateral izquierdo para que cada pestaña muestre su nombre además del icono. Las pestañas se agrupan en `Tareas`, `Día a día` y `Seguimiento`, lo que cambia su orden respecto a la barra anterior. Plegar el menú solo cambia clases y atributos del DOM, sin volver a renderizar la página, y la preferencia se guarda en `localStorage` como conveniencia por navegador (no se sincroniza entre dispositivos). En móvil (≤ 760 px) no hay modo plegado: el menú es un panel que se abre desde una barra superior y su estado abierto no se guarda, por lo que cualquier render lo cierra.
 
+- El rediseño del frontal mantiene la SPA sin framework y los mismos contratos: solo cambian plantillas, estilos y comportamiento de UI. Los estilos pasan a variables CSS con tema claro/oscuro; el tema es una preferencia local (`gestask.theme`) que un script en `index.html` aplica antes del primer pintado, y cambiarlo solo actualiza el atributo `data-theme` y el botón, sin volver a renderizar.
+- Los colores de estado de las tareas no cambian; se mezclan con la superficie mediante `color-mix()` y la variable `--task-tint` (80 % en claro, 24 % en oscuro). Requiere navegadores con soporte de `color-mix()` (Chrome 111, Firefox 113, Safari 16.2 o posteriores).
+- Las tablas de tareas pasan de dos filas por tarea a una sola, con ticket, título y más info en la primera columna, porque el título es el dato principal. En móvil se convierten en tarjetas solo con CSS (`data-label` en cada celda), sin otra plantilla. Se elimina el modo `full` de `TaskTable`, que no usaba ninguna página.
+- Los mensajes de éxito y error pasan de bloques dentro de cada página a avisos flotantes renderizados por el layout, de modo que no desplazan el contenido. El de éxito se descarta a los 5 s quitando su nodo del DOM sin volver a renderizar, para no perder lo escrito en formularios abiertos; el de error permanece hasta cerrarlo.
+- Como cada render reemplaza el DOM, tras renderizar con un modal abierto el foco vuelve a su campo `[autofocus]` o al diálogo; `Escape` cierra el modal superior pulsando su botón de cerrar, para reutilizar los manejadores existentes.
+- Las filas y tarjetas clicables comparten `onActivate` en `main.js` (clic fuera de controles internos, o `Enter`/`Espacio` con foco), en lugar de manejadores de clic sueltos.
+- Los selectores de periodo cargan al cambiar, sin botón `Consultar`. El año solo se aplica si está entre 2000 y 2100, para no lanzar cargas con un año a medio escribir; el desplazamiento de día se calcula en UTC para no saltar ni repetir días con el cambio de hora.
+- En `Calendario` los días futuros se muestran neutros en lugar de rojos (por debajo del objetivo), comparando con `todayIso()` como el resto de la aplicación.
+- En `Completar tareas` el botón de cada fila muestra el nombre del paso (`Informar PR`, `Imputar`, `Cerrar`) en lugar de `Resolver`, y la tabla de imputación masiva muestra el título junto al ticket en vez de un icono con tooltip.
+- Correcciones incluidas en el rediseño: textos con codificación rota en `Completar tareas` (`Sin título`, `resolución`), tildes en `Calendario` y `Rendimiento`, la expresión regular de `toIsoDate` (no escapaba `\d`, por lo que la imputación masiva sin fecha compartida usaba siempre la fecha de hoy) y el acento de la columna `To do` del Kanban, que recibía un objeto en lugar de un color.
+
 ## Pendiente
 - Conectar y desplegar contra un proyecto Supabase real.
 - Añadir tests automatizados.
@@ -73,3 +88,4 @@
 - Validar Edge Functions con `supabase functions serve` o despliegue real cuando Supabase CLI esté configurado.
 - Ejecutar QA-002 y QA-004 en navegador contra Supabase real (ver `docs/11-backlog.md`).
 - Aplicar `script-011.sql`, desplegar `daily-tasks-pending`, `daily-tasks-complete` y las funciones modificadas, y ejecutar QA-005.
+- Ejecutar QA-006 (rediseño del frontal) en navegador contra Supabase real.

@@ -1,4 +1,6 @@
-import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
+import { PageHeader } from "../components/PageHeader.js";
+import { MonthPicker } from "../components/PeriodControls.js";
+import { EmptyState, LoadingState } from "../components/StateMessages.js";
 import { PRIORITIES, TASK_STATUSES } from "../utils/constants.js";
 import { getDailyScheduleSettings, isIntensiveDate } from "../utils/dailySchedule.js";
 import { formatHoursFromEffortPoints } from "../utils/effortTime.js";
@@ -7,8 +9,6 @@ import { getCompletionProgressMetrics, getCountablePerformanceTasks, getVisibleP
 
 const PERFORMANCE_TASK_STATUSES = TASK_STATUSES.filter((status) => !UNCOUNTED_PERFORMANCE_STATUSES.has(status));
 
-const MONTHS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-
 const CHART_GROUPS = [
   { id: "points", label: "Rendimiento de puntos" },
   { id: "tasks", label: "Rendimiento de tareas" },
@@ -16,7 +16,7 @@ const CHART_GROUPS = [
   { id: "distribution", label: "Distribución y resumen" },
 ];
 
-export function PerformancePage({ tasks = [], calendarDays = [], configurations = [], minutesPerEffortPoint = 60, showAll = false, chartGroup = "points", year, month, referenceDate = new Date(), loading = false, error = "", success = "" } = {}) {
+export function PerformancePage({ tasks = [], calendarDays = [], configurations = [], minutesPerEffortPoint = 60, showAll = false, chartGroup = "points", year, month, referenceDate = new Date(), loading = false } = {}) {
   const now = new Date();
   const selectedYear = year ?? now.getFullYear();
   const selectedMonth = month ?? now.getMonth() + 1;
@@ -37,72 +37,66 @@ export function PerformancePage({ tasks = [], calendarDays = [], configurations 
   const activeGroup = CHART_GROUPS.some((group) => group.id === chartGroup) ? chartGroup : CHART_GROUPS[0].id;
 
   return `
-    <section class="page-header">
-      <div>
-        <p class="eyebrow">Gráficas de Rendimiento</p>
-        <h1>Rendimiento</h1>
+    ${PageHeader({
+      eyebrow: "Seguimiento",
+      title: "Gráficas de rendimiento",
+      description: "Métricas y evolución del mes a partir de las tareas y del calendario laboral.",
+    })}
+    <section class="panel toolbar-panel">
+      <div class="toolbar">
+        ${MonthPicker({ scope: "performance", year: selectedYear, month: selectedMonth })}
+        <label class="switch" title="Incluye las tareas terminadas de cualquier mes"><input data-performance-show-all type="checkbox" role="switch" ${showAll ? "checked" : ""} /><span class="switch-track" aria-hidden="true"></span>Mostrar todo</label>
       </div>
     </section>
-    ${ErrorMessage(error)}
-    ${SuccessMessage(success)}
-    ${loading ? LoadingState() : `
-      <section class="panel calendar-controls">
-        <div class="calendar-period">
-          <select data-performance-month>
-            ${MONTHS.map((name, index) => `<option value="${index + 1}" ${selectedMonth === index + 1 ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}
-          </select>
-          <input data-performance-year type="number" min="2000" max="2100" value="${selectedYear}" />
-          <button class="secondary" data-load-performance>Consultar</button>
-        </div>
-        <div class="calendar-nav">
-          <button class="secondary" data-performance-prev>&lt;</button>
-          <button class="secondary" data-performance-current>Actual</button>
-          <button class="secondary" data-performance-next>&gt;</button>
-        </div>
-      </section>`}
-    ${loading ? "" : `
-      <section class="panel filters performance-filters">
-        <label class="checkbox-label"><input data-performance-show-all type="checkbox" ${showAll ? "checked" : ""} /> Mostrar todo</label>
-      </section>
-      <section class="metric-grid performance-metrics">
-        ${Metric("Tareas abiertas", openTasks)}
-        ${Metric("Tareas terminadas", doneTasks.length)}
-        ${Metric("Listas para cierre", deployableTasks)}
-      </section>
-      <section class="metric-grid performance-metrics">
-        ${Metric("PE completados", completedPoints)}
-        ${showAll ? "" : Metric("PE totales del mes", monthlyTargetPoints)}
-        ${showAll ? "" : Metric("% completado del mes", `${monthlyCompletionPercentage}%`)}
-      </section>
-      ${showAll ? "" : `
-        <section class="metric-grid performance-metrics">
-          ${Metric("% actual del mes", `${currentMonthPercentage}%`)}
-          ${Metric("% completado hasta ahora", `${completionProgress.currentCompletionPercentage}% / ${completionProgress.yesterdayCompletionPercentage}%`)}
-          ${Metric("Ratio de diferencia", completionProgress.differenceRatio ? `x${completionProgress.differenceRatio}` : "0")}
-        </section>
-      `}
-      <section class="metric-grid performance-metrics">
-        ${Metric("Horas completadas", completedHours)}
-        ${Metric("Dias laborables del mes", workableDays.length)}
-        ${Metric("Dias intensivos del mes", intensiveDays)}
+    ${loading ? `<section class="panel">${LoadingState()}</section>` : `
+      <section class="metric-groups">
+        ${MetricGroup("Tareas", [
+          Metric("Tareas abiertas", openTasks),
+          Metric("Tareas terminadas", doneTasks.length),
+          Metric("Listas para cierre", deployableTasks),
+        ])}
+        ${MetricGroup("Esfuerzo", [
+          Metric("PE completados", completedPoints),
+          showAll ? "" : Metric("PE totales del mes", monthlyTargetPoints),
+          showAll ? "" : Metric("% completado del mes", `${monthlyCompletionPercentage}%`),
+          Metric("Horas completadas", completedHours),
+        ])}
+        ${showAll ? "" : MetricGroup("Ritmo", [
+          Metric("% actual del mes", `${currentMonthPercentage}%`),
+          Metric("% completado hasta ahora", `${completionProgress.currentCompletionPercentage}% / ${completionProgress.yesterdayCompletionPercentage}%`),
+          Metric("Ratio de diferencia", completionProgress.differenceRatio ? `x${completionProgress.differenceRatio}` : "0"),
+        ])}
+        ${MetricGroup("Calendario", [
+          Metric("Días laborables del mes", workableDays.length),
+          Metric("Días intensivos del mes", intensiveDays),
+        ])}
       </section>
       <section class="distribution-charts">
         ${ChartPanel("Estados de tarea", BarList(countBy(visibleTasks, "task_status"), PERFORMANCE_TASK_STATUSES))}
         ${ChartPanel("Prioridad", BarList(countBy(visibleTasks, "priority"), PRIORITIES))}
       </section>
       <section class="performance-charts">
-        <aside class="performance-chart-menu" aria-label="Grupos de graficas">
+        <div class="performance-chart-menu segmented" role="group" aria-label="Grupos de gráficas">
           ${CHART_GROUPS.map((group) => `
-            <button class="chart-menu-item ${group.id === activeGroup ? "active" : ""}" data-performance-group="${group.id}" aria-pressed="${group.id === activeGroup}">
+            <button type="button" class="chart-menu-item ${group.id === activeGroup ? "active" : ""}" data-performance-group="${group.id}" aria-pressed="${group.id === activeGroup}">
               ${escapeHtml(group.label)}
             </button>
           `).join("")}
-        </aside>
+        </div>
         <div class="performance-chart-content">
           ${renderChartGroup(activeGroup, { visibleTasks, countableTasks, calendarDays })}
         </div>
       </section>
     `}
+  `;
+}
+
+function MetricGroup(title, metrics) {
+  return `
+    <article class="panel metric-group">
+      <h2>${escapeHtml(title)}</h2>
+      <div class="metric-grid">${metrics.join("")}</div>
+    </article>
   `;
 }
 
@@ -118,8 +112,8 @@ function ChartPanel(title, body) {
 function renderChartGroup(groupId, { visibleTasks, countableTasks, calendarDays }) {
   if (groupId === "tasks") {
     return [
-      ChartPanel("Tareas terminadas por dia", DailyCompletedTasksChart(calendarDays)),
-      ChartPanel("Tareas creadas por dia", DailyCreatedTasksChart(calendarDays, countableTasks)),
+      ChartPanel("Tareas terminadas por día", DailyCompletedTasksChart(calendarDays)),
+      ChartPanel("Tareas creadas por día", DailyCreatedTasksChart(calendarDays, countableTasks)),
       ChartPanel("Diferencia entre nuevas y terminadas", DailyTaskDifferenceChart(calendarDays, countableTasks)),
     ].join("");
   }
@@ -131,7 +125,7 @@ function renderChartGroup(groupId, { visibleTasks, countableTasks, calendarDays 
     ].join("");
   }
   if (groupId === "distribution") {
-    return ChartPanel("Trabajo por dia de la semana", WeekdayCompletionChart(calendarDays));
+    return ChartPanel("Trabajo por día de la semana", WeekdayCompletionChart(calendarDays));
   }
   return [
     ChartPanel("Puntos completados este mes", CalendarPointsChart(calendarDays)),
@@ -141,11 +135,11 @@ function renderChartGroup(groupId, { visibleTasks, countableTasks, calendarDays 
 }
 
 function DailyCompletedTasksChart(days) {
-  if (!days.length) return EmptyState("Consulta un mes en Calendario para ver tareas terminadas por dia.");
+  if (!days.length) return EmptyState("Consulta un mes en Calendario para ver tareas terminadas por día.");
   const values = days.map((day) => getCompletedTasksCount(day));
   const max = Math.max(1, ...values);
   return `
-    <div class="daily-bars" aria-label="Tareas terminadas por dia">
+    <div class="daily-bars" aria-label="Tareas terminadas por día">
       ${days.map((day) => {
         const value = getCompletedTasksCount(day);
         const height = value ? Math.max(12, Math.round((value / max) * 150)) : 8;
@@ -169,7 +163,7 @@ function isDateUntil(dateValue, referenceDate) {
 }
 
 function Metric(label, value) {
-  return `<article class="panel metric-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`;
+  return `<div class="metric-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
 }
 
 function countBy(items, key) {
@@ -217,7 +211,7 @@ function CalendarPointsChart(days) {
 function CumulativeCompletedPointsChart(days) {
   if (!days.length) return EmptyState("Consulta un mes en Calendario para ver el acumulado terminado.");
   const values = accumulate(days.map((day) => Number(day.completed_points || 0)));
-  return LineChart(days, values, "puntos terminados acumulados", "Puntos terminados acumulados por dia");
+  return LineChart(days, values, "puntos terminados acumulados", "Puntos terminados acumulados por día");
 }
 
 function CumulativeCreatedPointsChart(days, tasks) {
@@ -225,7 +219,7 @@ function CumulativeCreatedPointsChart(days, tasks) {
   const assignedStats = getAssignedStatsByDay(days, tasks);
   // Convenio: lo creado cuenta como negativo, por lo que el acumulado se dibuja por debajo del 0.
   const values = accumulate(days.map((day) => -(assignedStats.get(day.date)?.points ?? 0)));
-  return LineChart(days, values, "puntos creados acumulados", "Puntos creados acumulados por dia");
+  return LineChart(days, values, "puntos creados acumulados", "Puntos creados acumulados por día");
 }
 
 function accumulate(values) {
@@ -244,7 +238,7 @@ function WeekdayCompletionChart(days) {
   });
   const max = Math.max(1, ...totals.map((item) => item.points));
   return `
-    <div class="weekday-bars" aria-label="Trabajo terminado por dia de la semana">
+    <div class="weekday-bars" aria-label="Trabajo terminado por día de la semana">
       ${totals.map((item) => {
         const height = item.points ? Math.max(12, Math.round((item.points / max) * 150)) : 8;
         return `
@@ -270,12 +264,12 @@ function getMondayFirstWeekdayIndex(dateValue) {
 }
 
 function DailyNewPointsChart(days, tasks) {
-  if (!days.length) return EmptyState("Consulta un mes en Calendario para ver puntos nuevos por dia.");
+  if (!days.length) return EmptyState("Consulta un mes en Calendario para ver puntos nuevos por día.");
   const assignedStats = getAssignedStatsByDay(days, tasks);
   const values = days.map((day) => assignedStats.get(day.date)?.points ?? 0);
   const max = Math.max(1, ...values);
   return `
-    <div class="daily-bars" aria-label="Puntos nuevos por dia">
+    <div class="daily-bars" aria-label="Puntos nuevos por día">
       ${days.map((day) => {
         const value = assignedStats.get(day.date)?.points ?? 0;
         const height = value ? Math.max(12, Math.round((value / max) * 150)) : 8;
@@ -299,12 +293,12 @@ function DailyPointDifferenceChart(days, tasks) {
 }
 
 function DailyCreatedTasksChart(days, tasks) {
-  if (!days.length) return EmptyState("Consulta un mes en Calendario para ver tareas creadas por dia.");
+  if (!days.length) return EmptyState("Consulta un mes en Calendario para ver tareas creadas por día.");
   const assignedStats = getAssignedStatsByDay(days, tasks);
   const values = days.map((day) => assignedStats.get(day.date)?.tasks ?? 0);
   const max = Math.max(1, ...values);
   return `
-    <div class="daily-bars" aria-label="Tareas creadas por dia">
+    <div class="daily-bars" aria-label="Tareas creadas por día">
       ${days.map((day) => {
         const value = assignedStats.get(day.date)?.tasks ?? 0;
         const height = value ? Math.max(12, Math.round((value / max) * 150)) : 8;

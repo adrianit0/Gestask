@@ -1,6 +1,7 @@
-﻿import { TaskDetailModal, TaskModal, TaskTable } from "../components/TaskTable.js";
-import { ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
-import { PRIORITIES, TASK_STATUSES } from "../utils/constants.js";
+﻿import { PageHeader, plusIcon } from "../components/PageHeader.js";
+import { TaskDetailModal, TaskModal, TaskTable } from "../components/TaskTable.js";
+import { LoadingState } from "../components/StateMessages.js";
+import { PRIORITIES, TASK_COLORS, TASK_STATUSES } from "../utils/constants.js";
 import { escapeHtml } from "../utils/format.js";
 
 const SORT_OPTIONS = [
@@ -29,43 +30,65 @@ const STATUS_DESCRIPTIONS = {
   Warning: "Requiere atención.",
 };
 
-export function BacklogPage({ tasks = [], filters = {}, loading = false, error = "", success = "", modalTask = undefined, detailTask = null } = {}) {
+export function BacklogPage({ tasks = [], filters = {}, loading = false, modalTask = undefined, detailTask = null } = {}) {
   const selectedStatuses = Array.isArray(filters.statuses) ? filters.statuses : [];
+  const activeFilterCount = [filters.search, filters.priority, filters.date, selectedStatuses.length, filters.show_history].filter(Boolean).length;
+  const canClear = Object.values(filters).some((value) => (Array.isArray(value) ? value.length : Boolean(value)));
   return `
-    <section class="page-header">
-      <div>
-        <p class="eyebrow">Backlog</p>
-        <h1>Tareas</h1>
+    ${PageHeader({
+      eyebrow: "Tareas",
+      title: "Backlog",
+      description: "Todas tus tareas. Filtra, ordena y pulsa una tarea para ver su detalle.",
+      actions: `<button class="primary" data-open-task-modal>${plusIcon()}Crear tarea</button>`,
+    })}
+    <section class="panel toolbar-panel backlog-filters" aria-label="Filtros">
+      <div class="toolbar">
+        <label class="search-field">
+          <span class="visually-hidden">Texto a buscar</span>
+          ${searchIcon()}
+          <input data-filter="search" type="search" placeholder="Buscar por título, ticket o info" value="${escapeHtml(filters.search || "")}" />
+        </label>
+        <label class="toolbar-field">Prioridad<select data-filter="priority"><option value="">Todas</option>${PRIORITIES.map((priority) => `<option value="${priority}" ${filters.priority === priority ? "selected" : ""}>${priority}</option>`).join("")}</select></label>
+        <label class="toolbar-field" title="Fecha asignada o finalizada">Fecha<input data-filter="date" type="date" value="${escapeHtml(filters.date || "")}" /></label>
+        <label class="toolbar-field">Ordenar por<select data-filter="sort_by">${SORT_OPTIONS.map(([value, label]) => `<option value="${value}" ${(filters.sort_by || "created_at") === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>
+        <label class="toolbar-field">Dirección<select data-filter="sort_direction">
+          <option value="desc" ${(filters.sort_direction || "desc") === "desc" ? "selected" : ""}>Descendente</option>
+          <option value="asc" ${filters.sort_direction === "asc" ? "selected" : ""}>Ascendente</option>
+        </select></label>
       </div>
-      <button class="primary" data-open-task-modal>Crear tarea</button>
+      <div class="toolbar toolbar-secondary">
+        <fieldset class="chip-group">
+          <legend>Estados</legend>
+          ${TASK_STATUSES.map((status) => `
+            <label class="chip" title="${escapeHtml(STATUS_DESCRIPTIONS[status] || status)}">
+              <input data-status-filter value="${escapeHtml(status)}" type="checkbox" ${selectedStatuses.includes(status) ? "checked" : ""} />
+              <span class="chip-dot" style="--chip-color:${statusColor(status)}" aria-hidden="true"></span>
+              ${escapeHtml(status)}
+            </label>
+          `).join("")}
+        </fieldset>
+        <div class="toolbar-end">
+          <label class="switch"><input data-filter-check="show_history" type="checkbox" role="switch" ${filters.show_history ? "checked" : ""} /><span class="switch-track" aria-hidden="true"></span>Histórico completo</label>
+          <button class="text-button" data-clear-filters ${canClear ? "" : "disabled"}>Limpiar filtros${activeFilterCount ? ` (${activeFilterCount})` : ""}</button>
+        </div>
+      </div>
     </section>
-    ${ErrorMessage(error)}
-    ${SuccessMessage(success)}
-    <section class="panel filters backlog-filters">
-      <label>Texto a buscar<input data-filter="search" placeholder="Título, ticket o info" value="${escapeHtml(filters.search || "")}" /></label>
-      <label>Prioridad<select data-filter="priority"><option value="">Todas las prioridades</option>${PRIORITIES.map((priority) => `<option value="${priority}" ${filters.priority === priority ? "selected" : ""}>${priority}</option>`).join("")}</select></label>
-      <label>Fecha asignada o finalizada<input data-filter="date" type="date" value="${escapeHtml(filters.date || "")}" /></label>
-      <label>Campo de ordenación<select data-filter="sort_by">${SORT_OPTIONS.map(([value, label]) => `<option value="${value}" ${(filters.sort_by || "created_at") === value ? "selected" : ""}>Ordenar por ${label}</option>`).join("")}</select></label>
-      <label>Dirección del orden<select data-filter="sort_direction">
-        <option value="desc" ${(filters.sort_direction || "desc") === "desc" ? "selected" : ""}>Descendente</option>
-        <option value="asc" ${filters.sort_direction === "asc" ? "selected" : ""}>Ascendente</option>
-      </select></label>
-      <label class="checkbox-label backlog-history-toggle"><input data-filter-check="show_history" type="checkbox" ${filters.show_history ? "checked" : ""} /> Mostrar histórico completo</label>
-      <fieldset class="status-filter-grid">
-        <legend>Estados a incluir</legend>
-        ${TASK_STATUSES.map((status) => `
-          <label class="status-filter-option">
-            <span>${escapeHtml(STATUS_DESCRIPTIONS[status] || status)}</span>
-            <input data-status-filter value="${escapeHtml(status)}" type="checkbox" ${selectedStatuses.includes(status) ? "checked" : ""} />
-            <strong>${escapeHtml(status)}</strong>
-          </label>
-        `).join("")}
-      </fieldset>
-      <button class="secondary" data-clear-filters>Limpiar</button>
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Tareas <span class="count-badge">${tasks.length}</span></h2>
+      </div>
+      ${loading ? LoadingState() : TaskTable(tasks, { mode: "backlog" })}
     </section>
-    <section class="panel">${loading ? LoadingState() : TaskTable(tasks, { mode: "backlog" })}</section>
     ${modalTask !== undefined ? TaskModal(modalTask) : ""}
     ${detailTask ? TaskDetailModal(detailTask) : ""}
   `;
 }
 
+function statusColor(status) {
+  const color = TASK_COLORS[status];
+  return typeof color === "string" ? color : color.Prioritaria;
+}
+
+function searchIcon() {
+  return `<svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>`;
+}

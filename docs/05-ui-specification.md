@@ -8,9 +8,9 @@ Menú lateral izquierdo fijo (ocupa todo el alto y no se desplaza con la página
   - `Tareas`: Backlog, Kanban, Ordenar tareas y Completar tareas.
   - `Día a día`: Tareas diarias, Horario diario y Diarias.
   - `Seguimiento`: Calendario, Gestor de tiempos y Gráficas de rendimiento.
-- Pie con Configuración (icono de rueda dentada), Actualizar datos y Cerrar sesión, con el email de la sesión debajo de `Cerrar sesión`.
+- Pie con Configuración (icono de rueda dentada), selector de tema, Actualizar datos y Cerrar sesión, con el email de la sesión debajo de `Cerrar sesión`.
 
-La pestaña activa se resalta con el color secundario. `Completar tareas` muestra un contador con las tareas que esperan un paso de cierre (`Need PR`, `Need to Impute` e `Imputed`); al pasar el ratón se ve el desglose por estado. Si no hay ninguna, no se muestra el contador.
+La pestaña activa se resalta con el color secundario y una marca vertical del color principal en el borde izquierdo. `Completar tareas` muestra un contador con las tareas que esperan un paso de cierre (`Need PR`, `Need to Impute` e `Imputed`); al pasar el ratón se ve el desglose por estado. Si no hay ninguna, no se muestra el contador.
 
 Estados del menú:
 - **Desplegado** (por defecto): iconos, nombres, títulos de sección, etiquetas de los indicadores y email.
@@ -18,19 +18,34 @@ Estados del menú:
 - El estado plegado/desplegado se recuerda en el navegador (`localStorage`, clave `gestask.sidebarCollapsed`). Si el almacenamiento no está disponible, el menú arranca desplegado.
 - Si el alto de la ventana no alcanza, solo se desplaza la lista de pestañas; marca, indicadores y pie permanecen visibles.
 
+## Sistema visual común
+- **Tema**: claro, oscuro o del sistema. El botón del pie del menú alterna `Tema del sistema` → `Tema claro` → `Tema oscuro`. La preferencia se guarda en el navegador (`localStorage`, clave `gestask.theme`) y se aplica antes del primer pintado; sin almacenamiento disponible se sigue el tema del sistema.
+- **Tokens**: colores, radios, sombras y tipografía se definen como variables CSS en `:root` y se redefinen para el tema oscuro. Los colores de estado de las tareas (`TASK_COLORS`, `PR_BORDER_COLORS`) se mantienen; en oscuro se mezclan con la superficie para conservar el tono sin perder contraste.
+- **Cabecera de página**: sección del menú (antetítulo), nombre de la pestaña como título, descripción breve y acciones a la derecha. El título de la pestaña del navegador es `<Pestaña> · Gestask`.
+- **Avisos**: los mensajes de éxito y error se muestran como avisos flotantes abajo a la derecha, sin desplazar el contenido. Los de éxito se cierran solos a los 5 segundos; los de error permanecen hasta cerrarlos o cambiar de pestaña. Ambos tienen botón de cerrar.
+- **Modales**: cabecera fija al desplazar, `Escape` cierra el modal abierto y, al abrirse, el foco va al primer campo del formulario (`autofocus`) o al propio diálogo.
+- **Teclado**: las filas y tarjetas que abren un detalle (tablas de tareas, Kanban, Horario diario, días del Calendario) se pueden enfocar con `Tab` y abrir con `Enter` o `Espacio`.
+- **Estados**: carga con indicador giratorio, vacío con icono y texto, y tareas con cambios pendientes con la etiqueta `Creando...`/`Guardando...`.
+
 ## Backlog
 Tabla responsive con colores por estado y borde por estado PR. Crear/editar usa modal compartido.
+
+Filtros en una barra compacta: búsqueda, prioridad, fecha, campo y dirección de ordenación en una fila; debajo, los estados como chips seleccionables (con el color de cada estado y su descripción como tooltip), el interruptor `Histórico completo` y `Limpiar filtros (N)`, desactivado si no hay filtros.
+
+Cada tarea ocupa una fila: la primera columna (`Tarea`) agrupa ticket, indicador de comentarios, título y más info; el resto de columnas muestran tipo (etiqueta de color: `Bug` rojo, `Feature` violeta, `Task` azul), fechas, scoring, orden y acciones. Los valores vacíos se muestran como `—`.
 
 La vista debe permitir:
 - Filtrar por estado, prioridad, fecha de inicio, búsqueda y tipo de ticket.
 - Ordenar por puntos de orden, scoring, fecha de inicio, fecha límite, prioridad, estado, tipo y fechas técnicas.
 - Mostrar `ticket_type`, `limit_date` y `scoring` cuando el ancho disponible lo permita.
-- Mantener scroll horizontal en móvil si la tabla supera el ancho disponible.
+- En móvil (≤ 760 px), cada tarea se muestra como una tarjeta con el título arriba y el resto de campos etiquetados en dos columnas, sin scroll horizontal.
 
 ## Indicador de comentarios en tablas de tareas
-Todas las tablas de tareas (Backlog, Tareas Diarias y vista completa) muestran, junto al título de la tarea, un indicador con el número de comentarios que tiene. El indicador solo se muestra cuando la tarea tiene al menos un comentario.
+Todas las tablas de tareas (Backlog y Tareas Diarias) muestran, en la línea del ticket sobre el título de la tarea, un indicador con el número de comentarios que tiene. El indicador solo se muestra cuando la tarea tiene al menos un comentario.
 
 ## Modal de creación y edición de tarea
+El título es el primer campo y recibe el foco al abrir el modal.
+
 Debe incluir:
 - Ticket.
 - Tipo de ticket: `Bug`, `Feature`, `Task`.
@@ -63,6 +78,8 @@ En móvil:
 - La rejilla puede pasar a 1 columna.
 - Los comentarios deben seguir siendo accesibles al final del modal.
 
+La cabecera muestra el ticket en el antetítulo, el título de la tarea y el botón `Editar`; el título no se repite en la rejilla. Estado y PR aparecen en la primera parte de la rejilla para cambiarlos sin desplazarse.
+
 Campos mínimos en detalle:
 - Ticket.
 - Tipo.
@@ -94,7 +111,7 @@ Reglas de UX:
 - El historial se muestra en orden inverso al de almacenamiento: el comentario más reciente aparece primero.
 
 ## Tareas Diarias
-Selector de fecha, botón Nuevo día, aviso de modo histórico y listado ordenado por `order_points` descendente por defecto.
+Selector de fecha con botones de día anterior y siguiente y `Hoy` (desactivado si ya se muestra hoy); cambiar la fecha carga el parte sin botón `Consultar`. Botón Nuevo día, aviso de modo histórico y listado ordenado por `order_points` descendente por defecto. La descripción de la cabecera indica la fecha del parte.
 
 La vista debe permitir cambiar la ordenación usando los mismos criterios principales que Backlog cuando aplique.
 
@@ -119,6 +136,8 @@ La vista debe mostrar exclusivamente:
 
 La vista no debe incluir filtros, scoring visible como criterio ni controles de ordenación funcionales.
 
+Encima de la tabla se muestran tres resúmenes con el número de tareas en cada paso (`Informar PR` / `Need PR`, `Imputar horas` / `Need to Impute`, `Cerrar` / `Imputed`), con el color de borde PR de cada estado.
+
 Orden fijo de presentación:
 - Primero por estado PR: `Need PR`, `Need to Impute`, `Imputed`, `Deployed`.
 - Después por fecha de finalización de menor a mayor.
@@ -130,12 +149,14 @@ Campos mínimos de tabla:
 - Fecha de finalización.
 - Esfuerzo u horas a imputar.
 - Estado PR/imputación.
-- Acción `Resolver` cuando exista una transición disponible.
+- Acción de resolución cuando exista una transición disponible, con el nombre del paso: `Informar PR` (`Need PR`), `Imputar` (`Need to Impute`) o `Cerrar` (`Imputed`). Si el tipo de tarea no tiene ese paso, el botón aparece desactivado.
+
+En la tabla `Pendientes de imputar` cada fila muestra ticket y título juntos en la columna `Tarea`.
 
 ### Resolver `Need PR`
 Aplica a tareas `Bug` y `Feature` en `pr_status = Need PR`.
 
-Al pulsar `Resolver`, debe abrirse un popup con:
+Al pulsar la acción de resolución, debe abrirse un popup con:
 - Campo opcional `pr_link` para informar el enlace al PR.
 - Campo opcional `test_cases` solo cuando `ticket_type = Feature`.
 - Botón de confirmar.
@@ -149,7 +170,7 @@ Reglas:
 ### Resolver `Need to Impute`
 Aplica a tareas en `pr_status = Need to Impute`.
 
-Al pulsar `Resolver`, debe abrirse un popup con:
+Al pulsar la acción de resolución, debe abrirse un popup con:
 - Hipervínculo al ticket.
 - Título de la tarea.
 - Fecha de resolución, tomada de `finished_date`.
@@ -186,7 +207,7 @@ Reglas:
 ### Resolver `Imputed`
 Aplica solo a tareas `Bug` y `Feature` en `pr_status = Imputed`.
 
-Al pulsar `Resolver`, debe abrirse un popup con:
+Al pulsar la acción de resolución, debe abrirse un popup con:
 - Hipervínculo al ticket.
 - Aviso claro de que el usuario debe cerrar la tarea en el sistema externo.
 - Botón de confirmar.
@@ -237,23 +258,32 @@ Agenda con franjas horarias generada a partir del parte diario. Cabecera con res
 
 Arriba del todo, antes de la agenda, se muestra el bloque `Tareas diarias` con las diarias del parte, su progreso `realizadas / total` y una casilla por tarea. Las diarias no ocupan franjas horarias.
 
+Las franjas se dibujan como una línea de tiempo: hora de inicio y fin a la izquierda, un punto por franja (principal para tareas, verde para descanso, azul para `Daily`) y la tarjeta con el color de estado de la tarea.
+
 Al final del listado se muestra un botón a todo el ancho disponible para incluir horas extra:
-- Borde gris con transparencia y línea discontinua, fondo blanco muy transparente y texto gris.
-- Altura aproximada de 5 veces la altura del texto.
-- Texto `(+) Incluir horas` cuando está desactivado y `Mostrar menos horas` cuando está activado.
+- Borde discontinuo, fondo transparente y texto atenuado; al pasar el ratón toma el tono principal.
+- Altura aproximada de 3 líneas de texto.
+- Texto `Incluir horas` con un icono `+` cuando está desactivado y `Mostrar menos horas` cuando está activado.
 - Al activarlo, la hora de fin efectiva se amplía `PE_diario_extra` puntos de esfuerzo y se planifican tareas adicionales por encima de la hora de fin.
 - Al desactivarlo, se vuelve a la jornada base y se eliminan las tareas de la franja extra.
 
 El detalle de comportamiento y los casos límite están en `docs/09-daily-schedule.md`.
 
 ## Calendario
-Grid mensual. Cada día muestra estado, puntos y tickets/tareas finalizadas.
+Grid mensual de días laborables (lunes a viernes) con leyenda de colores. Navegación con mes anterior/siguiente, selector de mes, año y `Mes actual`; cambiar mes o año carga el periodo sin botón `Consultar`.
+
+Cada día muestra su número, el estado si no es laborable, `Hoy` en el día actual, los puntos completados frente al objetivo con una barra de progreso, las horas, la observación y las tareas finalizadas. Colores:
+- Verde: objetivo cumplido. Rojo: por debajo del objetivo. Gris con borde discontinuo: no laborable.
+- Hoy: fondo amarillo y contorno del color principal.
+- Días futuros: neutros (sin verde ni rojo), porque aún no se han trabajado.
+
+El nombre del día de la semana solo se repite dentro de la tarjeta en móvil, donde no hay cabecera de columnas. Los días editables abren el popup de tipo de día con clic o teclado.
 
 ## Gráficas de Rendimiento
 Vista con métricas y gráficas del mes consultado.
 
 ### Bloque de métricas
-La parte superior mantiene las tarjetas de métricas (tareas abiertas/terminadas, puntos, porcentajes, horas y días) y el selector `Mostrar todo`. Este bloque es siempre visible, independientemente del grupo de gráficas seleccionado.
+La barra superior contiene el selector de mes (igual que en `Calendario`) y el interruptor `Mostrar todo`. Debajo, las métricas se agrupan en cuatro paneles: `Tareas` (abiertas, terminadas, listas para cierre), `Esfuerzo` (PE completados, PE totales del mes, % completado del mes, horas completadas), `Ritmo` (% actual del mes, % completado hasta ahora, ratio de diferencia) y `Calendario` (días laborables e intensivos). Con `Mostrar todo` se ocultan las métricas que dependen del mes. Este bloque es siempre visible, independientemente del grupo de gráficas seleccionado.
 
 ### Gráficas de distribución siempre visibles
 Encima del área de grupos se muestran, siempre visibles y como barras horizontales, las gráficas categóricas de distribución:
@@ -261,7 +291,7 @@ Encima del área de grupos se muestran, siempre visibles y como barras horizonta
 - Prioridad
 
 ### Organización de las gráficas por grupos
-El resto de gráficas (series por día) se dividen en grupos diferenciados. A la izquierda del área de gráficas hay un menú vertical con un elemento por grupo; al seleccionar un grupo se muestran únicamente sus gráficas en el panel de la derecha. Por defecto se muestra el primer grupo (`Rendimiento de puntos`).
+El resto de gráficas (series por día) se dividen en grupos diferenciados. Encima del área de gráficas hay un selector segmentado con un elemento por grupo; al seleccionar un grupo se muestran únicamente sus gráficas debajo. Por defecto se muestra el primer grupo (`Rendimiento de puntos`).
 
 Grupos y gráficas que contienen, en orden:
 
@@ -308,7 +338,7 @@ La vista debe mostrar:
 - Nombre del parámetro.
 - Tipo primitivo.
 - Valor efectivo.
-- Indicador de valor fijo.
+- Indicador de valor fijo (`Fijo`) o personalizado (`Personalizado`, cuando difiere del valor por defecto).
 - Control de edición adecuado al tipo.
 
 Los parámetros con `fixed_value = true` se muestran en solo lectura y siempre usan el valor por defecto.
@@ -318,9 +348,10 @@ La creación de parámetros debe solicitar `name`, `parameter_type`, `default_va
 Los parámetros `scoring_*` deben mostrarse igual que el resto, aunque se recomienda agruparlos visualmente bajo una sección `Scoring` si la lista crece.
 
 ## Colores
-- Principal: `#ff8000`.
-- Secundario: `#ffdbb6`.
+- Principal: `#ff8000` (botones principales con texto oscuro para mantener el contraste).
+- Secundario: `#ffdbb6` (pestaña activa en tema claro).
 - Estados según requisitos del backlog y calendario.
+- Tema oscuro: superficies cálidas oscuras y los mismos colores de estado mezclados con la superficie (`--task-tint`).
 
 ## Responsive
-En móvil, tablas se desplazan horizontalmente. Por debajo de 760 px el menú lateral se convierte en una barra superior fija con el botón de menú, la marca y los indicadores; el botón abre las pestañas en un panel lateral sobre el contenido, que se cierra al elegir una pestaña, al pulsar fuera o con `Escape`. En móvil no existe el modo plegado.
+En móvil, las tablas de tareas (Backlog, Tareas diarias y Completar tareas) se convierten en tarjetas; el resto de tablas se desplazan horizontalmente. Los formularios y rejillas pasan a una columna y los filtros a dos por fila. Por debajo de 760 px el menú lateral se convierte en una barra superior fija con el botón de menú, la marca y los indicadores; el botón abre las pestañas en un panel lateral sobre el contenido, que se cierra al elegir una pestaña, al pulsar fuera o con `Escape`. En móvil no existe el modo plegado.

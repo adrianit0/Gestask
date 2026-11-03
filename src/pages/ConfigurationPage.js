@@ -1,4 +1,5 @@
-import { EmptyState, ErrorMessage, LoadingState, SuccessMessage } from "../components/StateMessages.js";
+import { PageHeader, plusIcon } from "../components/PageHeader.js";
+import { EmptyState, LoadingState } from "../components/StateMessages.js";
 import { closeIcon } from "../components/TaskTable.js";
 import { escapeHtml } from "../utils/format.js";
 import { EXTERNAL_PAGE_CONFIGURATION_NAME, TICKET_MODEL_CONFIGURATION_NAME, TICKET_ORDER_CONFIGURATION_NAME } from "../utils/projectSettings.js";
@@ -17,19 +18,16 @@ const OPTIONAL_CONFIGURATION_PLACEHOLDERS = {
 
 const PARAMETER_TYPES = ["string", "number", "boolean", "date", "datetime"];
 
-export function ConfigurationPage({ configurations = [], loading = false, error = "", success = "", showCreateModal = false } = {}) {
+export function ConfigurationPage({ configurations = [], loading = false, showCreateModal = false } = {}) {
   return `
-    <section class="page-header">
-      <div>
-        <p class="eyebrow">Configuración</p>
-        <h1>Parámetros</h1>
-      </div>
-      <button class="primary" data-open-configuration-modal>Crear parámetro</button>
-    </section>
-    ${ErrorMessage(error)}
-    ${SuccessMessage(success)}
+    ${PageHeader({
+      eyebrow: "Ajustes",
+      title: "Configuración",
+      description: "Parámetros que usan el horario, el scoring y los enlaces de tickets. Edita un valor y pulsa Guardar.",
+      actions: `<button class="primary" data-open-configuration-modal>${plusIcon()}Crear parámetro</button>`,
+    })}
     <section class="panel">
-      <h2>Valores activos</h2>
+      <div class="panel-header"><h2>Valores activos <span class="count-badge">${configurations.length}</span></h2></div>
       ${loading ? LoadingState() : ConfigurationTable(configurations)}
     </section>
     ${showCreateModal ? ConfigurationCreateModal() : ""}
@@ -39,17 +37,17 @@ export function ConfigurationPage({ configurations = [], loading = false, error 
 function ConfigurationCreateModal() {
   return `
     <div class="modal-backdrop" role="presentation">
-      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="configuration-modal-title">
+      <section class="modal configuration-modal" role="dialog" aria-modal="true" aria-labelledby="configuration-modal-title" tabindex="-1">
         <div class="modal-header">
-          <div>
+          <div class="modal-heading">
             <p class="eyebrow">Configuración</p>
             <h2 id="configuration-modal-title">Crear parámetro</h2>
           </div>
-          <button class="icon-button close-icon-button" data-close-configuration-modal aria-label="Cerrar">${closeIcon()}</button>
+          <button class="icon-button close-icon-button" data-close-configuration-modal aria-label="Cerrar" title="Cerrar (Esc)">${closeIcon()}</button>
         </div>
         <form id="configuration-create-form" class="configuration-form">
           <label>Nombre
-            <input name="name" required placeholder="Ej. puntos_objetivo_diarios" />
+            <input name="name" required autofocus placeholder="Ej. puntos_objetivo_diarios" />
           </label>
           <label>Tipo
             <select name="parameter_type" required data-create-parameter-type>
@@ -78,13 +76,13 @@ function ConfigurationTable(configurations) {
 
   return `
     <div class="table-wrap">
-      <table class="task-table configuration-table">
+      <table class="data-table configuration-table">
         <thead>
           <tr>
             <th>Nombre</th>
             <th>Tipo</th>
             <th>Valor activo</th>
-            <th>Acciones</th>
+            <th class="actions-cell"><span class="visually-hidden">Acciones</span></th>
           </tr>
         </thead>
         <tbody>
@@ -100,18 +98,19 @@ function ConfigurationRow(configuration) {
   const canReset = !configuration.is_default && !configuration.readonly && !configuration.fixed_value;
   return `
     <tr>
-      <td><strong>${escapeHtml(configuration.name)}</strong></td>
-      <td>${escapeHtml(configuration.parameter_type)}</td>
+      <td><strong class="configuration-name">${escapeHtml(configuration.name)}</strong>${configuration.fixed_value ? `<span class="status-pill locked">Fijo</span>` : configuration.is_default ? "" : `<span class="status-pill custom">Personalizado</span>`}</td>
+      <td><code class="type-code">${escapeHtml(configuration.parameter_type)}</code></td>
       <td>
         <form class="configuration-value-form" data-configuration-form>
           <input type="hidden" name="configuration_id" value="${escapeHtml(configuration.id)}" />
           ${ValueControl(configuration, disabled)}
         </form>
       </td>
-      <td class="row-actions">
-        <button class="icon-button" type="submit" form="${escapeHtml(formId(configuration.id))}" ${disabled}>Guardar</button>
-        ${canReset ? `<button class="icon-button reset-icon-button" type="button" data-reset-configuration="${escapeHtml(configuration.id)}" title="Valor por defecto: ${escapeHtml(formatValue(configuration.default_value, configuration.parameter_type))}" aria-label="Volver al valor por defecto">${undoIcon()}</button>` : ""}
-        ${configuration.readonly ? `<span class="muted-text">No editable</span>` : ""}
+      <td class="actions-cell">
+        <div class="task-actions">
+          ${configuration.readonly ? `<span class="muted-text">No editable</span>` : `<button class="secondary button-sm" type="submit" form="${escapeHtml(formId(configuration.id))}">Guardar</button>`}
+          ${canReset ? `<button class="icon-button reset-icon-button" type="button" data-reset-configuration="${escapeHtml(configuration.id)}" title="Valor por defecto: ${escapeHtml(formatValue(configuration.default_value, configuration.parameter_type))}" aria-label="Volver al valor por defecto">${undoIcon()}</button>` : ""}
+        </div>
       </td>
     </tr>
   `.replace("<form class=\"configuration-value-form\"", `<form id="${escapeHtml(formId(configuration.id))}" class="configuration-value-form"`);

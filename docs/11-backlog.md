@@ -522,3 +522,19 @@
   - **Archivos**: `src/components/AppLayout.js`, `src/services/layoutPreferencesService.js`, `src/main.js`, `src/styles/global.css`, `docs/05-ui-specification.md`
   - **Criterio de aceptación**: En escritorio el menú muestra icono y nombre de cada pestaña; al plegarlo quedan solo los iconos (con tooltip) y la preferencia se mantiene al navegar y al recargar. Los tooltips de los indicadores y los modales se ven por encima del menú. En móvil aparece una barra superior cuyo botón abre el menú, que se cierra al elegir pestaña, al pulsar fuera o con `Escape`, sin scroll horizontal.
   - **Dependencias**: UI-001, FE-019.
+
+- **FE-024**
+  - **Estado**: Hecho
+  - **Área**: Frontend
+  - **Descripción**: Rediseño del frontal para mejorar aspecto y usabilidad: tokens CSS con tema claro/oscuro, cabeceras de página comunes, avisos flotantes, tablas de tareas de una fila con tarjetas en móvil, filtros compactos del Backlog, selectores de periodo con carga automática, `Escape` y foco en modales y activación por teclado de filas y tarjetas.
+  - **Archivos**: `src/styles/global.css`, `src/main.js`, `index.html`, `src/components/*`, `src/pages/*`, `src/services/layoutPreferencesService.js`, `docs/05-ui-specification.md`
+  - **Criterio de aceptación**: Todas las pestañas se ven correctamente en tema claro y oscuro y en móvil (375 px) sin scroll horizontal de la página. El tema elegido se mantiene al recargar. Los avisos de éxito desaparecen solos y los de error se cierran con su botón. `Escape` cierra los modales y los formularios abren con el foco en el primer campo. Cambiar mes, año o fecha carga el periodo sin botón `Consultar`.
+  - **Dependencias**: FE-023.
+
+- **QA-006**
+  - **Estado**: Pendiente
+  - **Área**: Testing manual
+  - **Descripción**: Revisar el rediseño contra Supabase real con datos propios: flujos de crear, editar y completar tareas, partes diarios, calendario y configuración en ambos temas y en móvil.
+  - **Archivos**: Navegador + Supabase, `docs/05-ui-specification.md`
+  - **Criterio de aceptación**: Los flujos funcionan igual que antes del rediseño y la UI cumple `docs/05-ui-specification.md`.
+  - **Dependencias**: FE-024.
